@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Add New Post</h1>
+<form method="post">
+    <input type="text" name="title" placeholder="Title" required>
+    <textarea name="content" placeholder="Content" rows="5" required></textarea>
+    <button type="submit">Add</button>
+</form>
+<a class="back-link" href="/">Go Back</a>
+{% endblock %}

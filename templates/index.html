@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Blog Posts</h1>
+
+    {% if session.get('access_token') %}
+        <!-- Nếu ĐÃ đăng nhập: Hiện nút Thêm bài và Đăng xuất -->
+        <a href="/add" class="btn">Add New Post</a> <br>
+        <a href="/logout" class="btn">Đăng xuất</a>
+    {% else %}
+        <!-- Nếu CHƯA đăng nhập: Hiện nút Đăng nhập và Đăng ký -->
+        <a href="/login"class="btn" >Đăng nhập</a> <br>
+        <a href="/register" class="btn">Đăng ký</a>
+    {% endif %}
+
+    {% for post in posts %}
+        <div class="post">
+            <h2>{{ post.title }}</h2>
+            <p>{{ post.content }}</p>
+            <small>Created at: {{ post.created_at }}</small>
+            <br><br>
+            <a href="/edit/{{ post.id }}" class="btn btn-edit">Edit</a>
+            <a href="/delete/{{ post.id }}" class="btn btn-danger">Delete</a>
+        </div>
+    {% endfor %}
+{% endblock %}

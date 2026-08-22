@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Quản Trị Hống Hệ Thống</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icon -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <!-- Navbar Top -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-user-shield me-2"></i>Admin Dashboard</a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3"><i class="fa-solid fa-circle-user me-1"></i> Admin</span>
+                <a href="/logout" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i>Đăng xuất</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4 px-4">
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                <i class="fa-solid fa-bell me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Tab Navigation -->
+        <ul class="nav nav-pills mb-4" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-semibold" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-panel" type="button" role="tab">
+                    <i class="fa-solid fa-users me-2"></i>Quản Lý Người Dùng & Phân Quyền
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts-panel" type="button" role="tab">
+                    <i class="fa-solid fa-newspaper me-2"></i>Quản Lý Bài Viết
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="adminTabsContent">
+            
+            <!-- TAB 1: QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN -->
+            <div class="tab-pane fade show active" id="users-panel" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-user-gear me-2"></i>Danh sách Người dùng trong Hệ thống</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID / Email</th>
+                                        <th>Vai trò (Role)</th>
+                                        <th>Quyền chi tiết</th>
+                                        <th class="text-center">Cập nhật Vai trò</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in profiles %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold text-dark">{{ user.email if user.email else user.id }}</div>
+                                            <small class="text-muted">ID: {{ user.id }}</small>
+                                        </td>
+                                        <td>
+                                            {% if user.role == 'admin' %}
+                                                <span class="badge bg-danger">Admin</span>
+                                            {% elif user.role == 'staff' %}
+                                                <span class="badge bg-success">Staff (Biên tập)</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Viewer (Chỉ xem)</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.role == 'admin' or user.role == 'staff' %}
+                                                <small class="text-success"><i class="fa-solid fa-check me-1"></i>Thêm, Sửa, Xóa bài</small>
+                                            {% else %}
+                                                <small class="text-muted"><i class="fa-solid fa-eye me-1"></i>Chỉ xem bài viết</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <!-- Form Thay đổi Quyền -->
+                                            <form action="/admin/update-role" method="POST" class="d-flex justify-content-center gap-2">
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <select name="role" class="form-select form-select-sm" style="width: 160px;">
+                                                    <option value="viewer" {% if user.role == 'viewer' %}selected{% endif %}>Viewer (Chỉ xem)</option>
+                                                    <option value="staff" {% if user.role == 'staff' %}selected{% endif %}>Staff (Sửa/Xóa)</option>
+                                                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin (Toàn quyền)</option>
+                                                </select>
+                                                <button type="submit" class="btn btn-primary btn-sm">
+                                                    <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: QUẢN LÝ BÀI VIẾT -->
+            <div class="tab-pane fade" id="posts-panel" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-list-check me-2"></i>Danh sách Tất cả Bài viết</h5>
+                        <a href="/add" class="btn btn-success btn-sm"><i class="fa-solid fa-plus me-1"></i>Tạo bài viết mới</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 80px;">ID</th>
+                                        <th>Tiêu đề bài viết</th>
+                                        <th> Tác giả (User ID)</th>
+                                        <th>Ngày tạo</th>
+                                        <th class="text-end px-4">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for post in posts %}
+                                    <tr>
+                                        <td><strong>#{{ post.id }}</strong></td>
+                                        <td>
+                                            <div class="fw-semibold">{{ post.title }}</div>
+                                            <small class="text-muted">{{ post.content[:60] }}...</small>
+                                        </td>
+                                        <td><small class="text-muted">{{ post.user_id }}</small></td>
+                                        <td><small class="text-muted">{{ post.created_at[:10] if post.created_at else 'N/A' }}</small></td>
+                                        <td class="text-end px-4">
+                                            <!-- Nút Sửa -->
+                                            <a href="/edit/{{ post.id }}" class="btn btn-outline-warning btn-sm me-1">
+                                                <i class="fa-solid fa-pen-to-square"></i> Sửa
+                                            </a>
+                                            <!-- Nút Xóa (Có cảnh báo JS) -->
+                                            <a href="/delete/{{ post.id }}" 
+                                               class="btn btn-outline-danger btn-sm"
+                                               onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
+                                                <i class="fa-solid fa-trash"></i> Xóa
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
