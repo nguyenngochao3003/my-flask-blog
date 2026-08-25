@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Sản Phẩm</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; display: flex; justify-content: center; padding: 40px 20px; }
+        .card { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { margin-top: 0; color: #333; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        
+        /* Dropzone tải ảnh */
+        .image-upload-wrapper { border: 2px dashed #007bff; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #f8f9fa; position: relative; }
+        .image-upload-wrapper:hover { background: #e9ecef; }
+        .image-upload-wrapper input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        
+        /* Preview ảnh */
+        .preview-img { max-width: 100%; max-height: 200px; border-radius: 6px; display: none; margin-top: 10px; margin-left: auto; margin-right: auto; }
+        
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #218838; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        
+        #statusMessage { margin-top: 15px; text-align: center; font-weight: 600; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Thêm Sản Phẩm Mới</h2>
+    <form id="productForm">
+        <div class="form-group">
+            <label for="name">Tên sản phẩm</label>
+            <input type="text" id="name" required placeholder="Nhập tên sản phẩm...">
+        </div>
+
+        <div class="form-group">
+            <label>Hình ảnh sản phẩm</label>
+            <div class="image-upload-wrapper">
+                <span id="uploadText">📸 Nhấp hoặc kéo thả ảnh vào đây</span>
+                <input type="file" id="imageInput" accept="image/*" required>
+                <img id="preview" class="preview-img" alt="Ảnh xem trước">
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn">Tải Lên Supabase</button>
+    </form>
+    <div id="statusMessage"></div>
+</div>
+
+<script>
+    const imageInput = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+    const uploadText = document.getElementById('uploadText');
+    const productForm = document.getElementById('productForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMessage = document.getElementById('statusMessage');
+
+    // Xem trước hình ảnh khi chọn file
+    imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                preview.src = event.target.result;
+                preview.style.display = 'block';
+                uploadText.style.display = 'none';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Xử lý submit form
+    productForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('name').value;
+        const file = imageInput.files[0];
+
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('image', file);
+
+        // Khóa nút submit và báo trạng thái
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Đang tải lên...';
+        statusMessage.className = '';
+        statusMessage.innerText = '';
+
+        try {
+            const response = await fetch('http://localhost:5000/api/products', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                statusMessage.className = 'success';
+                statusMessage.innerText = '✅ Thêm sản phẩm thành công!';
+                productForm.reset();
+                preview.style.display = 'none';
+                uploadText.style.display = 'block';
+            } else {
+                throw new Error(result.error || 'Có lỗi xảy ra');
+            }
+        } catch (err) {
+            statusMessage.className = 'error';
+            statusMessage.innerText = '❌ Error: ' + err.message;
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Tải Lên Supabase';
+        }
+    });
+</script>
+
+</body>
+</html>

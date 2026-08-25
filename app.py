@@ -1,9 +1,15 @@
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import (Flask, render_template, request, 
+    redirect, session, flash, jsonify)
+from werkzeug.utils import secure_filename
 from supabase import create_client, Client, ClientOptions
 from dotenv import load_dotenv
 import os 
- 
 
+
+
+
+
+# CHẠY BACK END CHO WEB BẰNG FLASK VÀ SUPABASE-------------------------------------------------------
 # chạy hàm để lấy key bảo mật từ .env
 load_dotenv()
 
@@ -16,6 +22,7 @@ key = os.getenv("SUPABASE_KEY")
 #  tạo client thông qua url và key 
 supabase: Client = create_client(url, key)
 
+
 # chỗ này là rpc: remote procedure call để gọi từ xa việc thực thi một hàm trong postgres trên supabase
 result = supabase.rpc('check_my_role').execute()
 print("SUPABASE ROLE:", result.data)
@@ -24,6 +31,8 @@ app = Flask(__name__)
 # dùng kèm với password để mã hóa dữ liệu key cho mỗi session 
 app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 
+
+# hiển thị trang web------------------------------------
 @app.route('/')
 def index():
     posts = supabase.table('posts').select('*').order('created_at', desc=True).execute()
@@ -242,5 +251,64 @@ def update_user_role():
 
     return redirect('/admin')
 
+# -------- ĐỌC VÀ LƯU HÌNH ẢNH VÀO SUPABASE
+BUCKET_NAME = "product-images"
+
+
+@app.route('/take_picture')
+def home():
+    # Flask sẽ tự động tìm file index.html nằm trong thư mục templates/
+    return render_template('take_picture.html')
+
+@app.route('/api/products', methods=['POST'])
+def upload_product():
+    if 'image' not in request.files:
+        return jsonify({'error': 'Không tìm thấy file ảnh'}), 400
+
+    file = request.files['image']
+    name = request.form.get('name')
+
+    if file:
+        filename = secure_filename(file.filename)
+        # Tạo tên file duy nhất để tránh bị trùng đè
+        unique_filename = f"{os.urandom(4).hex()}_{filename}"
+        
+        # Đọc nội dung file dưới dạng bytes
+        file_bytes = file.read()
+        file_mime = file.mimetype
+
+        # 1. Upload file lên Supabase Storage
+        upload_response = supabase.storage.from_(BUCKET_NAME).upload(
+            path=unique_filename,
+            file=file_bytes,
+            file_options={"content-type": file_mime}
+        )
+
+        # 2. Lấy Public URL của ảnh vừa upload
+        public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(unique_filename)
+
+        # 3. Lưu thông tin + Public URL vào PostgreSQL Table qua Supabase Database API
+        db_response = supabase.table("products").insert({
+            "name": name,
+            "image_url": public_url
+        }).execute()
+
+        return jsonify({
+            'success': True,
+            'data': db_response.data[0]
+        }), 201
+
+    return jsonify({'error': 'File không hợp lệ'}), 400
+
+
+@app.route('/api/products', methods=['GET'])
+def get_products():
+    # Truy vấn bảng products từ Supabase
+    response = supabase.table("products").select("*").execute()
+    return jsonify(response.data)
+# ĐỌC VÀ LƯU HÌNH ẢNH VÀO SUPABASE-------------
 if __name__ == '__main__':
     app.run(debug=True)
+    # Sử dụng PORT từ môi trường (Cần thiết cho Cloud hosting)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
