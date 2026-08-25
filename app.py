@@ -251,6 +251,20 @@ def update_user_role():
 
     return redirect('/admin')
 
+
+# test lấy hiển thị bảng sản phẩm và qr code -------------------------------------------------
+@app.route('/product')
+def product():
+    return render_template('product.html')
+
+@app.route('/qrcode')
+def product():
+    return render_template('QR_tracker.html')
+
+# ---------------------------------------
+
+
+
 # -------- ĐỌC VÀ LƯU HÌNH ẢNH VÀO SUPABASE
 BUCKET_NAME = "product-images"
 
@@ -307,6 +321,7 @@ def get_products():
     response = supabase.table("products").select("*").execute()
     return jsonify(response.data)
 # ĐỌC VÀ LƯU HÌNH ẢNH VÀO SUPABASE-------------
+
 if __name__ == '__main__':
     app.run(debug=True)
     # Sử dụng PORT từ môi trường (Cần thiết cho Cloud hosting)

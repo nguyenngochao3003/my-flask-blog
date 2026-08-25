@@ -7,6 +7,7 @@
         <!-- Nếu ĐÃ đăng nhập: Hiện nút Thêm bài và Đăng xuất -->
         <a href="/add" class="btn">Add New Post</a> <br>
         <a href="/logout" class="btn">Đăng xuất</a>
+        
     {% else %}
         <!-- Nếu CHƯA đăng nhập: Hiện nút Đăng nhập và Đăng ký -->
         <a href="/login"class="btn" >Đăng nhập</a> <br>
@@ -23,4 +24,11 @@
             <a href="/delete/{{ post.id }}" class="btn btn-danger">Delete</a>
         </div>
     {% endfor %}
+
+    <br>
+    <br>
+    <br>
+    <a href="/product" class="btn">product</a>
+    <a href="/qrcode" class="btn">qrcode</a>
+
 {% endblock %}

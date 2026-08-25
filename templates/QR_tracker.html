@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <base target="_top">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 50px;
+    }
+
+    /* .button {
+      gap: 10;
+      padding: 12px 25px;
+      font-size: 16px;
+      cursor: pointer;
+    } */
+  </style>
+</head>
+
+<body>
+<!-- quét mã qr ===================================================================== -->
+  <h2>QR Scanner</h2>
+<form method="POST">
+    <input
+    type="text"
+    id="qrCode" name="qrCodexxx"
+    placeholder="Mã QR sẽ xuất hiện ở đây"
+    >
+
+
+    <button onclick="openQRScanner()">
+        Mở QR Scanner
+    </button>
+    <p id="detail"></p>
+    
+    <button type="submit">
+        Thêm
+    </button>
+</form>
+
+<!-- tạo mã qr ===================================================================== -->
+
+
+<div id="qrcode"></div>
+<div class="qr-container">
+
+  <h3>Tạo mã QR</h3>
+
+  <input
+    type="text"
+    id="productCode"
+    placeholder="Mã sản phẩm"
+  >
+  <div id="qrcode"></div>
+
+  <div id="qrInfo"></div>
+
+    <button type="button" id="createQRButton" onclick="createQRCode()">
+      🏷️ Tạo mã QR
+    </button>
+
+    <button
+      type="button"
+      id="printQRButton"
+      onclick="printQRCode()"
+    >
+      🖨️ Mở in mã QR
+    </button>
+    
+    {% for product in products%}
+        <p>
+            {{product.code}},
+            {{product.name}}
+        </p>
+    {% endfor%}
+
+
+</div>
+<!-- ===================================================================== -->
+
+<script>
+
+let qrScannerWindow = null;
+
+
+// ========================================
+// MỞ QR SCANNER
+// ========================================
+
+function openQRScanner() {
+
+  qrScannerWindow = window.open(
+    "https://nguyenngochao3003.github.io/qr-scanner/",
+    "_blank"
+  );
+
+}
+
+
+// ========================================
+// NHẬN DỮ LIỆU TỪ QR SCANNER
+// ========================================
+
+window.addEventListener("message", function(event) {
+
+  // Kiểm tra nguồn gửi
+  if (event.origin !== "https://nguyenngochao3003.github.io") {
+    return;
+  }
+
+  // Kiểm tra dữ liệu
+  if (!event.data) {
+    return;
+  }
+
+  if (event.data.type !== "QR_SCANNED") {
+    return;
+  }
+
+  // Lấy mã QR
+  const qrCode = event.data.code;
+
+  console.log("Đã nhận QR:", qrCode);
+
+  const data = event.data;
+
+  // Đưa mã QR vào input
+  document.getElementById("qrCode").value = qrCode;
+  const time = new Date(data.timestamp);
+
+  document.getElementById("detail").textContent =
+    "Scanner: " + data.scanner +
+    " | Timestamp: " + time.toLocaleString("vi-VN") +
+    " | Location: " + data.location;
+});
+
+</script>
+<script>
+  // ========================================
+// TẠO QR SCANNER
+// ========================================
+function createQRCode() {
+
+  const productCode =
+    document.getElementById("productCode").value.trim();
+
+  if (!productCode) {
+    alert("Vui lòng nhập mã sản phẩm");
+    return;
+  }
+
+  const qrContainer =
+    document.getElementById("qrcode");
+
+  // Xóa QR cũ
+  qrContainer.innerHTML = "";
+
+  // QR chỉ chứa mã sản phẩm
+  new QRCode(
+    qrContainer,
+    {
+      text: productCode,
+      width: 200,
+      height: 200
+    }
+  );
+}
+
+function printQRCode() {
+
+  const qrElement =
+    document.getElementById("qrcode");
+
+  const productCode =
+    document.getElementById("productCode").value.trim();
+
+  if (!qrElement.innerHTML) {
+    alert("Vui lòng tạo mã QR trước");
+    return;
+  }
+
+  const printWindow = window.open("", "_blank");
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+
+      <title>In mã QR - ${productCode}</title>
+
+      <style>
+
+        body {
+          font-family: Arial, sans-serif;
+          text-align: center;
+          margin: 0;
+          padding: 20px;
+        }
+
+        .label {
+          width: 50mm;
+          min-height: 50mm;
+          margin: auto;
+          text-align: center;
+        }
+
+        .label h3 {
+          margin: 5px 0;
+          font-size: 16px;
+        }
+
+        .label p {
+          margin: 5px 0;
+          font-size: 12px;
+        }
+
+        #printQR img {
+          width: 40mm;
+          height: 40mm;
+        }
+
+        @media print {
+
+          @page {
+            margin: 5mm;
+          }
+
+          body {
+            padding: 0;
+          }
+
+        }
+
+      </style>
+
+    </head>
+
+    <body>
+
+      <div class="label">
+
+        <h3>MÃ SẢN PHẨM</h3>
+
+        <div id="printQR"></div>
+
+        <p>${productCode}</p>
+
+      </div>
+
+      <script>
+
+        const source =
+          window.opener.document.getElementById("qrcode");
+
+        const target =
+          document.getElementById("printQR");
+
+        target.innerHTML = source.innerHTML;
+
+        setTimeout(() => {
+          window.print();
+        }, 500);
+
+      <\/script>
+
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+}
+</script>
+</body>
+</html>

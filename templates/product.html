@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+    <!-- Nhúng file CSS từ thư mục static -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chèn file JavaScript từ thư mục static -->
+    <script src="{{ url_for('static', filename='js/toggleDiv.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/scan_QR.js') }}"></script>
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- bảng sản phẩm -->
+    <div class='headerContent'>
+        <h4><i class="fa-solid fa-bars"></i><span>Sản phẩm</span></h4>
+        <div class='timeDisplay'>date</div>
+    </div>
+    <div class='table_view'>; 
+        <div class="table-header">
+            <input type="text" placeholder="Tìm tên, mã SP..." class="search-box" id='productSearchInput' onkeyup='processFilterProduct()'>
+                <select class="status-filter">
+                    <option value="">-- Tất cả các nhóm --</option>
+                    <option value="pending">Giày dép</option>
+                    <option value="success">Áo</option>
+                    <option value="cancel">Phụ kiện</option>
+                </select>
+            <input type="date" class="date-filter">
+            <button type="button" class="btn export" ><i class="fas fa-file-excel"></i> Xuất Excel</button>
+            <button type="button" class="btn import" ><i class="fas fa-file-excel"></i> Nhập Excel</button>
+            <button type="button" class="btn create" onclick="openForm('addProductModal')" ><i class="fas fa-plus"></i> Thêm SP</button><button>In QR</button>
+        </div>
+        <!-- bảng sản phẩm -->
+        <table class='custom-table' id='productTable'>
+            
+            <thead><tr>
+                <th>Mã</th>
+                <th>Hình</th>
+                <th>Tên SP</th>
+                <th>Nhóm</th>
+                <th>ĐVT</th>
+                <th>Giá Nhập</th>
+                <th>Giá bán</th>
+                <th>Lượng đầu kỳ</th>
+                <th>Ngày đầu kỳ</th>
+                <th>Tồn kho</th>
+                <th>TT</th>
+                <th>Thao tác</th>
+                </tr> 
+            </thead>
+            <tbody>
+                {% for product in products%}
+
+                    <tr>
+                    <td class="MaDH">{{product.id}}</td>
+                    <td><img src='${pic_link}' class="product-img"></td>
+                    <td>{{product.name}}</td>
+                    <td class='tag ${tag_cur}'>{{product.group}}</td>
+                    <td>{{product.unit}}</td>
+                    <td class="checked-out">{{product.import_price}}</td>
+                    <td>{{product.sale_price}}</td>
+                    <td>{{product.input_stock}}</td>
+                    <td>{{product.input_date}}</td>
+                    <td class='stock'><span>${stock}</span></td>
+                    <td class='checkout ${tag_checkout}'><span>${status}</span></td>
+                    <td class="action-btn">
+                        <div class="icon-btn" onclick="openAdjustProductForm('${id}')" ><i class="fas fa-edit"></i></div>
+                        <div data-name='${id}' class="icon-btn delete-row"><i data-name='${id}'class="fas fa-trash delete-row"></i></div>
+                    </td>
+                    </tr>
+
+                {% endfor%} 
+            </tbody>
+        </table>
+        <div class="table-footer"># bản ghi<div>số trang</div>
+            
+        </div>
+    </div>
+    <!--  -->
+
+    <!-- form nhập thông tin sản phẩm mới -->
+    <div id="addProductModal" class="modal" style="display:block;">
+        <div id='addProductModalContent' class="modal-content">
+            <div id='customerHeaderForm'>
+                <span class="close" onclick="closeForm('addProductModal')">&times;</span>
+                <h4>Tên sản phẩm</h4>
+            </div>
+            
+            <form id="orderForm">
+            <div class="formRow full">
+                <div class="formGroup">
+                    <div class="formLabel">
+                        <label>Tên sản phẩm</label>
+                        <label class='labelNote'>*</label>
+                    </div>
+                        <input class="formInput" id='productName_input' type="text">
+                </div>
+                <div class="formGroup">
+                    <div class="formLabel">
+                        <label>Mã Code</label>
+                        <label class='labelNote'>*</label>
+                    </div>
+                        <input class="formInput" id='Product_QR' type="text">
+                        <button onclick="openQRScanner()">
+                            <i class="fas fa-qrcode"></i>
+                        </button>
+                </div>
+                <div class="formGroup">
+                    <div class="formLabel">
+                        <label>Nhóm SP</label>
+                        <label class='labelNote'>*</label>
+                    </div>
+                    <select class="status-filter" id="productGroup_input">
+                        <option>Giày dép</option>
+                        <option>Áo</option>
+                        <option>Phụ kiện</option>
+                    </select>
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formGroup">
+                <div class="formLabel">
+                    <label>Đơn vị tính</label>
+                    <label class='labelNote'>*</label>
+                </div>
+                <input class="formInput" id="productUnit_input" type="text">
+                </div>
+                <div class="formGroup">
+                <div class="formLabel">
+                    <label>Trạng thái</label>
+                </div>
+                <select class="status-filter" id="productStatus_select">
+                    <option>Tạo Mới</option>
+                </select>
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formGroup">
+                <div class="formLabel">
+                    <label>Giá nhập</label>
+                    <label class='labelNote'>*</label>
+                </div>
+                <input class="formInput" id="productPurchasePrices_input" type="number">
+                </div>
+                <div class="formGroup">
+                <div class="formLabel">
+                    <label>Giá bán</label>
+                </div>
+                <input class="formInput" id="productSellingPrices_input" type="number" min="0">
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formGroup">
+                <div class="formLabel">
+                    <label>SL tồn đầu kỳ</label>
+                </div>
+                <input class="formInput" id="productOpenStock_input" type="number" min="0">
+                </div>
+                <div class="formGroup">
+                <div class="formLabel">
+                    <label>Ngày tồn đầu kỳ</label>
+                </div>
+                <input class="formInput" id='productOpeningStock_date' type="date">
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formGroup full">
+                <div class="formLabel">
+                    <label>URL hình ảnh</label>
+                </div>
+                <input class="formInput" id="productUrl_input" type="url" placeholder="Ví dụ: Link sản phẩm trực tiếp hoặc URL xem google drive (https://drive.google.com/file/d...)">
+                </div>
+            </div>
+            <div class="formRow">
+                <div class="formGroup full">
+                <div class="formLabel">
+                    <label>Mô tả</label>
+                </div>
+                <textarea class='formNote' id="productDescrible_textArea" rows="4" placeholder="Nhập ghi chú..."></textarea>
+                </div>
+            </div>
+            </form>
+            <div class='bottomForm'>
+            <button type="button" id='btn_cancel' onclick="closeAddProductForm()">Hủy</button>
+            <button type="button" id="btn_create_order" onclick="submitAddProductForm()" class='jj'>Thêm SP</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+window.onload = function() {
+  setupQRListener("Product_QR");
+};
+</script>
