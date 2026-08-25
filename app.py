@@ -258,7 +258,7 @@ def product():
     return render_template('product.html')
 
 @app.route('/qrcode')
-def product():
+def qrcode_tracker():
     return render_template('QR_tracker.html')
 
 # ---------------------------------------
