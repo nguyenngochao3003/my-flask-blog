@@ -1,43 +1,329 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-  <base target="_top">
-    <!-- Nhúng file CSS từ thư mục static -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Chèn file JavaScript từ thư mục static -->
-        <script src="{{ url_for('static', filename='js/product-add_new_row.js') }}"></script>
-    <link rel="stylesheet"
-    href="https://cdnjs.cloudflare. com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản Lý Sản Phẩm - Warehouse Management System</title>
+<!-- Font Inter & FontAwesome Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/static/css/product_style.css">
+ 
 </head>
-
 <body>
-    
-    <div class="product">
-        <button id="btnAddProduct" style="margin-bottom: 15px; padding: 8px 16px; cursor: pointer;">
-            + Thêm sản phẩm mới
-        </button>
 
-        <table>
+  <!-- Overlay khi mở Sidebar trên Mobile -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar Navigator -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <i class="fa-solid fa-boxes-stacked"></i>
+        <h2>Kho Việt</h2>
+      </div>
+      <button class="close-sidebar-btn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="#"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+      <li><a href="#" class="active"><i class="fa-solid fa-box"></i> Sản phẩm</a></li>
+      <li><a href="#"><i class="fa-solid fa-warehouse"></i> Kho chứa</a></li>
+      <li><a href="#"><i class="fa-solid fa-arrow-right-arrow-left"></i> Giao dịch</a></li>
+      <li><a href="#"><i class="fa-solid fa-user-gear"></i> Tài khoản</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Container -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <header class="top-header">
+      <button class="toggle-sidebar-btn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="user-profile">
+        <div class="user-avatar">NV</div>
+        <div class="user-info">
+          <div class="user-name">Nguyễn Văn A</div>
+          <div class="user-role">Admin</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body -->
+    <main class="content-body">
+      
+      <!-- Cards tổng quan -->
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-info">
+            <p>Quản lý Sản phẩm</p>
+            <h3>5,200 SP</h3>
+          </div>
+          <div class="card-icon">
+            <i class="fa-solid fa-box"></i>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-info">
+            <p>Kho chứa</p>
+            <h3>12 Kho</h3>
+          </div>
+          <div class="card-icon">
+            <i class="fa-solid fa-warehouse"></i>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-info">
+            <p>Xuất nhập kho</p>
+            <h3>340 Giao dịch</h3>
+          </div>
+          <div class="card-icon">
+            <i class="fa-solid fa-right-left"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar hành động -->
+      <div class="toolbar">
+        <div class="toolbar-title">
+          <h1>Quản lý Sản phẩm</h1>
+        </div>
+        <div class="toolbar-actions">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search...">
+          </div>
+          <button class="btn btn-primary" onclick="openModal()">
+            <i class="fa-solid fa-plus"></i> Thêm Sản phẩm
+          </button>
+        </div>
+      </div>
+    
+
+    <!-- Bảng Sản Phẩm -->
+        <div class="table-container">
+            <table>
             <thead>
-            <tr>
-                <th>ID</th>
-                <th>Tên sản phẩm</th>
-                <th>Giá</th>
-                <th>Trạng thái</th>
-            </tr>
+                <tr>
+                <th>Hình ảnh</th>
+                <th>Mã SP (SKU)</th>
+                <th>Tên Sản phẩm</th>
+                <th>Nhà cung cấp</th>
+                <th>Nhóm</th>
+                <th>Nhân viên tạo</th>
+                <th>Ngày tạo</th>
+                <th>Hành động</th>
+                </tr>
             </thead>
             <tbody>
-            <tr>
-                <td>1</td>
-                <td>Sản phẩm A</td>
-                <td>100.000 VNĐ</td>
-                <td>Còn hàng</td>
-            </tr>
+                <tr>
+                <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
+                <td><span class="code-badge">SP-001</span></td>
+                <td><strong>Áo Sơ mi Nam</strong></td>
+                <td>NXB Kim Đồng</td>
+                <td>Thời trang Nam</td>
+                <td>Nguyễn Văn A</td>
+                <td>25/10/2023</td>
+                <td>
+                    <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+                </tr>
+                <tr>
+                <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
+                <td><span class="code-badge">SP-002</span></td>
+                <td><strong>Quần Jean Slimfit</strong></td>
+                <td>May 10</td>
+                <td>Thời trang Nam</td>
+                <td>Nguyễn Văn A</td>
+                <td>25/10/2023</td>
+                <td>
+                    <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+                </tr>
+                <tr>
+                <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
+                <td><span class="code-badge">SP-003</span></td>
+                <td><strong>Giày Thể Thao Sneaker</strong></td>
+                <td>Bitis</td>
+                <td>Giày dép</td>
+                <td>Nguyễn Văn A</td>
+                <td>24/10/2023</td>
+                <td>
+                    <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+                </tr>
             </tbody>
-        </table>
+            </table>
+        </div>
+    <!-- card sản phẩm -->
+        <div class="card-container">
+            <!-- Item 1 -->
+            <div class="product-item">
+                <img src="path/to/shirt1.jpg" alt="Áo Sơ mi Nam" class="product-img">
+                <div class="product-info">
+                <h3 class="product-title">Áo Sơ mi Nam</h3>
+                <div class="product-details">
+                    <span class="label">Nhóm</span>
+                    <span class="value">Nguyễn Văn A</span>
+                    <span class="label">SP</span>
+                    <span class="value">25/10/2023</span>
+                </div>
+                </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="product-item">
+                <img src="path/to/shirt2.jpg" alt="Áo Sơ mi Nam" class="product-img">
+                <div class="product-info">
+                <h3 class="product-title">Áo Sơ mi Nam</h3>
+                <div class="product-details">
+                    <span class="label">Nhóm</span>
+                    <span class="value">NXB Kim Đồng</span>
+                    <span class="label">01</span>
+                    <span class="value">25/10/2023</span>
+                </div>
+                </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="product-item">
+                <img src="path/to/jacket.jpg" alt="Thời trang Nam" class="product-img">
+                <div class="product-info">
+                <h3 class="product-title">Thời trang Nam</h3>
+                <div class="product-details">
+                    <span class="label">Nhóm</span>
+                    <span class="value">Nguyễn Văn A</span>
+                    <span class="label">01</span>
+                    <span class="value">25/10/2023</span>
+                </div>
+                </div>
+            </div>
+        </div>
+<!-- thanh điều hướng cho điện thoại máy tính bảng -->
+       <!-- Thêm thư viện Font Awesome để lấy icon -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+        <nav class="bottom-nav">
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-border-all nav-icon"></i>
+                <span class="nav-label">Dashboard</span>
+            </a>
+
+            <a href="#" class="nav-item active">
+                <i class="fa-solid fa-box nav-icon"></i>
+                <span class="nav-label">Sản phẩm</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-store nav-icon"></i>
+                <span class="nav-label">Kho chứa</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-arrow-right-left nav-icon"></i>
+                <span class="nav-label">Giao dịch</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <i class="fa-regular fa-user nav-icon"></i>
+                <span class="nav-label">Tài khoản</span>
+            </a>
+        </nav>
+
+    </main>
+  </div>
+
+  <!-- Form Modal Thêm Sản Phẩm -->
+  <div class="modal-overlay" id="addProductModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Thêm Sản phẩm Mới</h3>
+        <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="form-group">
+          <label>Tên SP</label>
+          <input type="text" class="form-control" placeholder="Nhập tên sản phẩm...">
+        </div>
+
+        <div class="form-group">
+          <label>Mã Code</label>
+          <input type="text" class="form-control" placeholder="Nhập mã code sản phẩm...">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nhà cung cấp</label>
+            <div class="input-with-action">
+              <select class="form-control">
+                <option value="">Thêm mới...</option>
+                <option value="1">NXB Kim Đồng</option>
+                <option value="2">May 10</option>
+              </select>
+              <button class="btn btn-secondary" title="Tạo nhà cung cấp mới">+</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nhóm</label>
+            <div class="input-with-action">
+              <select class="form-control">
+                <option value="">Thêm mới...</option>
+                <option value="1">Thời trang Nam</option>
+                <option value="2">Giày dép</option>
+              </select>
+              <button class="btn btn-secondary" title="Tạo nhóm mới">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nhân viên</label>
+            <input type="text" class="form-control" value="Nguyễn Văn A" readonly>
+          </div>
+          <div class="form-group">
+            <label>Ngày tạo</label>
+            <input type="date" class="form-control" value="2023-10-25">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tính năng chụp / quét</label>
+          <div class="media-buttons">
+            <button class="btn btn-secondary"><i class="fa-solid fa-qrcode"></i> Quét mã QR</button>
+            <button class="btn btn-secondary"><i class="fa-solid fa-camera"></i> Chụp ảnh sản phẩm</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Hình ảnh sản phẩm</label>
+          <input type="file" class="form-control" accept="image/*">
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+        <button class="btn btn-primary">Lưu</button>
+      </div>
     </div>
+  </div>
 
+  <script>
+    function openModal() {
+      document.getElementById('addProductModal').classList.add('active');
+    }
 
-    
+    function closeModal() {
+      document.getElementById('addProductModal').classList.remove('active');
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('active');
+      document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+  </script>
 </body>
-
+</html>

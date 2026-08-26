@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Vị Trí Kho</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/stock_style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-left">
+        <button class="icon-btn"><i class="fa-solid fa-arrow-left"></i></button>
+        <h2>QUẢN LÝ VỊ TRÍ</h2>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+        <button class="icon-btn"><i class="fa-regular fa-bookmark"></i></button>
+        <button class="icon-btn"><i class="fa-solid fa-circle-info"></i></button>
+      </div>
+    </header>
+
+    <div class="meta-bar">
+      <div class="meta-item">
+        <i class="fa-regular fa-user meta-icon"></i>
+        <div>
+          <span class="meta-label">Người tạo:</span>
+          <span class="meta-value">Nguyễn Văn A</span>
+        </div>
+      </div>
+      <div class="meta-item">
+        <i class="fa-regular fa-calendar-days meta-icon"></i>
+        <div>
+          <span class="meta-label">Thời gian:</span>
+          <span class="meta-value">25/10/2023 - 10:30</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="meta-item status-item">
+        <div class="progress-circle">
+          <i class="fa-solid fa-box"></i>
+        </div>
+        <div>
+          <span class="meta-label">Trạng thái:</span>
+          <span class="meta-value highlight">Còn trống 75%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" placeholder="Tìm kiếm tên kho...">
+        <button class="qr-btn">
+          <i class="fa-solid fa-qrcode"></i>
+          <span>QR Scan</span>
+        </button>
+      </div>
+      <button class="btn-primary">
+        Tạo Mới Kho <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+
+    <div class="tree-container">
+      
+      <div class="tree-card expanded">
+        <div class="tree-header">
+          <div class="tree-title">
+            <i class="fa-solid fa-chevron-down toggle-icon"></i>
+            <i class="fa-solid fa-warehouse node-icon"></i>
+            <span>Kho A</span>
+          </div>
+          <i class="fa-solid fa-chevron-up action-chevron"></i>
+        </div>
+
+        <div class="context-menu">
+          <ul>
+            <li><i class="fa-solid fa-list-check"></i> Thêm Kệ</li>
+            <li><i class="fa-solid fa-bars-staggered"></i> Thêm Hàng</li>
+            <li><i class="fa-regular fa-square"></i> Thêm Ô Chứa</li>
+            <li><i class="fa-solid fa-pen"></i> Sửa Thông Tin</li>
+            <li><i class="fa-regular fa-copy"></i> Copy từ Kệ có sẵn</li>
+          </ul>
+        </div>
+
+        <div class="tree-content">
+          <div class="tree-node level-1">
+            <div class="node-line-v"></div>
+            <div class="node-line-h"></div>
+            <i class="fa-solid fa-list-check node-icon"></i>
+            <span class="node-text">Kệ 1</span>
+          </div>
+
+          <div class="tree-node level-2">
+            <div class="node-line-v"></div>
+            <div class="node-line-h"></div>
+            <i class="fa-solid fa-chevron-down toggle-icon"></i>
+            <i class="fa-solid fa-bars-staggered node-icon"></i>
+            <span class="node-text">Hàng A1</span>
+          </div>
+
+          <div class="tree-node level-3">
+            <div class="node-line-v"></div>
+            <div class="node-line-h"></div>
+            <i class="fa-regular fa-square node-icon"></i>
+            <span class="node-text">Ô 101</span>
+          </div>
+
+          <div class="tree-node level-3">
+            <div class="node-line-h"></div>
+            <i class="fa-regular fa-square node-icon"></i>
+            <span class="node-text">Ô 102</span>
+          </div>
+
+          <div class="tree-node level-1">
+            <div class="node-line-h"></div>
+            <i class="fa-solid fa-list-check node-icon"></i>
+            <span class="node-text">Kệ 2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tree-card collapsed">
+        <div class="tree-header">
+          <div class="tree-title">
+            <i class="fa-solid fa-chevron-right toggle-icon"></i>
+            <i class="fa-solid fa-warehouse node-icon"></i>
+            <span>Kho A</span>
+          </div>
+          <i class="fa-solid fa-chevron-down action-chevron"></i>
+        </div>
+      </div>
+
+      <div class="tree-card collapsed">
+        <div class="tree-header">
+          <div class="tree-title">
+            <i class="fa-solid fa-chevron-right toggle-icon"></i>
+            <i class="fa-solid fa-warehouse node-icon"></i>
+            <span>Kho B</span>
+          </div>
+          <i class="fa-solid fa-chevron-down action-chevron"></i>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

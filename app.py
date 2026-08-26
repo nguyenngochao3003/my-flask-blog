@@ -1,7 +1,8 @@
 from flask import (Flask, render_template, request, 
     redirect, session, flash, jsonify, url_for)
-from werkzeug.utils import secure_filename
+
 from supabase import create_client, Client, ClientOptions
+from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os 
 
@@ -256,6 +257,10 @@ def update_user_role():
 @app.route('/product')
 def product():
     return render_template('product.html')
+
+@app.route('/stock')
+def stock():
+    return render_template('stock.html')
 
 @app.route('/qrcode')
 def qrcode_tracker():

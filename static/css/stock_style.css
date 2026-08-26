@@ -1,0 +1,299 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+body {
+  background-color: #f0f4f8;
+  color: #333333;
+  display: flex;
+  justify-content: center;
+  padding: 20px 10px;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 900px;
+  background-color: #f4f7fc;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-left h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2533;
+  letter-spacing: 0.5px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #5a6e85;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Meta Bar */
+.meta-bar {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.meta-icon {
+  font-size: 16px;
+  color: #5a6e85;
+}
+
+.meta-label {
+  color: #7a8b9e;
+  margin-right: 4px;
+}
+
+.meta-value {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.meta-value.highlight {
+  color: #1a2533;
+}
+
+.divider {
+  width: 1px;
+  height: 28px;
+  background-color: #e2e8f0;
+}
+
+.progress-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid #4a77b5;
+  border-top-color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #4a77b5;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search-box {
+  flex: 1;
+  background-color: #ffffff;
+  border: 1px solid #dce4ec;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  padding: 4px 6px 4px 16px;
+}
+
+.search-icon {
+  color: #94a3b8;
+  margin-right: 10px;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+  color: #334155;
+}
+
+.qr-btn {
+  background-color: #4370af;
+  color: #ffffff;
+  border: none;
+  border-radius: 18px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background-color: #4370af;
+  color: #ffffff;
+  border: none;
+  border-radius: 24px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* Tree Container */
+.tree-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tree-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+}
+
+.tree-card.expanded {
+  background-color: #dce7f5;
+  padding-bottom: 12px;
+}
+
+.tree-header {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.tree-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.toggle-icon, .action-chevron {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.node-icon {
+  color: #475569;
+}
+
+/* Context Menu Overlay */
+.context-menu {
+  position: absolute;
+  top: 42px;
+  left: 215px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  width: 170px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.context-menu ul {
+  list-style: none;
+}
+
+.context-menu li {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.context-menu li:first-child {
+  background-color: #eef4fb;
+  font-weight: 500;
+}
+
+.context-menu li:hover {
+  background-color: #f1f5f9;
+}
+
+.context-menu li i {
+  color: #64748b;
+  width: 14px;
+}
+
+/* Tree Nodes Hierarchy & Branch Lines */
+.tree-content {
+  padding-left: 24px;
+}
+
+.tree-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.level-1 { margin-left: 20px; }
+.level-2 { margin-left: 45px; }
+.level-3 { margin-left: 70px; }
+
+/* Dấu đường nối nhánh (Branch lines) */
+.node-line-v {
+  position: absolute;
+  left: -12px;
+  top: -16px;
+  width: 1px;
+  height: 48px;
+  background-color: #94a3b8;
+}
+
+.node-line-h {
+  position: absolute;
+  left: -12px;
+  top: 16px;
+  width: 10px;
+  height: 1px;
+  background-color: #94a3b8;
+}
+
+.node-text {
+  font-weight: 500;
+}
