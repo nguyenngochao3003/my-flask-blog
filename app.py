@@ -35,8 +35,8 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/test_login')
 def index():
-    if 'access_token' in session:
-        return redirect(url_for('index'))
+    # if 'access_token' in session:
+    #     return redirect(url_for('index'))
     return render_template('test login.html')
 
 # 2. Route Xử lý Đăng ký
@@ -113,57 +113,6 @@ def logout():
 def index():
     posts = supabase.table('posts').select('*').order('created_at', desc=True).execute()
     return render_template('index.html', posts=posts.data)
-
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-
-#     if request.method == 'POST':
-
-#         email = request.form['email']
-#         password = request.form['password']
-
-#         try:
-#             response = supabase.auth.sign_in_with_password({
-#                 'email': email,
-#                 'password': password
-#             })
-
-#             # 0. lấy session từ web và gán dưới dict: session key: 'access_token'
-#             session['access_token'] = response.session.access_token # Phải có dòng này!
-#             print("LOGIN:", response)
-
-#             return redirect('/')
-        
-#         except Exception as e:
-#             print("LỖI LOGIN:", e)
-#             return str(e)
-
-#     return render_template('login.html')
-
-
-# @app.route('/register', methods=['GET', 'POST'])
-# def register():
-
-#     if request.method == 'POST':
-
-#         email = request.form['email']
-#         password = request.form['password']
-
-#         try:
-#             response = supabase.auth.sign_up({
-#                 'email': email,
-#                 'password': password
-#             })
-
-#             print("REGISTER:", response)
-
-#             return redirect('/login')
-
-#         except Exception as e:
-#             print("LỖI REGISTER:", e)
-#             return str(e)
-
-#     return render_template('register.html')
 
 
 @app.route('/add', methods=['GET', 'POST'])
@@ -260,20 +209,7 @@ def edit_post(post_id):
 
     return render_template('edit.html', post=post)
 
-# @app.route('/logout')
-# def logout():
-#     try:
-#         # 1. Đăng xuất phía Supabase (Hủy session trên server của Supabase)
-#         supabase.auth.sign_out()
-#     except Exception as e:
-#         print("Lỗi đăng xuất Supabase:", e)
 
-#     # 2. Xóa sạch toàn bộ dữ liệu trong Flask Session (access_token, user_info,...)
-#     session.clear()
-
-#     # 3. Thông báo và đưa người dùng về trang chủ
-#     flash("Bạn đã đăng xuất thành công!")
-#     return redirect('/')
 
 
 # admin phân quyền, quản lý 
