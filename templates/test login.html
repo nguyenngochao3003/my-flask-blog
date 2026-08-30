@@ -129,7 +129,7 @@
         } else {
           showAlert("Đăng nhập thành công! Đang chuyển hướng...", "success");
           setTimeout(() => {
-            window.location.href = result.redirect_url || "/dashboard";
+            window.location.href = result.redirect_url || "/product";
           }, 1000);
         }
 

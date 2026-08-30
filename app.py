@@ -6,9 +6,6 @@ from dotenv import load_dotenv
 import os 
 
 
-
-
-
 # CHẠY BACK END CHO WEB BẰNG FLASK VÀ SUPABASE-------------------------------------------------------
 # chạy hàm để lấy key bảo mật từ .env
 load_dotenv()
@@ -34,10 +31,16 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 #  test hiển thị đăng nhập -------------
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/test_login')
-def index():
+def test_login():
     # if 'access_token' in session:
     #     return redirect(url_for('index'))
     return render_template('test login.html')
+# hiển thị trang web------------------------------------
+
+@app.route('/post')
+def post():
+    posts = supabase.table('posts').select('*').order('created_at', desc=True).execute()
+    return render_template('index.html', posts=posts.data)
 
 # 2. Route Xử lý Đăng ký
 @app.route('/api/signup', methods=['POST'])
@@ -79,7 +82,7 @@ def login():
 
         return jsonify({
             "message": "Đăng nhập thành công",
-            "redirect_url": "/product"
+            "redirect_url": url_for('product')
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 401
@@ -89,7 +92,7 @@ def login():
 def dashboard():
     access_token = session.get('access_token')
     if not access_token:
-        return redirect(url_for('product'))
+        return redirect(url_for('login'))
 
     # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
     user_supabase = create_client(
@@ -104,15 +107,8 @@ def dashboard():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
 # ------------------
-
-
-# hiển thị trang web------------------------------------
-@app.route('/')
-def index():
-    posts = supabase.table('posts').select('*').order('created_at', desc=True).execute()
-    return render_template('index.html', posts=posts.data)
 
 
 @app.route('/add', methods=['GET', 'POST'])
