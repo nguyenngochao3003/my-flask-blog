@@ -79,17 +79,17 @@ def login():
 
         return jsonify({
             "message": "Đăng nhập thành công",
-            "redirect_url": "/dashboard"
+            "redirect_url": "/product"
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 401
     
 # 4. Trang Dashboard bảo mật (yêu cầu kiểm tra Session)
-@app.route('/dashboard')
+@app.route('/product')
 def dashboard():
     access_token = session.get('access_token')
     if not access_token:
-        return redirect(url_for('index'))
+        return redirect(url_for('product'))
 
     # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
     user_supabase = create_client(
