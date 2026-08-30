@@ -87,21 +87,22 @@ def login():
     except Exception as e:
         return jsonify({"error": str(e)}), 401
     
-# # 4. Trang Dashboard bảo mật (yêu cầu kiểm tra Session)
-# @app.route('/product')
-# def dashboard():
-#     access_token = session.get('access_token')
-#     if not access_token:
-#         return redirect(url_for('login'))
+# 4. Trang Dashboard bảo mật (yêu cầu kiểm tra Session)
+@app.route('/dashboard')
+def dashboard():
+    access_token = session.get('access_token')
+    if not access_token:
+        return redirect(url_for('login'))
 
-#     # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
-#     user_supabase = create_client(
-#         url, 
-#         key, 
-#         options={"headers": {"Authorization": f"Bearer {access_token}"}}
-#     )
+    # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
+    user_supabase = create_client(
+        url, 
+        key, 
+        options={"headers": {"Authorization": f"Bearer {access_token}"}}
+    )
     
-#     return f"Xin chào {session.get('email')}, bạn đã đăng nhập thành công!"
+    return jsonify({"message": f"Xin chào {session.get('email')}, bạn đã đăng nhập thành công!", 
+                    "redirect_url": url_for("product")}) 
 
 # 5. Route Đăng xuất
 @app.route('/logout')
