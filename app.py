@@ -32,8 +32,8 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/test_login')
 def test_login():
-    # if 'access_token' in session:
-    #     return redirect(url_for('index'))
+    if 'access_token' in session:
+        return redirect(url_for('post'))
     return render_template('test login.html')
 # hiển thị trang web------------------------------------
 
@@ -87,21 +87,21 @@ def login():
     except Exception as e:
         return jsonify({"error": str(e)}), 401
     
-# 4. Trang Dashboard bảo mật (yêu cầu kiểm tra Session)
-@app.route('/product')
-def dashboard():
-    access_token = session.get('access_token')
-    if not access_token:
-        return redirect(url_for('login'))
+# # 4. Trang Dashboard bảo mật (yêu cầu kiểm tra Session)
+# @app.route('/product')
+# def dashboard():
+#     access_token = session.get('access_token')
+#     if not access_token:
+#         return redirect(url_for('login'))
 
-    # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
-    user_supabase = create_client(
-        url, 
-        key, 
-        options={"headers": {"Authorization": f"Bearer {access_token}"}}
-    )
+#     # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
+#     user_supabase = create_client(
+#         url, 
+#         key, 
+#         options={"headers": {"Authorization": f"Bearer {access_token}"}}
+#     )
     
-    return f"Xin chào {session.get('email')}, bạn đã đăng nhập thành công!"
+#     return f"Xin chào {session.get('email')}, bạn đã đăng nhập thành công!"
 
 # 5. Route Đăng xuất
 @app.route('/logout')
