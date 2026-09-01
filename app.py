@@ -30,13 +30,11 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 
 #  test hiển thị đăng nhập -------------
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
-@app.route('/login')
-def login():
+@app.route('/test_login')
+def test_login():
     if 'access_token' in session:
         return redirect(url_for('product'))
-    return render_template('login.html')
-
-
+    return render_template('test_login.html')
 
 @app.route('/post')
 def post():
@@ -119,7 +117,7 @@ def product():
     user_access_token = session.get('access_token')
     if not user_access_token:
         flash("Bạn cần đăng nhập để sửa bài!")
-        return redirect('/login')
+        return redirect('/test_login')
 
     user_supabase = create_client(
         url, 
