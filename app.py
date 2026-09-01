@@ -114,44 +114,63 @@ def logout():
 
 @app.route('/product')
 def product():
-    user_access_token = session.get('access_token')
-    if not user_access_token:
-        flash("Bạn cần đăng nhập để sửa bài!")
-        return redirect('/test_login')
-    try:
-        user_supabase = create_client(
-            url, 
-            key,
-            options=ClientOptions(
-                headers={"Authorization": f"Bearer {user_access_token}"}
-            )
-        )
-    
-        # 1. Lấy thông tin user hiện tại từ Token
-        user_response = user_supabase.auth.get_user()
-        current_user_id = user_response.user.id
+  user_access_token = session.get('access_token')
 
-        # 2. Lọc chính xác profile của user đó (.single() trả về 1 Object thay vì List)
-        profile = user_supabase.table('profiles') \
-            .select('*') \
-            .eq('id', current_user_id) \
-            .single() \
-            .execute().data
+  # 1. Kiểm tra session xem đã có token chưa
+  if not user_access_token:
+    flash('Bạn cần đăng nhập để truy cập!')
+    return redirect(url_for('test_login'))  # Hoặc redirect(url_for('login'))
 
-        # 3. Lấy dữ liệu sản phẩm
-        product_data = user_supabase.table('product').select('*').execute().data
-        
-        context = {
-            'profile': profile,  # Nên đặt tên số ít (profile) vì chỉ có 1 user
-            'product_data': product_data
-        }   
-            
-        return render_template('product.html', **context)
-    except Exception as e:
-        print("Lỗi tại /product:", e)
-        session.clear() # Xóa session để không bị vướng vòng lặp
-        flash("Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!")
-        return redirect(url_for('test_login'))
+  try:
+    # 2. Khởi tạo Supabase client chuẩn cho từng request với Bearer Token
+    user_supabase = create_client(
+        url,
+        key,
+        options=ClientOptions(
+            headers={'Authorization': f'Bearer {user_access_token}'}
+        ),
+    )
+
+    # 3. Lấy thông tin user
+    user_response = user_supabase.auth.get_user()
+
+    # BẮT BỘC: Kiểm tra an toàn xem user có tồn tại không trước khi lấy .id
+    user_obj = getattr(user_response, 'user', None)
+    if not user_obj:
+      print('Token không hợp lệ hoặc hết hạn!')
+      session.clear()  # Xóa session để tránh vòng lặp redirect
+      flash('Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.')
+      return redirect(url_for('test_login'))
+
+    current_user_id = user_obj.id
+
+    # 4. Lấy Profile an toàn (không dùng .single() để tránh throw Exception khi rỗng)
+    profile_res = (
+        user_supabase.table('profiles')
+        .select('*')
+        .eq('id', current_user_id)
+        .execute()
+    )
+    profile = profile_res.data[0] if profile_res.data else None
+
+    # 5. Lấy dữ liệu sản phẩm
+    product_res = user_supabase.table('product').select('*').execute()
+    product_data = product_res.data if product_res.data else []
+
+    context = {
+        'profile': profile,
+        'product_data': product_data,
+        'cart_count': 3,
+    }
+
+    return render_template('product.html', **context)
+
+  except Exception as e:
+    # In ra log chi tiết nếu gặp lỗi hệ thống khác
+    print('Lỗi tại /product:', e)
+    session.clear()
+    flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
+    return redirect(url_for('test_login'))
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_post():
