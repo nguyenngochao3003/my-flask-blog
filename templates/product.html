@@ -235,7 +235,7 @@
 
         <div class="form-group">
           <label>Mã Code</label>
-          <input type="text" class="form-control" placeholder="Nhập mã code sản phẩm...">
+          <input type="text" class="form-control" id="productForm_productCode" placeholder="Nhập mã code sản phẩm...">
         </div>
 
         <div class="form-row">
@@ -277,7 +277,7 @@
         <div class="form-group">
           <label>Tính năng chụp / quét</label>
           <div class="media-buttons">
-            <button class="btn btn-secondary"><i class="fa-solid fa-qrcode"></i> Quét mã QR</button>
+            <button class="btn btn-secondary" onclick="openQRScanner()"><i class="fa-solid fa-qrcode"></i> Quét mã QR</button>
             <button class="btn btn-secondary"><i class="fa-solid fa-camera"></i> Chụp ảnh sản phẩm</button>
           </div>
         </div>
@@ -308,6 +308,53 @@
       document.getElementById('sidebar').classList.toggle('active');
       document.getElementById('sidebarOverlay').classList.toggle('active');
     }
+    // ========================================
+    // MỞ QR SCANNER
+    // ========================================
+    function openQRScanner() {
+
+      qrScannerWindow = window.open(
+        "https://nguyenngochao3003.github.io/qr-scanner/",
+        "_blank"
+      );
+
+    }
+    // ========================================
+    // NHẬN DỮ LIỆU TỪ QR SCANNER
+    // ========================================
+
+    window.addEventListener("message", function(event) {
+
+      // Kiểm tra nguồn gửi
+      if (event.origin !== "https://nguyenngochao3003.github.io") {
+        return;
+      }
+
+      // Kiểm tra dữ liệu
+      if (!event.data) {
+        return;
+      }
+
+      if (event.data.type !== "QR_SCANNED") {
+        return;
+      }
+
+      // Lấy mã QR
+      const qrCode = event.data.code;
+
+      console.log("Đã nhận QR:", qrCode);
+
+      const data = event.data;
+
+      // Đưa mã QR vào input
+      document.getElementById("productForm_productCode").value = qrCode;
+      const time = new Date(data.timestamp);
+
+      // document.getElementById("detail").textContent =
+      //   "Scanner: " + data.scanner +
+      //   " | Timestamp: " + time.toLocaleString("vi-VN") +
+      //   " | Location: " + data.location;
+    });
   </script>
 </body>
 </html>
