@@ -30,12 +30,13 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 
 #  test hiển thị đăng nhập -------------
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
-@app.route('/test_login')
-def test_login():
+@app.route('/login')
+def login():
     if 'access_token' in session:
-        return redirect(url_for('post'))
-    return render_template('test login.html')
-# hiển thị trang web------------------------------------
+        return redirect(url_for('product'))
+    return render_template('login.html')
+
+
 
 @app.route('/post')
 def post():
@@ -111,6 +112,44 @@ def logout():
     return redirect(url_for('login'))
 # ------------------
 
+# hiển thị trang web------------------------------------
+
+@app.route('/product')
+def product():
+    user_access_token = session.get('access_token')
+    if not user_access_token:
+        flash("Bạn cần đăng nhập để sửa bài!")
+        return redirect('/login')
+
+    user_supabase = create_client(
+        url, 
+        key,
+        options=ClientOptions(
+            headers={"Authorization": f"Bearer {user_access_token}"}
+        )
+    )
+    
+    # 1. Lấy thông tin user hiện tại từ Token
+    user_response = user_supabase.auth.get_user()
+    current_user_id = user_response.user.id
+
+    # 2. Lọc chính xác profile của user đó (.single() trả về 1 Object thay vì List)
+    profile = user_supabase.table('profiles') \
+        .select('*') \
+        .eq('id', current_user_id) \
+        .single() \
+        .execute().data
+
+    # 3. Lấy dữ liệu sản phẩm
+    product_data = user_supabase.table('product').select('*').execute().data
+    
+    context = {
+        'profile': profile,  # Nên đặt tên số ít (profile) vì chỉ có 1 user
+        'product_data': product_data,
+        'cart_count': 3
+    }   
+        
+    return render_template('product.html', **context)
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_post():
@@ -262,9 +301,7 @@ def update_user_role():
 
 
 # test lấy hiển thị bảng sản phẩm và qr code -------------------------------------------------
-@app.route('/product')
-def product():
-    return render_template('product.html')
+
 
 @app.route('/stock')
 def stock():
@@ -283,7 +320,7 @@ BUCKET_NAME = "product-images"
 
 
 @app.route('/take_picture')
-def home():
+def take_picture():
     # Flask sẽ tự động tìm file index.html nằm trong thư mục templates/
     return render_template('take_picture.html')
 

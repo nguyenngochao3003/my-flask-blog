@@ -45,8 +45,8 @@
       <div class="user-profile">
         <div class="user-avatar">NV</div>
         <div class="user-info">
-          <div class="user-name">Nguyễn Văn A</div>
-          <div class="user-role">Admin</div>
+          <div class="user-name">{{ profile.username}}</div>
+          <div class="user-role">{{ profile.role}}</div>
         </div>
       </div>
     </header>
@@ -118,42 +118,25 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
-                <td><span class="code-badge">SP-001</span></td>
-                <td><strong>Áo Sơ mi Nam</strong></td>
-                <td>NXB Kim Đồng</td>
-                <td>Thời trang Nam</td>
-                <td>Nguyễn Văn A</td>
-                <td>25/10/2023</td>
-                <td>
-                    <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
-                </td>
-                </tr>
-                <tr>
-                <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
-                <td><span class="code-badge">SP-002</span></td>
-                <td><strong>Quần Jean Slimfit</strong></td>
-                <td>May 10</td>
-                <td>Thời trang Nam</td>
-                <td>Nguyễn Văn A</td>
-                <td>25/10/2023</td>
-                <td>
-                    <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
-                </td>
-                </tr>
-                <tr>
-                <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
-                <td><span class="code-badge">SP-003</span></td>
-                <td><strong>Giày Thể Thao Sneaker</strong></td>
-                <td>Bitis</td>
-                <td>Giày dép</td>
-                <td>Nguyễn Văn A</td>
-                <td>24/10/2023</td>
-                <td>
-                    <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
-                </td>
-                </tr>
+                {% for item in product_data %}
+                  <tr>
+                  <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
+                  <td><span class="code-badge">{{item.code}}</span></td>
+                  <td><strong>{{item.product_name}}Áo Sơ mi Nam</strong></td>
+                  <td>{{item.suplier_name}}NXB Kim Đồng</td>
+                  <td>{{item.product_group}}Thời trang Nam</td>
+                  <td>{{item.employee_name}}Nguyễn Văn A</td>
+                  <td>{{item.created_at}}25/10/2023</td>
+                  <td>
+                      <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+                  </td>
+                  </tr>
+                {% else %}
+                <!-- Phần này sẽ hiển thị khi product_data = [] -->
+                <div class="empty-state">
+                    <p>Hiện chưa có sản phẩm nào trong hệ thống.</p>
+                </div>
+                {% endfor %} 
             </tbody>
             </table>
         </div>
@@ -171,6 +154,7 @@
                     <span class="value">25/10/2023</span>
                 </div>
                 </div>
+                
             </div>
 
             <!-- Item 2 -->
