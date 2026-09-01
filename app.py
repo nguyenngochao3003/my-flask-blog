@@ -62,29 +62,35 @@ def api_signup():
         return jsonify({"error": str(e)}), 400
     
 # 3. Route Xử lý Đăng nhập
+# 1. ROUTE API LOGIN (Đảm bảo lưu access_token đúng chuẩn chuỗi)
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+  data = request.get_json() or {}
+  email = data.get('email')
+  password = data.get('password')
 
-    try:
-        res = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        
-        # Lưu access_token và thông tin user vào Flask Session Cookie
-        session['access_token'] = res.session.access_token
-        session['user_id'] = res.user.id
-        session['email'] = res.user.email
+  try:
+    res = supabase.auth.sign_in_with_password(
+        {'email': email, 'password': password}
+    )
 
-        return jsonify({
-            "message": "Đăng nhập thành công",
-            "redirect_url": url_for('product')
-        }), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 401
+    if not res.session or not res.user:
+      return jsonify({'error': 'Đăng nhập không thành công'}), 401
+
+    # ÉP KIỂU STR ĐỂ ĐẢM BẢO TOKEN LÀ CHUỖI CHUẨN JWT
+    session['access_token'] = str(res.session.access_token)
+    session['user_id'] = str(res.user.id)
+    session['email'] = str(res.user.email)
+
+    return (
+        jsonify({
+            'message': 'Đăng nhập thành công',
+            'redirect_url': url_for('product'),
+        }),
+        200,
+    )
+  except Exception as e:
+    return jsonify({'error': str(e)}), 401
     
 # 4. Trang Dashboard bảo mật (yêu cầu kiểm tra Session)
 @app.route('/dashboard')
@@ -112,49 +118,38 @@ def logout():
 
 # hiển thị trang web------------------------------------
 
+# 2. ROUTE PRODUCT (Khởi tạo Auth với JWT Token)
 @app.route('/product')
 def product():
   user_access_token = session.get('access_token')
 
-  # 1. Kiểm tra session xem đã có token chưa
   if not user_access_token:
     flash('Bạn cần đăng nhập để truy cập!')
-    return redirect(url_for('test_login'))  # Hoặc redirect(url_for('login'))
+    return redirect(url_for('test_login'))
 
   try:
-    # 2. Khởi tạo Supabase client chuẩn cho từng request với Bearer Token
-    user_supabase = create_client(
-        url,
-        key,
-        options=ClientOptions(
-            headers={'Authorization': f'Bearer {user_access_token}'}
-        ),
-    )
+    # Truyền trực tiếp Token lấy từ Session vào hàm get_user()
+    user_response = supabase.auth.get_user(user_access_token)
 
-    # 3. Lấy thông tin user
-    user_response = user_supabase.auth.get_user()
-
-    # BẮT BỘC: Kiểm tra an toàn xem user có tồn tại không trước khi lấy .id
-    user_obj = getattr(user_response, 'user', None)
-    if not user_obj:
+    if not user_response or not user_response.user:
       print('Token không hợp lệ hoặc hết hạn!')
-      session.clear()  # Xóa session để tránh vòng lặp redirect
-      flash('Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.')
+      session.clear()
+      flash('Phiên đăng nhập hết hạn!')
       return redirect(url_for('test_login'))
 
-    current_user_id = user_obj.id
+    current_user_id = user_response.user.id
 
-    # 4. Lấy Profile an toàn (không dùng .single() để tránh throw Exception khi rỗng)
+    # Lấy Profile
     profile_res = (
-        user_supabase.table('profiles')
+        supabase.table('profiles')
         .select('*')
         .eq('id', current_user_id)
         .execute()
     )
     profile = profile_res.data[0] if profile_res.data else None
 
-    # 5. Lấy dữ liệu sản phẩm
-    product_res = user_supabase.table('product').select('*').execute()
+    # Lấy Product
+    product_res = supabase.table('product').select('*').execute()
     product_data = product_res.data if product_res.data else []
 
     context = {
@@ -166,7 +161,6 @@ def product():
     return render_template('product.html', **context)
 
   except Exception as e:
-    # In ra log chi tiết nếu gặp lỗi hệ thống khác
     print('Lỗi tại /product:', e)
     session.clear()
     flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
