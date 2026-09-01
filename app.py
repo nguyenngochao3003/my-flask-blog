@@ -45,7 +45,7 @@ def post():
 
 # 2. Route Xử lý Đăng ký
 @app.route('/api/signup', methods=['POST'])
-def signup():
+def api_signup():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
@@ -65,7 +65,7 @@ def signup():
     
 # 3. Route Xử lý Đăng nhập
 @app.route('/api/login', methods=['POST'])
-def login():
+def api_login():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
