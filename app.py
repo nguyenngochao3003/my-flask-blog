@@ -36,10 +36,10 @@ def test_login():
         return redirect(url_for('product'))
     return render_template('test_login.html')
 
-@app.route('/post')
-def post():
-    posts = supabase.table('posts').select('*').order('created_at', desc=True).execute()
-    return render_template('index.html', posts=posts.data)
+# @app.route('/post')
+# def post():
+#     posts = supabase.table('posts').select('*').order('created_at', desc=True).execute()
+#     return render_template('index.html', posts=posts.data)
 
 # 2. Route Xử lý Đăng ký
 @app.route('/api/signup', methods=['POST'])
@@ -91,7 +91,7 @@ def api_login():
 def dashboard():
     access_token = session.get('access_token')
     if not access_token:
-        return redirect(url_for('login'))
+        return redirect(url_for('test_login'))
 
     # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
     user_supabase = create_client(
@@ -107,7 +107,7 @@ def dashboard():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('test_login'))
 # ------------------
 
 # hiển thị trang web------------------------------------
@@ -118,36 +118,40 @@ def product():
     if not user_access_token:
         flash("Bạn cần đăng nhập để sửa bài!")
         return redirect('/test_login')
-
-    user_supabase = create_client(
-        url, 
-        key,
-        options=ClientOptions(
-            headers={"Authorization": f"Bearer {user_access_token}"}
+    try:
+        user_supabase = create_client(
+            url, 
+            key,
+            options=ClientOptions(
+                headers={"Authorization": f"Bearer {user_access_token}"}
+            )
         )
-    )
     
-    # 1. Lấy thông tin user hiện tại từ Token
-    user_response = user_supabase.auth.get_user()
-    current_user_id = user_response.user.id
+        # 1. Lấy thông tin user hiện tại từ Token
+        user_response = user_supabase.auth.get_user()
+        current_user_id = user_response.user.id
 
-    # 2. Lọc chính xác profile của user đó (.single() trả về 1 Object thay vì List)
-    profile = user_supabase.table('profiles') \
-        .select('*') \
-        .eq('id', current_user_id) \
-        .single() \
-        .execute().data
+        # 2. Lọc chính xác profile của user đó (.single() trả về 1 Object thay vì List)
+        profile = user_supabase.table('profiles') \
+            .select('*') \
+            .eq('id', current_user_id) \
+            .single() \
+            .execute().data
 
-    # 3. Lấy dữ liệu sản phẩm
-    product_data = user_supabase.table('product').select('*').execute().data
-    
-    context = {
-        'profile': profile,  # Nên đặt tên số ít (profile) vì chỉ có 1 user
-        'product_data': product_data,
-        'cart_count': 3
-    }   
+        # 3. Lấy dữ liệu sản phẩm
+        product_data = user_supabase.table('product').select('*').execute().data
         
-    return render_template('product.html', **context)
+        context = {
+            'profile': profile,  # Nên đặt tên số ít (profile) vì chỉ có 1 user
+            'product_data': product_data
+        }   
+            
+        return render_template('product.html', **context)
+    except Exception as e:
+        print("Lỗi tại /product:", e)
+        session.clear() # Xóa session để không bị vướng vòng lặp
+        flash("Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!")
+        return redirect(url_for('test_login'))
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_post():
@@ -193,55 +197,55 @@ def add_post():
      
 
 
-            return redirect('/')
+#             return redirect('/')
 
-    return render_template('add.html')
+#     return render_template('add.html')
 
-# delete a post
-@app.route('/delete/<int:post_id>')
-def delete_post(post_id):
-    supabase.table('posts').delete().eq('id', post_id).execute()
-    return redirect('/')
+# # delete a post
+# @app.route('/delete/<int:post_id>')
+# def delete_post(post_id):
+#     supabase.table('posts').delete().eq('id', post_id).execute()
+#     return redirect('/')
 
-# Edit a post
-@app.route('/edit/<int:post_id>', methods=['GET', 'POST'])
-def edit_post(post_id):
-    # 1. Kiểm tra xem user đã đăng nhập chưa
-    user_access_token = session.get('access_token')
-    if not user_access_token:
-        flash("Bạn cần đăng nhập để sửa bài!")
-        return redirect('/login')
+# # Edit a post
+# @app.route('/edit/<int:post_id>', methods=['GET', 'POST'])
+# def edit_post(post_id):
+#     # 1. Kiểm tra xem user đã đăng nhập chưa
+#     user_access_token = session.get('access_token')
+#     if not user_access_token:
+#         flash("Bạn cần đăng nhập để sửa bài!")
+#         return redirect('/login')
 
-    # 2. Tạo Client xác thực (đính kèm token)
-    user_supabase = create_client(
-        url, 
-        key,
-        options=ClientOptions(
-            headers={"Authorization": f"Bearer {user_access_token}"}
-        )
-    )
+#     # 2. Tạo Client xác thực (đính kèm token)
+#     user_supabase = create_client(
+#         url, 
+#         key,
+#         options=ClientOptions(
+#             headers={"Authorization": f"Bearer {user_access_token}"}
+#         )
+#     )
     
-    # Lấy thông tin bài viết (vẫn cần xác thực để xem bài)
-    post = user_supabase.table('posts').select('*').eq('id', post_id).single().execute().data
+#     # Lấy thông tin bài viết (vẫn cần xác thực để xem bài)
+#     post = user_supabase.table('posts').select('*').eq('id', post_id).single().execute().data
     
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
+#     if request.method == 'POST':
+#         title = request.form['title']
+#         content = request.form['content']
         
-        try:
-            # 3. Thực hiện Update với Client đã có Token
-            user_supabase.table('posts').update({
-                'title': title, 
-                'content': content
-            }).eq('id', post_id).execute()
+#         try:
+#             # 3. Thực hiện Update với Client đã có Token
+#             user_supabase.table('posts').update({
+#                 'title': title, 
+#                 'content': content
+#             }).eq('id', post_id).execute()
             
-            flash("Cập nhật thành công!")
-            return redirect('/')
-        except Exception as e:
-            flash(f"Lỗi: Bạn không có quyền sửa bài này! ({e})")
-            return redirect('/')
+#             flash("Cập nhật thành công!")
+#             return redirect('/')
+#         except Exception as e:
+#             flash(f"Lỗi: Bạn không có quyền sửa bài này! ({e})")
+#             return redirect('/')
 
-    return render_template('edit.html', post=post)
+#     return render_template('edit.html', post=post)
 
 
 
