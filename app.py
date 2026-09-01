@@ -149,7 +149,7 @@ def product():
     profile = profile_res.data[0] if profile_res.data else None
 
     # Lấy Product
-    product_res = supabase.table('product').select('*').execute()
+    product_res = supabase.table('view_product_details').select('*').execute()
     product_data = product_res.data if product_res.data else []
 
     context = {
