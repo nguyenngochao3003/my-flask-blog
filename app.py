@@ -153,6 +153,7 @@ def product():
     # Lấy Product
     product_res = supabase.table('view_product_details').select('*').execute()
     product_data = product_res.data if product_res.data else []
+    print('product_data', product_data)
     
     # lấy group product
     prod_group_res = supabase.table('prod_group').select('*').execute()
