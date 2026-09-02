@@ -221,9 +221,11 @@
             <label>Nhà cung cấp</label>
             <div class="input-with-action">
               <select class="form-control">
-                <option value="">Thêm mới...</option>
-                <option value="1">NXB Kim Đồng</option>
-                <option value="2">May 10</option>
+                {%for item in suplier_data%}
+                  <option value="">{{item.name}}</option>
+                {% else %}
+                  <option value="2">không có nhà cung cấp </option>
+                {% endfor %} 
               </select>
               <button class="btn btn-secondary" title="Tạo nhà cung cấp mới">+</button>
             </div>
@@ -232,9 +234,11 @@
             <label>Nhóm</label>
             <div class="input-with-action">
               <select class="form-control">
-                <option value="">Thêm mới...</option>
-                <option value="1">Thời trang Nam</option>
-                <option value="2">Giày dép</option>
+                {%for item in prod_group_data%}
+                  <option value="">{{item.name}}</option>
+                {% else %}
+                  <option value="2">không có dữ liệu/option>
+                {% endfor %}
               </select>
               <button class="btn btn-secondary" title="Tạo nhóm mới">+</button>
             </div>

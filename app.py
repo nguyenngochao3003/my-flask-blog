@@ -151,11 +151,19 @@ def product():
     # Lấy Product
     product_res = supabase.table('view_product_details').select('*').execute()
     product_data = product_res.data if product_res.data else []
+    
+    # lấy group product
+    prod_group_res = supabase.table('prod_group').select('*').execute()
+    prod_group_data = prod_group_res.data if prod_group_res.data else []
 
+    # lấy nhà cung cấp
+    suplier_res = supabase.table('suplier').select('*').execute()
+    suplier_data = suplier_res.data if suplier_res.data else []
+        
     context = {
         'profile': profile,
         'product_data': product_data,
-        'cart_count': 3,
+        'prod_group': prod_group_data,
     }
 
     return render_template('product.html', **context)
