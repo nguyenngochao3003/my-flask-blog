@@ -1,0 +1,17 @@
+<div id="modal-category" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Thêm Nhóm Sản Phẩm Mới</h3>
+      <span class="close-btn" onclick="closeModal('modal-category')">&times;</span>
+    </div>
+    <form action="/add-category" method="POST">
+      <div class="form-group">
+        <label for="category-name">Tên nhóm:</label>
+        <input type="text" id="category-name" name="name" required placeholder="Nhập tên nhóm...">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-save">Lưu Nhóm</button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -121,64 +121,68 @@ def logout():
 # 2. ROUTE PRODUCT (Khởi tạo Auth với JWT Token)
 @app.route('/product')
 def product():
-  user_access_token = session.get('access_token')
+    user_access_token = session.get('access_token')
 
-  if not user_access_token:
-    flash('Bạn cần đăng nhập để truy cập!')
-    return redirect(url_for('test_login'))
+    if not user_access_token:
+        flash('Bạn cần đăng nhập để truy cập!')
+        return redirect(url_for('test_login'))
 
-  try:
-    # Truyền trực tiếp Token lấy từ Session vào hàm get_user()
-    user_response = supabase.auth.get_user(user_access_token)
-
-    if not user_response or not user_response.user:
-      print('Token không hợp lệ hoặc hết hạn!')
-      session.clear()
-      flash('Phiên đăng nhập hết hạn!')
-      return redirect(url_for('test_login'))
-
-    current_user_id = user_response.user.id
-
-    # Lấy Profile
-    profile_res = (
-        supabase.table('profiles')
-        .select('*')
-        .eq('id', current_user_id)
-        .execute()
+    # 2. Tạo client Supabase đóng vai trò chính user đó
+    user_supabase = create_client(
+        url, 
+        key,
+        options=ClientOptions(
+            headers={"Authorization": f"Bearer {user_access_token}"}
+        )
     )
-    profile = profile_res.data[0] if profile_res.data else None
-    print('#1. kết quả truy vấn dữ liệu trước khi hiển thị')
-    print('profile', profile)
-    
-    # Lấy Product
-    product_res = supabase.table('view_product_details').select('*').execute()
-    product_data = product_res.data if product_res.data else []
-    print('product_data', product_data)
-    
-    # lấy group product
-    prod_group_res = supabase.table('prod_group').select('*').execute()
-    prod_group_data = prod_group_res.data if prod_group_res.data else []
-    print('prod_group_data', prod_group_data)
 
-    # lấy nhà cung cấp
-    suplier_res = supabase.table('suplier').select('*').execute()
-    suplier_data = suplier_res.data if suplier_res.data else []
-    print('suplier_data', suplier_data)
+    try:
+        # Truyền trực tiếp Token lấy từ Session vào hàm get_user()
+        user_response = user_supabase.auth.get_user(user_access_token)
+
+        if not user_response or not user_response.user:
+            print('Token không hợp lệ hoặc hết hạn!')
+            session.clear()
+            flash('Phiên đăng nhập hết hạn!')
+            return redirect(url_for('test_login'))
+
+        current_user_id = user_response.user.id
+
+        # 1. Lấy Profile của chính user đó qua JWT Token
+        profile_res = user_supabase.table('profiles').select('*').execute()
+        profile = profile_res.data[0] if profile_res.data else None
+        print('#1. kết quả truy vấn dữ liệu trước khi hiển thị')
+        print('profile', profile)
         
-    context = {
-        'profile': profile,
-        'product_data': product_data,
-        'prod_group_data': prod_group_data,
-        'suplier_data': suplier_data,
-    }
+        # Lấy Product
+        product_res = user_supabase.table('view_product_details').select('*').execute()
+        product_data = product_res.data if product_res.data else []
+        print('product_data', product_data)
+        
+        # lấy group product
+        prod_group_res = user_supabase.table('prod_group').select('*').execute()
+        prod_group_data = prod_group_res.data if prod_group_res.data else []
+        print('prod_group_data', prod_group_data)
 
-    return render_template('product.html', **context)
+        # lấy nhà cung cấp
+        suplier_res = user_supabase.table('suplier').select('*').execute()
+        suplier_data = suplier_res.data if suplier_res.data else []
+        print('suplier_data', suplier_data)
+            
+        context = {
+            'profile': profile,
+            'product_data': product_data,
+            'prod_group_data': prod_group_data,
+            'suplier_data': suplier_data,
+        }
 
-  except Exception as e:
-    print('Lỗi tại /product:', e)
-    session.clear()
-    flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
-    return redirect(url_for('test_login'))
+        return render_template('product.html', **context)
+
+    except Exception as e:
+        print('Lỗi tại /product:', e)
+        session.clear()
+        flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
+        return redirect(url_for('test_login'))
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_post():

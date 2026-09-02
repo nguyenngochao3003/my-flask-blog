@@ -1,0 +1,17 @@
+<div id="modal-supplier" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Thêm Nhà Cung Cấp Mới</h3>
+      <span class="close-btn" onclick="closeModal('modal-supplier')">&times;</span>
+    </div>
+    <form action="/add-supplier" method="POST">
+      <div class="form-group">
+        <label for="supplier-name">Tên nhà cung cấp:</label>
+        <input type="text" id="supplier-name" name="name" required placeholder="Nhập tên NCC...">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-save">Lưu Nhà Cung Cấp</button>
+      </div>
+    </form>
+  </div>
+</div>

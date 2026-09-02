@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản lý Nhà cung cấp & Nhóm</title>
+  <style>
+    /* CSS Cơ bản */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .btn-add {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    /* Lớp Modal phủ toàn màn hình (Ẩn mặc định) */
+    .modal {
+      display: none; /* Mặc định ẩn */
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5); /* Nền tối */
+    }
+
+    /* Hộp thoại chứa Form */
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+
+    .close-btn {
+      font-size: 24px;
+      cursor: pointer;
+      color: #aaa;
+    }
+
+    .close-btn:hover {
+      color: #000;
+    }
+
+    .form-group {
+      margin-top: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .form-actions {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    .btn-save {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nút mở Modal -->
+  <div>
+    <label>Nhà cung cấp:</label>
+    <button class="btn-add" onclick="openModal('modal-ncc')">+</button>
+    
+    <label style="margin-left: 20px;">Nhóm:</label>
+    <button class="btn-add" onclick="openModal('modal-nhom')">+</button>
+  </div>
+
+  <!-- Modal Thêm Nhà Cung Cấp -->
+  <div id="modal-ncc" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Thêm Nhà Cung Cấp Mới</h3>
+        <span class="close-btn" onclick="closeModal('modal-ncc')">&times;</span>
+      </div>
+      <form>
+        <div class="form-group">
+          <label for="ten-ncc">Tên nhà cung cấp:</label>
+          <input type="text" id="ten-ncc" placeholder="Nhập tên nhà cung cấp...">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-save" onclick="closeModal('modal-ncc')">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Thêm Nhóm Mới -->
+  <div id="modal-nhom" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Thêm Nhóm Sản Phẩm Mới</h3>
+        <span class="close-btn" onclick="closeModal('modal-nhom')">&times;</span>
+      </div>
+      <form>
+        <div class="form-group">
+          <label for="ten-nhom">Tên nhóm:</label>
+          <input type="text" id="ten-nhom" placeholder="Nhập tên nhóm...">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-save" onclick="closeModal('modal-nhom')">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript điều khiển display: block / display: none -->
+  <script>
+    function openModal(id) {
+      document.getElementById(id).style.display = 'block';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    // Đóng modal khi bấm ra ngoài vùng nội dung modal
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -8,7 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="/static/css/product_style.css">
- 
+<!-- Thêm vào trong thẻ <head> của product.html -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
 </head>
 <body>
 
@@ -196,7 +197,6 @@
 
     </main>
   </div>
-
   <!-- Form Modal Thêm Sản Phẩm -->
   <div class="modal-overlay" id="addProductModal">
     <div class="modal-card">
@@ -227,7 +227,7 @@
                   <option value="2">không có nhà cung cấp </option>
                 {% endfor %} 
               </select>
-              <button class="btn btn-secondary" title="Tạo nhà cung cấp mới">+</button>
+              <button class="btn btn-secondary" title="Tạo nhà cung cấp mới" onclick="openModal('modal-supplier')">+</button>
             </div>
           </div>
           <div class="form-group">
@@ -240,7 +240,7 @@
                   <option value="2">không có dữ liệu</option>
                 {% endfor %}
               </select>
-              <button class="btn btn-secondary" title="Tạo nhóm mới">+</button>
+              <button class="btn btn-secondary" title="Tạo nhóm mới" onclick="openModal('modal-category')">+</button>
             </div>
           </div>
         </div>
@@ -271,8 +271,12 @@
         <button class="btn btn-primary">Lưu</button>
       </div>
     </div>
+    
   </div>
-
+  <!-- Form Modal thêm nhà cung cấp, sản phẩm -->
+<!-- 2. NƠI GỌI CÁC FILE FORM MODAL VÀO -->
+  {% include 'includes/modal_add_supplier.html' %}
+  {% include 'includes/modal_add_category.html' %}
   <script>
     function openModal() {
       document.getElementById('addProductModal').classList.add('active');
@@ -333,6 +337,19 @@
       //   " | Timestamp: " + time.toLocaleString("vi-VN") +
       //   " | Location: " + data.location;
     });
+    function openModal(id) {
+      document.getElementById(id).style.display = 'block';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+    }
   </script>
 </body>
 </html>
