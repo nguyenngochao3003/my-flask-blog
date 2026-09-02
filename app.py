@@ -147,7 +147,9 @@ def product():
         .execute()
     )
     profile = profile_res.data[0] if profile_res.data else None
-
+    print('#1. kết quả truy vấn dữ liệu trước khi hiển thị')
+    print('profile', profile)
+    
     # Lấy Product
     product_res = supabase.table('view_product_details').select('*').execute()
     product_data = product_res.data if product_res.data else []
