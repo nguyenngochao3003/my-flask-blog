@@ -45,7 +45,7 @@
       <div class="user-profile">
         <div class="user-avatar">NV</div>
         <div class="user-info">
-          <div class="user-name">{{profile.username}}</div>
+          <div class="user-name">{{profile.user_name}}</div>
           <div class="user-role">{{profile.role}}</div>
         </div>
       </div>
@@ -122,11 +122,11 @@
                   <tr>
                   <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
                   <td><span class="code-badge">{{item.code}}</span></td>
-                  <td><strong>{{item.product_name}}Áo Sơ mi Nam</strong></td>
-                  <td>{{item.suplier_name}}NXB Kim Đồng</td>
-                  <td>{{item.product_group}}Thời trang Nam</td>
-                  <td>{{item.employee_name}}Nguyễn Văn A</td>
-                  <td>{{item.created_at}}25/10/2023</td>
+                  <td><strong>{{item.product_name}}</strong></td>
+                  <td>{{item.suplier_name}}</td>
+                  <td>{{item.product_group}}</td>
+                  <td>{{item.employee_name}}</td>
+                  <td>{{item.created_at}}</td>
                   <td>
                       <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
                   </td>
@@ -143,47 +143,25 @@
     <!-- card sản phẩm -->
         <div class="card-container">
             <!-- Item 1 -->
+          {% for item in product_data %}
             <div class="product-item">
                 <img src="path/to/shirt1.jpg" alt="Áo Sơ mi Nam" class="product-img">
                 <div class="product-info">
-                <h3 class="product-title">Áo Sơ mi Nam</h3>
+                <h3 class="product-title">{{item.product_name}}</h3>
                 <div class="product-details">
-                    <span class="label">Nhóm</span>
-                    <span class="value">Nguyễn Văn A</span>
-                    <span class="label">SP</span>
-                    <span class="value">25/10/2023</span>
-                </div>
-                </div>
-                
-            </div>
-
-            <!-- Item 2 -->
-            <div class="product-item">
-                <img src="path/to/shirt2.jpg" alt="Áo Sơ mi Nam" class="product-img">
-                <div class="product-info">
-                <h3 class="product-title">Áo Sơ mi Nam</h3>
-                <div class="product-details">
-                    <span class="label">Nhóm</span>
-                    <span class="value">NXB Kim Đồng</span>
-                    <span class="label">01</span>
-                    <span class="value">25/10/2023</span>
+                    <span class="label">{{item.product_group}}</span>
+                    <span class="value">{{item.employee_name}}</span>
+                    <span class="label">{{item.code}}</span>
+                    <span class="value">{{item.created_at}}</span>
                 </div>
                 </div>
             </div>
-
-            <!-- Item 3 -->
-            <div class="product-item">
-                <img src="path/to/jacket.jpg" alt="Thời trang Nam" class="product-img">
-                <div class="product-info">
-                <h3 class="product-title">Thời trang Nam</h3>
-                <div class="product-details">
-                    <span class="label">Nhóm</span>
-                    <span class="value">Nguyễn Văn A</span>
-                    <span class="label">01</span>
-                    <span class="value">25/10/2023</span>
-                </div>
-                </div>
-            </div>
+          {% else %}
+              <!-- Phần này sẽ hiển thị khi product_data = [] -->
+              <div class="empty-state">
+                  <p>Hiện chưa có sản phẩm nào trong hệ thống.</p>
+              </div>
+          {% endfor %} 
         </div>
 <!-- thanh điều hướng cho điện thoại máy tính bảng -->
        <!-- Thêm thư viện Font Awesome để lấy icon -->
