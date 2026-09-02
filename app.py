@@ -155,15 +155,18 @@ def product():
     # lấy group product
     prod_group_res = supabase.table('prod_group').select('*').execute()
     prod_group_data = prod_group_res.data if prod_group_res.data else []
+    print('prod_group_data', prod_group_data)
 
     # lấy nhà cung cấp
     suplier_res = supabase.table('suplier').select('*').execute()
     suplier_data = suplier_res.data if suplier_res.data else []
+    print('suplier_data', suplier_data)
         
     context = {
         'profile': profile,
         'product_data': product_data,
-        'prod_group': prod_group_data,
+        'prod_group_data': prod_group_data,
+        'suplier_data': suplier_data,
     }
 
     return render_template('product.html', **context)

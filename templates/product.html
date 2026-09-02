@@ -237,7 +237,7 @@
                 {%for item in prod_group_data%}
                   <option value="">{{item.name}}</option>
                 {% else %}
-                  <option value="2">không có dữ liệu/option>
+                  <option value="2">không có dữ liệu</option>
                 {% endfor %}
               </select>
               <button class="btn btn-secondary" title="Tạo nhóm mới">+</button>
@@ -246,10 +246,6 @@
         </div>
 
         <div class="form-row">
-          <div class="form-group">
-            <label>Nhân viên</label>
-            <input type="text" class="form-control" value="Nguyễn Văn A" readonly>
-          </div>
           <div class="form-group">
             <label>Ngày tạo</label>
             <input type="date" class="form-control" value="2023-10-25">
