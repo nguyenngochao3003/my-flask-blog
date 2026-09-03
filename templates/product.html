@@ -96,7 +96,7 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" placeholder="Search...">
           </div>
-          <button class="btn btn-primary" onclick="openModal()">
+          <button class="btn btn-primary" onclick="openModal('modal-add-product')">
             <i class="fa-solid fa-plus"></i> Thêm Sản phẩm
           </button>
         </div>
@@ -204,13 +204,13 @@
   {% include 'includes/modal_add_supplier.html' %}
   {% include 'includes/modal_add_category.html' %}
   <script>
-    function openModal() {
+    /* function openModal() {
       document.getElementById('addProductModal').classList.add('active');
-    }
+    
 
     function closeModal() {
       document.getElementById('addProductModal').classList.remove('active');
-    }
+    }} */
 
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('active');
@@ -265,13 +265,13 @@
     });
 
     //---------------------------------------
-    //function openModal(id) {
-    //  document.getElementById(id).style.display = 'block';
-    //}
+    function openModal(id) {
+     document.getElementById(id).style.display = 'flex';
+    }
 
-    //function closeModal(id) {
-    //  document.getElementById(id).style.display = 'none';
-    //} 
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    } 
 
     window.onclick = function(event) {
       if (event.target.classList.contains('modal')) {
