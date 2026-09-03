@@ -119,7 +119,7 @@
             <tbody>
                 {% for item in product_data %}
                   <tr>
-                  <td><img src="https://via.placeholder.com/44" alt="SP" class="product-img"></td>
+                  <td><img src="{{ url_for('static', filename='images/image.png') }}" alt="SP" class="product-img"></td>
                   <td><span class="code-badge">{{item.code}}</span></td>
                   <td><strong>{{item.product_name}}</strong></td>
                   <td>{{item.suplier_name}}</td>
@@ -266,10 +266,11 @@
       }
     }
 
-    function closeModal() {
-      document.querySelectorAll('.modal-overlay.active').forEach(element => {
+    function closeModal(id) {
+      const element = document.getElementById(id);
+      if (element) {
         element.classList.remove('active');
-      });
+      }
     }
 
 
