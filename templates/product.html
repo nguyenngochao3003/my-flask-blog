@@ -9,8 +9,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- <link rel="stylesheet" href="/static/css/product_style.css"> -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_style.css') }}?v=1.1">
-<!-- Thêm vào trong thẻ <head> của product.html -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
 </head>
 <body>
 
@@ -103,7 +101,6 @@
         </div>
       </div>
     
-
     <!-- Bảng Sản Phẩm -->
         <div class="table-container">
             <table>
@@ -201,9 +198,7 @@
   <!-- Form Modal Thêm Sản Phẩm -->
   {% include 'includes/modal_add_product.html' %}
   <!-- Form Modal thêm nhà cung cấp, sản phẩm -->
-<!-- 2. NƠI GỌI CÁC FILE FORM MODAL VÀO -->
-  {% include 'includes/modal_add_supplier.html' %}
-  {% include 'includes/modal_add_category.html' %}
+
   <script>
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('active');
@@ -259,23 +254,24 @@
 
     //---------------------------------------
     function openModal(id) {
-     const element = document.getElementById(id)
-     element.classList.add('active')
+      // 1. Ẩn toàn bộ các modal đang active bằng cách xóa class 'active'
+      document.querySelectorAll('.modal-overlay').forEach(element => {
+        element.classList.remove('active');
+      });
+
+      // 2. Bật modal có id tương ứng bằng cách thêm class 'active'
+      const element = document.getElementById(id);
+      if (element) {
+        element.classList.add('active');
+      }
     }
+
 
     function closeModal(id) {
       const element = document.getElementById(id)
      element.classList.remove('active')
     } 
-    function openModalx(id) {
-     const element = document.getElementById(id)
-     element.display = 'block'
-    }
 
-    function closeModalx(id) {
-      const element = document.getElementById(id)
-     element.display = 'none'
-    } 
 
     window.onclick = function(event) {
       if (event.target.classList.contains('modal')) {
