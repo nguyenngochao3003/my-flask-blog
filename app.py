@@ -30,11 +30,11 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 
 #  test hiển thị đăng nhập -------------
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
-@app.route('/test_login')
-def test_login():
+@app.route('/login')
+def login():
     if 'access_token' in session:
         return redirect(url_for('product'))
-    return render_template('test_login.html')
+    return render_template('login.html')
 
 # @app.route('/post')
 # def post():
@@ -97,7 +97,7 @@ def api_login():
 def dashboard():
     access_token = session.get('access_token')
     if not access_token:
-        return redirect(url_for('test_login'))
+        return redirect(url_for('login'))
 
     # Khởi tạo Supabase client đi kèm Token để kích hoạt RLS cho từng request
     user_supabase = create_client(
@@ -113,7 +113,7 @@ def dashboard():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('test_login'))
+    return redirect(url_for('login'))
 # ------------------
 
 # hiển thị trang web------------------------------------
@@ -125,7 +125,7 @@ def product():
 
     if not user_access_token:
         flash('Bạn cần đăng nhập để truy cập!')
-        return redirect(url_for('test_login'))
+        return redirect(url_for('login'))
 
     # 2. Tạo client Supabase đóng vai trò chính user đó
     user_supabase = create_client(
@@ -144,7 +144,7 @@ def product():
             print('Token không hợp lệ hoặc hết hạn!')
             session.clear()
             flash('Phiên đăng nhập hết hạn!')
-            return redirect(url_for('test_login'))
+            return redirect(url_for('login'))
 
         current_user_id = user_response.user.id
 
@@ -183,7 +183,7 @@ def product():
         traceback.print_exc()
         session.clear()
         flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
-        return redirect(url_for('test_login'))
+        return redirect(url_for('login'))
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_post():
