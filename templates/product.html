@@ -266,10 +266,12 @@
       }
     }
 
-    function closeModal(id) {
-      const element = document.getElementById(id)
-     element.classList.remove('active')
-    } 
+    function closeModals() {
+      document.querySelectorAll('.modal-overlay.active').forEach(element => {
+        element.classList.remove('active');
+      });
+    }
+
 
 
     window.onclick = function(event) {
