@@ -4,7 +4,7 @@ from supabase import create_client, Client, ClientOptions
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os 
-
+import traceback
 
 # CHẠY BACK END CHO WEB BẰNG FLASK VÀ SUPABASE-------------------------------------------------------
 # chạy hàm để lấy key bảo mật từ .env
@@ -180,6 +180,7 @@ def product():
 
     except Exception as e:
         print('Lỗi tại /product:', e)
+        traceback.print_exc()
         session.clear()
         flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
         return redirect(url_for('test_login'))
