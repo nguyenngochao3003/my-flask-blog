@@ -391,6 +391,10 @@
     opacity: 1;
     visibility: visible;
   }
+  .modal-overlay.child.active {
+    z-index: 1100;
+  }
+
 
   .modal-card {
     background-color: #ffffff;

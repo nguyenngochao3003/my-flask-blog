@@ -255,9 +255,9 @@
     //---------------------------------------
     function openModal(id) {
       // 1. Ẩn toàn bộ các modal đang active bằng cách xóa class 'active'
-      document.querySelectorAll('.modal-overlay').forEach(element => {
+      /* document.querySelectorAll('.modal-overlay').forEach(element => {
         element.classList.remove('active');
-      });
+      }); */
 
       // 2. Bật modal có id tương ứng bằng cách thêm class 'active'
       const element = document.getElementById(id);
@@ -265,7 +265,6 @@
         element.classList.add('active');
       }
     }
-
 
     function closeModal(id) {
       const element = document.getElementById(id)
