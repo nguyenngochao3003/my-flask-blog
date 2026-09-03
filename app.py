@@ -152,7 +152,7 @@ def product():
         profile_res = user_supabase.table('profiles').select('*').execute()
         profile = profile_res.data[0] if profile_res.data else None
         print('#1. kết quả truy vấn dữ liệu trước khi hiển thị')
-        print('profile', profile)
+        # print('profile', profile)
         
         # Lấy Product
         product_res = user_supabase.table('view_product_details').select('*').execute()

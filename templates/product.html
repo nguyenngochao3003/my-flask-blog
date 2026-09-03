@@ -198,81 +198,7 @@
     </main>
   </div>
   <!-- Form Modal Thêm Sản Phẩm -->
-  <div class="modal-overlay" id="addProductModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Thêm Sản phẩm Mới</h3>
-        <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        
-        <div class="form-group">
-          <label>Tên SP</label>
-          <input type="text" class="form-control" placeholder="Nhập tên sản phẩm...">
-        </div>
-
-        <div class="form-group">
-          <label>Mã Code</label>
-          <input type="text" class="form-control" id="productForm_productCode" placeholder="Nhập mã code sản phẩm...">
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Nhà cung cấp</label>
-            <div class="input-with-action">
-              <select class="form-control">
-                {%for item in suplier_data%}
-                  <option value="">{{item.name}}</option>
-                {% else %}
-                  <option value="2">không có nhà cung cấp </option>
-                {% endfor %} 
-              </select>
-              <button class="btn btn-secondary" title="Tạo nhà cung cấp mới" onclick="openModal('modal-supplier')">+</button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Nhóm</label>
-            <div class="input-with-action">
-              <select class="form-control">
-                {%for item in prod_group_data%}
-                  <option value="">{{item.name}}</option>
-                {% else %}
-                  <option value="2">không có dữ liệu</option>
-                {% endfor %}
-              </select>
-              <button class="btn btn-secondary" title="Tạo nhóm mới" onclick="openModal('modal-category')">+</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Ngày tạo</label>
-            <input type="date" class="form-control" value="2023-10-25">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Tính năng chụp / quét</label>
-          <div class="media-buttons">
-            <button class="btn btn-secondary" onclick="openQRScanner()"><i class="fa-solid fa-qrcode"></i> Quét mã QR</button>
-            <button class="btn btn-secondary"><i class="fa-solid fa-camera"></i> Chụp ảnh sản phẩm</button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Hình ảnh sản phẩm</label>
-          <input type="file" class="form-control" accept="image/*">
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
-        <button class="btn btn-primary">Lưu</button>
-      </div>
-    </div>
-    
-  </div>
+  {% include 'includes/modal_add_product.html' %}
   <!-- Form Modal thêm nhà cung cấp, sản phẩm -->
 <!-- 2. NƠI GỌI CÁC FILE FORM MODAL VÀO -->
   {% include 'includes/modal_add_supplier.html' %}
@@ -337,13 +263,15 @@
       //   " | Timestamp: " + time.toLocaleString("vi-VN") +
       //   " | Location: " + data.location;
     });
-    function openModal(id) {
-      document.getElementById(id).style.display = 'block';
-    }
 
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
+    //---------------------------------------
+    //function openModal(id) {
+    //  document.getElementById(id).style.display = 'block';
+    //}
+
+    //function closeModal(id) {
+    //  document.getElementById(id).style.display = 'none';
+    //} 
 
     window.onclick = function(event) {
       if (event.target.classList.contains('modal')) {
