@@ -47,8 +47,8 @@
       <div class="user-profile">
         <div class="user-avatar">NV</div>
         <div class="user-info">
-          <div class="user-name">{{profile.user_name}}xx</div>
-          <div class="user-role">{{profile.role}}admin</div>
+          <div class="user-name">{{profile.user_name}}</div>
+          <div class="user-role">{{profile.role}}</div>
         </div>
       </div>
     </header>
@@ -205,14 +205,6 @@
   {% include 'includes/modal_add_supplier.html' %}
   {% include 'includes/modal_add_category.html' %}
   <script>
-    /* function openModal() {
-      document.getElementById('addProductModal').classList.add('active');
-    
-
-    function closeModal() {
-      document.getElementById('addProductModal').classList.remove('active');
-    }} */
-
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('active');
       document.getElementById('sidebarOverlay').classList.toggle('active');
@@ -267,11 +259,13 @@
 
     //---------------------------------------
     function openModal(id) {
-     document.getElementById(id).style.display = 'flex';
+     const element = document.getElementById(id)
+     element.classList.add('active')
     }
 
     function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
+      const element = document.getElementById(id)
+     element.classList.remove('active')
     } 
 
     window.onclick = function(event) {
