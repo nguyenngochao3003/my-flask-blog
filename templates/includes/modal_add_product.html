@@ -27,7 +27,7 @@
                   <option value="2">không có nhà cung cấp </option>
                 {% endfor %} 
               </select>
-              <button class="btn btn-secondary" title="Tạo nhà cung cấp mới" onclick="openModal('modal-supplier')">+</button>
+              <button class="btn btn-secondary" title="Tạo nhà cung cấp mới" onclick="openModalx('modal-supplier')">+</button>
             </div>
           </div>
           <div class="form-group">
@@ -40,7 +40,7 @@
                   <option value="2">không có dữ liệu</option>
                 {% endfor %}
               </select>
-              <button class="btn btn-secondary" title="Tạo nhóm mới" onclick="openModal('modal-category')">+</button>
+              <button class="btn btn-secondary" title="Tạo nhóm mới" onclick="openModalx('modal-category')">+</button>
             </div>
           </div>
         </div>
@@ -71,5 +71,9 @@
         <button class="btn btn-primary">Lưu</button>
       </div>
     </div>
+    <!-- 2. NƠI GỌI CÁC FILE FORM MODAL VÀO -->
+  {% include 'includes/modal_add_supplier.html' %}
+  {% include 'includes/modal_add_category.html' %}
     
   </div>
+  

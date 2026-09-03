@@ -267,6 +267,15 @@
       const element = document.getElementById(id)
      element.classList.remove('active')
     } 
+    function openModalx(id) {
+     const element = document.getElementById(id)
+     element.display = 'block'
+    }
+
+    function closeModalx(id) {
+      const element = document.getElementById(id)
+     element.display = 'none'
+    } 
 
     window.onclick = function(event) {
       if (event.target.classList.contains('modal')) {
