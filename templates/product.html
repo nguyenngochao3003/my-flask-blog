@@ -7,7 +7,8 @@
 <!-- Font Inter & FontAwesome Icons -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="/static/css/product_style.css">
+<!-- <link rel="stylesheet" href="/static/css/product_style.css"> -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/product_style.css') }}?v=1.1">
 <!-- Thêm vào trong thẻ <head> của product.html -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
 </head>
@@ -146,7 +147,7 @@
             <!-- Item 1 -->
           {% for item in product_data %}
             <div class="product-item">
-                <img src="path/to/shirt1.jpg" alt="Áo Sơ mi Nam" class="product-img">
+                <img src="{{ url_for('static', filename='images/image.png') }}" alt="Áo Sơ mi Nam" class="product-img">
                 <div class="product-info">
                 <h3 class="product-title">{{item.product_name}}</h3>
                 <div class="product-details">
