@@ -185,6 +185,69 @@ def product():
         flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
         return redirect(url_for('login'))
 
+@app.route("/api/add_product", methods=["POST"])
+@app.route("/api/add_product/", methods=["POST"])
+def add_product():
+    # 1. lấy token đăng nhập trừ session
+    user_access_token = session.get('access_token')
+    
+    if not user_access_token:
+        flash('Bạn cần đăng nhập để truy cập!')
+        return redirect(url_for('login'))
+
+    # 2. Tạo client Supabase đóng vai trò chính user đó
+    user_supabase = create_client(
+        url, 
+        key,
+        options=ClientOptions(
+            headers={"Authorization": f"Bearer {user_access_token}"}
+        )
+    )
+    
+    # 3. lấy dữ liệu từ form 
+    data = request.get_json()
+    name = data.get('name')
+    code = data.get('code')
+    group = data.get('group')
+    supplier = data.get('supplier')
+
+    try:
+        # 3. Lấy user_id hiện tại từ Supabase Auth
+        ## Hàm trợ giúp tạo client theo request (An toàn, không lo đụng độ Token giữa các user)
+        user_response = user_supabase.auth.get_user(user_access_token)
+        user_id = user_response.user.id
+
+        # 4. Truy vấn id
+        # supplier theo code hoặc tên
+        supplier_res = user_supabase.table("suplier").select("id").eq("name", supplier).execute()
+        id_supplier = supplier_res.data[0]["id"] if supplier_res.data else None
+
+        # Truy vấn group theo tên
+        group_res = user_supabase.table("prod_group").select("id").eq("name", group).execute()
+        id_group = group_res.data[0]["id"] if group_res.data else None
+
+        # Truy vấn employee theo user_id
+        employee_res = user_supabase.table("employees").select("id").eq("user_id", user_id).execute()
+        id_employee = employee_res.data[0]["id"] if employee_res.data else None
+        print('các mã id trước khi chèn vào bảng products', 'id_employee', id_employee, 'id_group', id_group, 'id_supplier', id_supplier)
+    
+        # 5.. Insert dữ liệu - RLS sẽ tự kiểm tra quyền Staff ở bước này
+        res = user_supabase.table("products").insert({
+            "name": name,
+            "code_nsx": code,
+            "id_suplier": id_supplier,
+            "id_prod_group": id_group,
+            "id_employee": id_employee
+            # "url_image": url_image
+        }).execute()
+
+        # TRƯỚC: return redirect('/product') -> LỖI
+        # SỬA THÀNH: Trả về JSON báo thành công
+        return jsonify({'message': 'Thêm sản phẩm thành công!'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
+
 @app.route('/add', methods=['GET', 'POST'])
 def add_post():
     if request.method == 'POST':
