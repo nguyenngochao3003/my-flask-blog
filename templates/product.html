@@ -257,6 +257,7 @@
     try {
       const res = await fetch('/api/get_token');
       const data = await res.json();
+      console.log('dữ liệu data trả về từ "/api/get_token": ', data);
 
       // Kiểm tra nếu API không có access_token hoặc báo lỗi
       if (!res.ok || !data.access_token) {
@@ -266,7 +267,7 @@
       }
 
       // Khởi tạo Supabase client đúng tên biến userSupabase
-      userSupabase = supabase.createClient(data.supabase_url, data.supabase_key, {
+      userSupabase = createClient(data.url, data.key, {
         global: {
           headers: {
             Authorization: `Bearer ${data.access_token}`
@@ -275,8 +276,8 @@
       });
 
       // Tải dữ liệu ban đầu & kích hoạt Realtime
-      await loadView();
-      subscribeRealtime();
+      //await loadView();
+      //subscribeRealtime();
 
     } catch (err) {
       console.error("Lỗi khởi tạo Supabase:", err);

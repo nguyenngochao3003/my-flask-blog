@@ -71,6 +71,8 @@ def api_login():
     if not res.session or not res.user:
       return jsonify({'error': 'Đăng nhập không thành công'}), 401
 
+    session["refresh_token"] = str(res.session.refresh_token)
+    
     # ÉP KIỂU STR ĐỂ ĐẢM BẢO TOKEN LÀ CHUỖI CHUẨN JWT
     session['access_token'] = str(res.session.access_token)
     session['user_id'] = str(res.user.id)
@@ -183,73 +185,32 @@ def add_product():
     except Exception as e:
         return jsonify({'error': str(e)}), 401
 
-@app.route('/add', methods=['GET', 'POST'])
-def add_post():
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        
-        # 1. Lấy access_token của user đã đăng nhập (lưu từ bước login)
-        user_access_token = session.get('access_token')
-            
-        if not user_access_token:
-            flash("Bạn chưa đăng nhập!")
-            return redirect('/login')
-
-        # 2. Tạo client Supabase đóng vai trò chính user đó
-        user_supabase = create_client(
-            url, 
-            key,
-            options=ClientOptions(
-                headers={"Authorization": f"Bearer {user_access_token}"}
-            )
-        )
-        
-        try:
-            # 3. Lấy user_id hiện tại từ Supabase Auth
-            ## Hàm trợ giúp tạo client theo request (An toàn, không lo đụng độ Token giữa các user)
-            user_response = user_supabase.auth.get_user(user_access_token)
-            user_id = user_response.user.id
-
-            # 4. Insert dữ liệu - RLS sẽ tự kiểm tra quyền Staff ở bước này
-            res = user_supabase.table('posts').insert({
-                'title': title,
-                'content': content,
-                'user_id': user_id
-            }).execute()
-
-            flash("Đăng bài thành công!")
-            return redirect('/')
-
-        except Exception as e:
-            # Nếu không phải Staff, Supabase RLS sẽ trả về lỗi tại đây
-            flash("Lỗi: Bạn không có quyền đăng bài (Chỉ Staff mới được phép)!")
-
 # token cho fetch để chạy real time
 @app.route("/api/get_token")
 def get_token():
-    refresh_token = session.get('refresh_token') # Lấy refresh_token từ session
+    session = supabase.se
+    return jsonify({
+        "url": url,
+        "key": key,
+        "access_token": session.get("access_token"),
+        "refresh_token": session.get("refresh_token")
+                    
+    })
+
+@app.route("/refresh", methods=["POST"])
+def refresh_token():
+    # Lấy refresh_token từ body request
+    refresh_token = request.json.get("refresh_token")
+
+    # Gọi Supabase để refresh session
+    res = supabase.auth.refresh_session(refresh_token)
+    session = res.session
+
+    return jsonify({
+        "access_token": session.access_token,
+        "refresh_token": session.refresh_token
+    }), 200
     
-    if not refresh_token:
-        return jsonify({"error": "No refresh token available"}), 401
-
-    try:
-        # 1. Gọi hàm làm mới session của Supabase
-        res = supabase.auth.refresh_session(refresh_token)
-        
-        # 2. Cập nhật lại token mới vào session Flask (để dùng cho các request sau)
-        session['access_token'] = res.session.access_token
-        session['refresh_token'] = res.session.refresh_token
-
-        # 3. Trả về access_token mới cho Frontend
-        return jsonify({
-            "supabase_url": url,
-            "supabase_key": key,
-            "access_token": res.session.access_token
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 401
-
 # admin phân quyền, quản lý 
 # 1. Route hiển thị trang Admin Dashboard
 @app.route('/admin')
@@ -301,19 +262,9 @@ def update_user_role():
     return redirect('/admin')
 
 
-# test lấy hiển thị bảng sản phẩm và qr code -------------------------------------------------
-
-
-@app.route('/stock')
-def stock():
-    return render_template('stock.html')
-
 @app.route('/qrcode')
 def qrcode_tracker():
     return render_template('QR_tracker.html')
-
-# ---------------------------------------
-
 
 
 # -------- ĐỌC VÀ LƯU HÌNH ẢNH VÀO SUPABASE
