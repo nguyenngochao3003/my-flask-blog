@@ -28,18 +28,12 @@ app = Flask(__name__)
 # dùng kèm với password để mã hóa dữ liệu key cho mỗi session 
 app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 
-#  test hiển thị đăng nhập -------------
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/login')
 def login():
     if 'access_token' in session:
         return redirect(url_for('product'))
     return render_template('login.html')
-
-# @app.route('/post')
-# def post():
-#     posts = supabase.table('posts').select('*').order('created_at', desc=True).execute()
-#     return render_template('index.html', posts=posts.data)
 
 # 2. Route Xử lý Đăng ký
 @app.route('/api/signup', methods=['POST'])
@@ -118,72 +112,13 @@ def logout():
 
 # hiển thị trang web------------------------------------
 
-# 2. ROUTE PRODUCT (Khởi tạo Auth với JWT Token)
+
+# 2. ROUTE PRODUCT 
 @app.route('/product')
 def product():
-    user_access_token = session.get('access_token')
+    
+    return render_template('product.html')
 
-    if not user_access_token:
-        flash('Bạn cần đăng nhập để truy cập!')
-        return redirect(url_for('login'))
-
-    # 2. Tạo client Supabase đóng vai trò chính user đó
-    user_supabase = create_client(
-        url, 
-        key,
-        options=ClientOptions(
-            headers={"Authorization": f"Bearer {user_access_token}"}
-        )
-    )
-
-    try:
-        # Truyền trực tiếp Token lấy từ Session vào hàm get_user()
-        user_response = user_supabase.auth.get_user(user_access_token)
-
-        if not user_response or not user_response.user:
-            print('Token không hợp lệ hoặc hết hạn!')
-            session.clear()
-            flash('Phiên đăng nhập hết hạn!')
-            return redirect(url_for('login'))
-
-        current_user_id = user_response.user.id
-
-        # 1. Lấy Profile của chính user đó qua JWT Token
-        profile_res = user_supabase.table('profiles').select('*').execute()
-        profile = profile_res.data[0] if profile_res.data else None
-        print('#1. kết quả truy vấn dữ liệu trước khi hiển thị')
-        # print('profile', profile)
-        
-        # Lấy Product
-        product_res = user_supabase.table('view_product_details').select('*').execute()
-        product_data = product_res.data if product_res.data else []
-        print('product_data', product_data)
-        
-        # lấy group product
-        prod_group_res = user_supabase.table('prod_group').select('*').execute()
-        prod_group_data = prod_group_res.data if prod_group_res.data else []
-        print('prod_group_data', prod_group_data)
-
-        # lấy nhà cung cấp
-        suplier_res = user_supabase.table('suplier').select('*').execute()
-        suplier_data = suplier_res.data if suplier_res.data else []
-        print('suplier_data', suplier_data)
-            
-        context = {
-            'profile': profile,
-            'product_data': product_data,
-            'prod_group_data': prod_group_data,
-            'suplier_data': suplier_data,
-        }
-
-        return render_template('product.html', **context)
-
-    except Exception as e:
-        print('Lỗi tại /product:', e)
-        traceback.print_exc()
-        session.clear()
-        flash('Có lỗi xảy ra khi tải dữ liệu trang sản phẩm!')
-        return redirect(url_for('login'))
 
 @app.route("/api/add_product", methods=["POST"])
 @app.route("/api/add_product/", methods=["POST"])
@@ -289,64 +224,33 @@ def add_post():
         except Exception as e:
             # Nếu không phải Staff, Supabase RLS sẽ trả về lỗi tại đây
             flash("Lỗi: Bạn không có quyền đăng bài (Chỉ Staff mới được phép)!")
-     
 
-
-#             return redirect('/')
-
-#     return render_template('add.html')
-
-# # delete a post
-# @app.route('/delete/<int:post_id>')
-# def delete_post(post_id):
-#     supabase.table('posts').delete().eq('id', post_id).execute()
-#     return redirect('/')
-
-# # Edit a post
-# @app.route('/edit/<int:post_id>', methods=['GET', 'POST'])
-# def edit_post(post_id):
-#     # 1. Kiểm tra xem user đã đăng nhập chưa
-#     user_access_token = session.get('access_token')
-#     if not user_access_token:
-#         flash("Bạn cần đăng nhập để sửa bài!")
-#         return redirect('/login')
-
-#     # 2. Tạo Client xác thực (đính kèm token)
-#     user_supabase = create_client(
-#         url, 
-#         key,
-#         options=ClientOptions(
-#             headers={"Authorization": f"Bearer {user_access_token}"}
-#         )
-#     )
+# token cho fetch để chạy real time
+@app.route("/api/get_token")
+def get_token():
+    refresh_token = session.get('refresh_token') # Lấy refresh_token từ session
     
-#     # Lấy thông tin bài viết (vẫn cần xác thực để xem bài)
-#     post = user_supabase.table('posts').select('*').eq('id', post_id).single().execute().data
-    
-#     if request.method == 'POST':
-#         title = request.form['title']
-#         content = request.form['content']
+    if not refresh_token:
+        return jsonify({"error": "No refresh token available"}), 401
+
+    try:
+        # 1. Gọi hàm làm mới session của Supabase
+        res = supabase.auth.refresh_session(refresh_token)
         
-#         try:
-#             # 3. Thực hiện Update với Client đã có Token
-#             user_supabase.table('posts').update({
-#                 'title': title, 
-#                 'content': content
-#             }).eq('id', post_id).execute()
-            
-#             flash("Cập nhật thành công!")
-#             return redirect('/')
-#         except Exception as e:
-#             flash(f"Lỗi: Bạn không có quyền sửa bài này! ({e})")
-#             return redirect('/')
+        # 2. Cập nhật lại token mới vào session Flask (để dùng cho các request sau)
+        session['access_token'] = res.session.access_token
+        session['refresh_token'] = res.session.refresh_token
 
-#     return render_template('edit.html', post=post)
-
-
-
+        # 3. Trả về access_token mới cho Frontend
+        return jsonify({
+            "supabase_url": url,
+            "supabase_key": key,
+            "access_token": res.session.access_token
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 # admin phân quyền, quản lý 
-
 # 1. Route hiển thị trang Admin Dashboard
 @app.route('/admin')
 def admin_dashboard():
