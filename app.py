@@ -67,6 +67,7 @@ def api_login():
     res = supabase.auth.sign_in_with_password(
         {'email': email, 'password': password}
     )
+    print('res in login', res)
 
     if not res.session or not res.user:
       return jsonify({'error': 'Đăng nhập không thành công'}), 401
@@ -188,7 +189,6 @@ def add_product():
 # token cho fetch để chạy real time
 @app.route("/api/get_token")
 def get_token():
-    session = supabase.se
     return jsonify({
         "url": url,
         "key": key,
@@ -207,6 +207,8 @@ def refresh_token():
     session = res.session
 
     return jsonify({
+        "url": url,
+        "key": key,
         "access_token": session.access_token,
         "refresh_token": session.refresh_token
     }), 200

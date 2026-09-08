@@ -248,116 +248,83 @@
    
     
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  let userSupabase = null;
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  // 1. Khởi tạo Supabase Client
+  let userSupabase;
+  let refreshTokenValue;
+
   async function initSupabase() {
+    console.log("initSupabase đã được gọi");
+
     try {
       const res = await fetch('/api/get_token');
       const data = await res.json();
       console.log('dữ liệu data trả về từ "/api/get_token": ', data);
 
-      // Kiểm tra nếu API không có access_token hoặc báo lỗi
       if (!res.ok || !data.access_token) {
         console.error("Không lấy được token xác thực:", data.error || "Token rỗng");
         alert("Phiên đăng nhập hết hạn hoặc chưa có Token. Vui lòng đăng nhập lại!");
         return;
       }
 
-      // Khởi tạo Supabase client đúng tên biến userSupabase
       userSupabase = createClient(data.url, data.key, {
         global: {
-          headers: {
-            Authorization: `Bearer ${data.access_token}`
-          }
+          headers: { Authorization: `Bearer ${data.access_token}` }
         }
       });
 
-      // Tải dữ liệu ban đầu & kích hoạt Realtime
-      //await loadView();
-      //subscribeRealtime();
+      refreshTokenValue = data.refresh_token;
 
+      await get_product_data();
+      subscribeRealtime();
     } catch (err) {
       console.error("Lỗi khởi tạo Supabase:", err);
     }
   }
 
-  // 2. Render dữ liệu vào bảng
-  function renderTable(products) {
-    const table = document.getElementById("table_products");
-    if (!table) return;
-    const tbody = table.querySelector("tbody");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-
-    if (!products || products.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">Không có dữ liệu sản phẩm</td></tr>`;
-      return;
+  async function get_product_data() {
+    try {
+      const { data, error } = await userSupabase
+        .from('profiles')
+        .select('*');
+      if (error) throw error;
+      console.log('test query data for table: ', data);
+    } catch (e) {
+      console.log('error at func get_product_data: ', e);
     }
+  }
 
-    products.forEach(p => {
-      const row = `
-      <tr>
-        <td><img src="{{ url_for('static', filename='images/image.png') }}" alt="SP" class="product-img"></td>
-        <td><span class="code-badge">${p.code || ''}</span></td>
-        <td><strong>${p.product_name || ''}</strong></td>
-        <td>${p.supplier_name || p.suplier_name || '-'}</td>
-        <td>${p.product_group || ''}</td>
-        <td>${p.employee_name || ''}</td>
-        <td>${p.created_at || ''}</td>
-        <td>
-            <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
-        </td>
-      </tr>
-      `;
-      tbody.innerHTML += row;
+  function subscribeRealtime() {
+    const channel = userSupabase.channel("messages_channel")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, payload => {
+        console.log("Realtime update:", payload);
+      })
+      .subscribe();
+
+    channel.on("error", async (err) => {
+      console.error("Realtime error:", err);
+
+      const res = await fetch("/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshTokenValue })
+      });
+      const data = await res.json();
+
+      refreshTokenValue = data.refresh_token;
+      userSupabase = createClient(data.url, data.key, {
+        global: { headers: { Authorization: `Bearer ${data.access_token}` } }
+      });
+
+      subscribeRealtime();
     });
   }
 
-  // 3. Lấy dữ liệu View
-  async function loadView() {
-    if (!userSupabase) {
-      console.error("userSupabase chưa được khởi tạo!");
-      return;
-    }
-
-    // SỬA LỖI: Đổi user_supabase thành userSupabase
-    let { data: productData, error: productError } = await userSupabase
-      .from("view_product_details")
-      .select("*");
-
-    if (productError) {
-      console.error("Lỗi Supabase (HTTP status/RLS):", productError);
-    } else {
-      renderTable(productData);
-    }
-  }
-
-  // 4. Lắng nghe Realtime
-  function subscribeRealtime() {
-    if (!userSupabase) return;
-
-    userSupabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
-        (payload) => {
-          console.log('Phát hiện thay đổi:', payload);
-          // SỬA LỖI: Đổi loadProducts() thành loadView()
-          loadView();
-        }
-      )
-      .subscribe();
-  }
-
-  // Khởi chạy khi trang web load xong
   document.addEventListener("DOMContentLoaded", () => {
     initSupabase();
   });
 </script>
+
 </body>
 </html>
