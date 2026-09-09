@@ -46,7 +46,7 @@
       <div class="user-profile">
         <div class="user-avatar">NV</div>
         <div class="user-info">
-          <div class="user-name" id="username"></div>
+          <div class="user-name" id="userName">xxxx</div>
           <div class="user-role" id="role"></div>
         </div>
       </div>
@@ -274,6 +274,13 @@
         }
       });
 
+      if (!userSupabase) {
+        console.error("Supabase client chưa khởi tạo");
+        return;
+      }
+
+      console.log("Access token hiện tại:", data.access_token);
+
       refreshTokenValue = data.refresh_token;
 
       await get_product_data();
@@ -284,15 +291,43 @@
   }
 
   async function get_product_data() {
+    // dữ liêu từ table
     try {
-      const { data, error } = await userSupabase
+          // Lấy thông tin user hiện tại
+      const { data: { user } } = await userSupabase.auth.getUser();
+
+      if (!user) {
+        console.error("Không tìm thấy user đang đăng nhập");
+        return;
+      }
+      const { data: profile, error: p_error } = await userSupabase
         .from('profiles')
-        .select('*');
-      if (error) throw error;
-      console.log('test query data for table: ', data);
-    } catch (e) {
-      console.log('error at func get_product_data: ', e);
+        .select('*')
+        .eq('id', user.id)   // lọc theo id của user
+        .single();           // chỉ lấy một record;
+
+      if (p_error) throw p_error;
+      console.log('test query data for table: ', profile);
+      // đưa dữ liêu user_name và role vào 
+      document.getElementById('userName').innerHTML = `<p>${profile.user_name}</p>`;
+      document.getElementById('role').innerHTML = `<p>${profile.role}</p>`;
+
+    } catch (p_error) {
+      console.log('p_error at func get_product_data: ', p_error);
     }
+        // dữ liêu từ product
+    try {
+      const { data: product, error: prod_error } = await userSupabase
+        .from('view_product_details')
+        .select('*');
+      if (prod_error) throw prod_error;
+      console.log('test query data for table: ', product);
+      // đưa dữ liêu user_name và role vào 
+
+    } catch (prod_error) {
+      console.log('prod_error at func get_product_data: ', prod_error);
+    }
+
   }
 
   function subscribeRealtime() {
@@ -311,7 +346,7 @@
         body: JSON.stringify({ refresh_token: refreshTokenValue })
       });
       const data = await res.json();
-
+      console.log(' kiểm tra subscribeRealtime() data.access_token', data.access_token);
       refreshTokenValue = data.refresh_token;
       userSupabase = createClient(data.url, data.key, {
         global: { headers: { Authorization: `Bearer ${data.access_token}` } }
