@@ -107,10 +107,12 @@ def dashboard():
                     "redirect_url": url_for("product")}) 
 
 # 5. Route Đăng xuất
-@app.route('/logout')
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
+    # Xóa toàn bộ session hoặc xóa đúng token
+    session.pop('access_token', None)
     session.clear()
-    return redirect(url_for('login'))
+    return jsonify({"status": "success", "message": "Logged out"})
 # ------------------
 
 # hiển thị trang web------------------------------------

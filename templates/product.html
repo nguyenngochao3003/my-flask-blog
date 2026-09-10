@@ -289,7 +289,7 @@
       console.error("Lỗi khởi tạo Supabase:", err);
     }
   }
-  function handleSessionExpired() {
+  async function handleSessionExpired() {
     // thông báo đăng nhập hết hạn 
     alert('phiên đăng nhập của bạn đã hết hạn hoặc tài khoản vừa được đăng nhập ở nơi khác. Bấm OK để đăng nhập lại.');
    
@@ -297,8 +297,15 @@
     localStorage.clear();
     sessionStorage.clear();
 
+    // 3. Đăng xuất ở Flask Backend để xóa Flask Session cũ
+    try {
+        await fetch('/logout', { method: 'POST' }); // Hoặc endpoint logout của bạn
+    } catch (err) {
+        console.error("Lỗi khi xóa session flask:", err);
+    }
+
     //3. chuyển về trang đăng nhập
-    window.location.href('/login');
+    window.location.href ='/login';
     
   }
   // Hàm helper để kiểm tra lỗi Token
@@ -338,6 +345,8 @@
 
       if (p_error) throw p_error;
       console.log('test query profile table: ', profile);
+
+
       // đưa dữ liêu user_name và role vào 
       document.getElementById('userName').innerHTML = `<p>${profile.user_name}</p>`;
       document.getElementById('role').innerHTML = `<p>${profile.role}</p>`;
@@ -353,14 +362,50 @@
         .from('view_product_details')
         .select('*');
 
-      if (prod_error) throw prod_error;
-      console.log('test query view_product_details view: ', product);
+      if (prod_error) {
+            if (checkTokenError(prod_error)) return; // Bắt lỗi JWT expired ở đây
+            throw prod_error;
+        }
       
       // đưa dữ liêu user_name và role vào 
       render_product_table(product);
       
     } catch (prod_error) {
       console.log('prod_error at func get_product_data: ', prod_error);
+    }
+    // 3. query dữ liệu cho thẻ select category
+    try {
+      const { data: category, error: category_error } = await userSupabase
+        .from('category')
+        .select('*');
+
+      if (category_error) {
+            if (checkTokenError(category_error)) return; // Bắt lỗi JWT expired ở đây
+            throw category_error;
+        }
+      
+      // đưa dữ liêu user_name và role vào 
+      render_select(category, 'category');
+      
+    } catch (category_error) {
+      console.log('category_error at func render_select: ', category_error);
+    }
+    // 4. query dữ liệu cho thẻ select supplier
+    try {
+      const { data: supplier, error: supplier_error } = await userSupabase
+        .from('supplier')
+        .select('*');
+
+      if (supplier_error) {
+            if (checkTokenError(supplier_error)) return; // Bắt lỗi JWT expired ở đây
+            throw supplier_error;
+        }
+      
+      // đưa dữ liêu user_name và role vào 
+      render_select(supplier, 'supplier');
+      
+    } catch (supplier_error) {
+      console.log('supplier_error at func render_select: ', supplier_error);
     }
   }
   function render_product_table(data) {
@@ -397,6 +442,16 @@
     console.log('func rend_product_table')
     document.querySelector(`#product_table tbody`).innerHTML = htmlTableContent;
     document.querySelector(`#product_card`).innerHTML = htmlCardContent;
+  }
+
+  function render_select(option_data, id) {
+    let htmlContent = '';
+    for (c of option_data) {
+      htmlContent += `
+        <option value="${c.name}">${c.name}</option>
+      `; 
+    }
+    document.querySelector(`#${id}`).innerHTML = htmlContent;
   }
 
 

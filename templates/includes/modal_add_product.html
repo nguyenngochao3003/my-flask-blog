@@ -23,12 +23,8 @@
           <div class="form-group">
             <label>Nhà cung cấp</label>
             <div class="input-with-action">
-              <select class="form-control">
-                {%for item in suplier_data%}
-                  <option value="">{{item.name}}</option>
-                {% else %}
-                  <option value="2">không có nhà cung cấp </option>
-                {% endfor %} 
+              <select class="form-control" id='supplierSelect'>
+                
               </select>
               <button class="btn btn-secondary" title="Tạo nhà cung cấp mới" onclick="openModal('modal-supplier')">+</button>
             </div>
@@ -36,12 +32,7 @@
           <div class="form-group">
             <label>Nhóm</label>
             <div class="input-with-action">
-              <select class="form-control">
-                {%for item in prod_group_data%}
-                  <option value="">{{item.name}}</option>
-                {% else %}
-                  <option value="2">không có dữ liệu</option>
-                {% endfor %}
+              <select class="form-control" id='categorySelect'>
               </select>
               <button class="btn btn-secondary" title="Tạo nhóm mới" onclick="openModal('modal-category')">+</button>
             </div>
