@@ -385,7 +385,7 @@
         }
       
       // đưa dữ liêu user_name và role vào 
-      render_select(category, 'category');
+      render_select(category, 'categorySelect');
       
     } catch (category_error) {
       console.log('category_error at func render_select: ', category_error);
@@ -402,7 +402,7 @@
         }
       
       // đưa dữ liêu user_name và role vào 
-      render_select(supplier, 'supplier');
+      render_select(supplier, 'supplierSelect');
       
     } catch (supplier_error) {
       console.log('supplier_error at func render_select: ', supplier_error);
@@ -445,8 +445,9 @@
   }
 
   function render_select(option_data, id) {
+    console.log('func render_select');
     let htmlContent = '';
-    for (c of option_data) {
+    for (const c of option_data) {
       htmlContent += `
         <option value="${c.name}">${c.name}</option>
       `; 
