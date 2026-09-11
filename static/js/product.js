@@ -237,10 +237,57 @@ function render_product_table(data) {
 function render_select(option_data, id) {
   let htmlContent = '';
   for (const c of option_data) {
-    htmlContent += `<option value="${c.name}">${c.name}</option>`; 
+    console.log('id', c.id);
+    htmlContent += `<option value="${c.id}">${c.name}</option>`; 
   }
   document.querySelector(`#${id}`).innerHTML = htmlContent;
 }
+window.submit_addProduct = submit_addProduct;
+async function submit_addProduct() {
+
+  const prod_name = document.getElementById("productForm_name").value;
+  const code = document.getElementById("productForm_code").value;
+  const id_category = document.getElementById("categorySelect").value;
+  const id_supplier = document.getElementById("supplierSelect").value;
+
+  try {
+      const { data: { user }, error } = await userSupabase.auth.getUser();
+      if (error) {
+        if (checkTokenError(error)) return;
+        console.error("Lỗi khác:", error.message);
+        return;
+      }
+
+      const { data: employee, error: e_err } = await userSupabase
+        .from('employees')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (e_err) throw e_err;
+
+      const { data, error: insertError } = await userSupabase
+        .from('products')
+        .insert([{
+          name: prod_name,
+          code_nsx: code,
+          id_supplier,
+          id_category,
+          id_employee: employee.id
+        }]);
+
+      if (insertError) {
+        console.error("Insert error:", insertError);
+      } else {
+        console.log("Insert success:", data);
+        window.location.href = "/product";
+      }
+    } catch (err ){
+      console.log('1. lỗi tại nút btnAddProduct: ', err.message);
+    }
+
+}
+
 
 function subscribeRealtime() {
   const channel = userSupabase.channel("messages_channel")

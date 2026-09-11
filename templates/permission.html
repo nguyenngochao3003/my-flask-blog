@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý phân quyền hệ thống</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  
+  <style>
+    /* Style cho danh sách gợi ý tự động (Google-style dropdown) */
+    .autocomplete-wrapper {
+      position: relative;
+    }
+    .autocomplete-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1055;
+      background: #fff;
+      border: 1px solid #ced4da;
+      border-radius: 0 0 0.375rem 0.375rem;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      display: none;
+    }
+    .autocomplete-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .autocomplete-item:hover {
+      background-color: #f1f3f5;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid py-4">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0"><i class="bi bi-shield-lock-fill me-2"></i>Quản lý phân quyền người dùng</h4>
+    </div>
+    <div class="card-body">
+      
+      <!-- 1. Bộ lọc tìm kiếm Người dùng & nút Lưu -->
+      <div class="row g-3 mb-4 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label fw-bold">Chọn / Tìm kiếm người dùng:</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person-search"></i></span>
+            <input type="text" class="form-control" placeholder="Nhập tên hoặc email người dùng...">
+            <button class="btn btn-outline-secondary" type="button">Tìm kiếm</button>
+          </div>
+        </div>
+        <div class="col-md-7 text-end">
+          <button class="btn btn-success me-2" onclick="savePermissions()">
+            <i class="bi bi-floppy-fill me-1"></i> Lưu thay đổi
+          </button>
+          <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#historyModal">
+            <i class="bi bi-clock-history me-1"></i> Lịch sử cấp quyền
+          </button>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- 2. Thanh công cụ quản lý Bảng & Đối tượng -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-secondary mb-0">Danh sách đối tượng & Quyền truy cập</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addObjectModal">
+          <i class="bi bi-plus-circle me-1"></i> Thêm đối tượng mới
+        </button>
+      </div>
+
+      <!-- Tìm kiếm theo Tên bảng / View / Procedure / Function trong bảng -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="searchObjectInput" class="form-control form-control-sm" placeholder="Lọc nhanh danh sách đối tượng bên dưới...">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Bảng Phân Quyền Chi Tiết (Đã bổ sung cột Ghi chú) -->
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-dark text-center">
+            <tr>
+              <th style="width: 200px;">Tên Đối Tượng</th>
+              <th style="width: 120px;">Loại</th>
+              <th style="width: 90px;">Thêm<br><small class="fw-normal">(Insert)</small></th>
+              <th style="width: 90px;">Xóa<br><small class="fw-normal">(Delete)</small></th>
+              <th style="width: 90px;">Cập nhật<br><small class="fw-normal">(Update)</small></th>
+              <th style="width: 90px;">Thực thi<br><small class="fw-normal">(Execute)</small></th>
+              <th>Ghi chú cấp quyền</th>
+              <th style="width: 70px;">Xóa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Dòng ví dụ cho Table -->
+            <tr>
+              <td><span class="fw-bold">users</span></td>
+              <td class="text-center"><span class="badge bg-primary">Table</span></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" checked></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox"></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" checked></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" disabled></td>
+              <td><input type="text" class="form-control form-control-sm" value="Quyền quản trị người dùng"></td>
+              <td class="text-center">
+                <button class="btn btn-outline-danger btn-sm" title="Xóa dòng này"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+            <!-- Dòng ví dụ cho View -->
+            <tr>
+              <td><span class="fw-bold">v_active_orders</span></td>
+              <td class="text-center"><span class="badge bg-info text-dark">View</span></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" disabled></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" disabled></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" disabled></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" checked></td>
+              <td><input type="text" class="form-control form-control-sm" value="Chỉ xem đơn hàng đang hoạt động"></td>
+              <td class="text-center">
+                <button class="btn btn-outline-danger btn-sm" title="Xóa dòng này"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+            <!-- Dòng ví dụ cho Stored Procedure -->
+            <tr>
+              <td><span class="fw-bold">sp_calculate_payroll</span></td>
+              <td class="text-center"><span class="badge bg-warning text-dark">Procedure</span></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" disabled></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" disabled></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" disabled></td>
+              <td class="text-center"><input class="form-check-input" type="checkbox" checked></td>
+              <td><input type="text" class="form-control form-control-sm" placeholder="Thêm ghi chú..."></td>
+              <td class="text-center">
+                <button class="btn btn-outline-danger btn-sm" title="Xóa dòng này"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Thêm đối tượng mới vào bảng phân quyền (Có autocomplete Google-style) -->
+<div class="modal fade" id="addObjectModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Thêm đối tượng phân quyền mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addForm">
+          
+          <!-- Tìm kiếm dạng Google xỏ xuống hiển thị Tên + Loại -->
+          <div class="mb-3 autocomplete-wrapper">
+            <label class="form-label fw-bold">Tìm kiếm đối tượng (Bảng, View, Procedure, Function)</label>
+            <input type="text" id="objectSearchInput" class="form-control" placeholder="Gõ tên để tìm kiếm... (vd: orders, sp_...)" autocomplete="off">
+            <input type="hidden" id="selectedObjectType"> <!-- Lưu loại đối tượng sau khi chọn -->
+            
+            <!-- Danh sách gợi ý kiểu Google -->
+            <div id="autocompleteList" class="autocomplete-results"></div>
+          </div>
+
+          <!-- Các tùy chọn quyền cấp -->
+          <div class="mb-3">
+            <label class="form-label fw-bold d-block">Quyền cấp mặc định</label>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="mAdd">
+              <label class="form-check-label" for="mAdd">Thêm</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="mDelete">
+              <label class="form-check-label" for="mDelete">Xóa</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="mUpdate">
+              <label class="form-check-label" for="mUpdate">Sửa</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="mExec">
+              <label class="form-check-label" for="mExec">Thực thi</label>
+            </div>
+          </div>
+
+          <!-- Nhập ghi chú cho riêng dòng thêm mới này -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Ghi chú cấp quyền</label>
+            <input type="text" class="form-control" placeholder="Nhập ghi chú cho đối tượng này...">
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary">Xác nhận thêm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal xem Lịch sử -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Lịch sử thay đổi quyền</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-striped table-sm">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Người thực hiện</th>
+                <th>Người nhận quyền</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>10/09/2026 14:30</td>
+                <td>Admin System</td>
+                <td>NguyenVanA</td>
+                <td>Cấp quyền Execute cho Procedure <span class="badge bg-warning text-dark">sp_calculate_payroll</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Dữ liệu mẫu danh sách hệ thống có sẵn
+  const dbObjects = [
+    { name: 'orders', type: 'Table', badgeClass: 'bg-primary' },
+    { name: 'products', type: 'Table', badgeClass: 'bg-primary' },
+    { name: 'v_customer_summary', type: 'View', badgeClass: 'bg-info text-dark' },
+    { name: 'sp_process_payment', type: 'Procedure', badgeClass: 'bg-warning text-dark' },
+    { name: 'fn_calculate_tax', type: 'Function', badgeClass: 'bg-secondary' }
+  ];
+
+  const searchInput = document.getElementById('objectSearchInput');
+  const autocompleteList = document.getElementById('autocompleteList');
+
+  // Sự kiện khi người dùng gõ phím vào ô tìm kiếm ở Modal
+  searchInput.addEventListener('input', function() {
+    const val = this.value.trim().toLowerCase();
+    autocompleteList.innerHTML = '';
+
+    if (!val) {
+      autocompleteList.style.display = 'none';
+      return;
+    }
+
+    // Lọc danh sách khớp với từ khóa
+    const matches = dbObjects.filter(item => item.name.toLowerCase().includes(val));
+
+    if (matches.length > 0) {
+      matches.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.innerHTML = `
+          <span><strong>${item.name}</strong></span>
+          <span class="badge ${item.badgeClass}">${item.type}</span>
+        `;
+        div.addEventListener('click', function() {
+          searchInput.value = item.name;
+          document.getElementById('selectedObjectType').value = item.type;
+          autocompleteList.style.display = 'none';
+        });
+        autocompleteList.appendChild(div);
+      });
+      autocompleteList.style.display = 'block';
+    } else {
+      autocompleteList.style.display = 'none';
+    }
+  });
+
+  // Ẩn danh sách gợi ý khi click ra ngoài
+  document.addEventListener('click', function(e) {
+    if (e.target !== searchInput) {
+      autocompleteList.style.display = 'none';
+    }
+  });
+
+  function savePermissions() {
+    alert('Đã lưu danh sách phân quyền thành công!');
+  }
+</script>
+
+</body>
+</html>

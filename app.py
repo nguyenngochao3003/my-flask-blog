@@ -118,15 +118,18 @@ def logout():
 # hiển thị trang web------------------------------------
 
 
+
 # 2. ROUTE PRODUCT 
 @app.route('/product')
 def product():
-    
     return render_template('product.html')
 
+# 3. ROUTE permission 
+@app.route('/permission')
+def permission():
+    return render_template('permission.html')
 
 @app.route("/api/add_product", methods=["POST"])
-@app.route("/api/add_product/", methods=["POST"])
 def add_product():
     # 1. lấy token đăng nhập trừ session
     user_access_token = session.get('access_token')
@@ -198,6 +201,7 @@ def get_token():
         "refresh_token": session.get("refresh_token")
                     
     })
+
 
 @app.route("/refresh", methods=["POST"])
 def refresh_token():
