@@ -291,10 +291,16 @@ async function submit_addProduct() {
 
 function subscribeRealtime() {
   const channel = userSupabase.channel("messages_channel")
-    .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, payload => {
+    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, payload => {
       console.log("Realtime update:", payload);
+      console.log("Realtime update:", payload);
+      get_product_data(); // gọi lại để load view
     })
-    .subscribe();
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log("Đã subscribe realtime thành công!");
+      }
+    });
 
   channel.on("error", async (err) => {
     console.error("Realtime error:", err);
