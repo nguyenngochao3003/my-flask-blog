@@ -297,6 +297,7 @@ function subscribeRealtime() {
       get_product_data(); // gọi lại để load view
     })
     .subscribe((status) => {
+      console.log("Channel status:", status);
       if (status === "SUBSCRIBED") {
         console.log("Đã subscribe realtime thành công!");
       }
