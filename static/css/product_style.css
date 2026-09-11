@@ -521,6 +521,14 @@
     .toggle-sidebar-btn {
       display: block;
     }
+    /* 2. Main Wrapper */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      height: calc(100vh - 60px);
+    }
 
     /* Điều chỉnh Top Header */
     .top-header {
