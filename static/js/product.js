@@ -202,7 +202,7 @@ function render_product_table(data) {
   let htmlCardContent = '';
 
   for (const p of data) {
-    htmlTableContent += `<tr>
+    htmlTableContent += `<tr data-id="${p.id}">
       <td><img src="/static/images/image.png" alt="SP" class="product-img"></td>
       <td><span class="code-badge">${p.code}</span></td>
       <td><strong>${p.product_name}</strong></td>
@@ -211,12 +211,12 @@ function render_product_table(data) {
       <td>${p.employee_name}</td>
       <td>${p.created_at}</td>
       <td>
-          <button class="action-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+          <button class="action-btn delete-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
       </td>
     </tr>`;
 
     // ĐÃ SỬA: Thay {{ url_for(...) }} bằng đường dẫn tĩnh /static/images/image.png
-    htmlCardContent += `<div class="product-item">
+    htmlCardContent += `<div class="product-item" data-id=${p.id}>
       <img src="/static/images/image.png" alt="Áo Sơ mi Nam" class="product-img">
       <div class="product-info">
         <h3 class="product-title">${p.product_name}</h3>
@@ -225,6 +225,7 @@ function render_product_table(data) {
             <span class="value">${p.employee_name}</span>
             <span class="label">${p.code} code</span>
             <span class="value">${p.created_at}</span>
+            <button class="action-btn delete-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
         </div>
       </div>
     </div>`;
@@ -242,6 +243,38 @@ function render_select(option_data, id) {
   }
   document.querySelector(`#${id}`).innerHTML = htmlContent;
 }
+
+  // lấy id khi bấm nút xóa
+  document.querySelector('#wrapper').addEventListener('click', async function(e) {
+  if (e.target.closest('.delete-btn')) {
+    console.log('func remove_product');
+
+    let row = null;
+
+    if (e.target.closest('tr')) {
+      row = e.target.closest('tr');
+    } else if (e.target.closest('.product-item')) {
+      row = e.target.closest('.product-item');
+    } else { alert('không tìm thấy dòng nào để xóa')}
+    
+    const id = row.dataset.id;
+    console.log(`xóa dòng ${id} trong bảng product`);
+
+    const { error } = await userSupabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('lỗi khi xóa supabase', error);
+      alert('Không thể xóa dữ liệu!');
+    } else {
+      row.remove();
+      alert('đã xóa thành công');
+    }
+  }
+});
+
 window.submit_addProduct = submit_addProduct;
 async function submit_addProduct() {
 
@@ -251,13 +284,14 @@ async function submit_addProduct() {
   const id_supplier = document.getElementById("supplierSelect").value;
 
   try {
+    // lấy user
       const { data: { user }, error } = await userSupabase.auth.getUser();
       if (error) {
         if (checkTokenError(error)) return;
         console.error("Lỗi khác:", error.message);
         return;
       }
-
+      // lấy bảng nhân viên
       const { data: employee, error: e_err } = await userSupabase
         .from('employees')
         .select('*')
@@ -266,6 +300,7 @@ async function submit_addProduct() {
 
       if (e_err) throw e_err;
 
+      // chèn vào bảng product
       const { data, error: insertError } = await userSupabase
         .from('products')
         .insert([{
@@ -276,6 +311,7 @@ async function submit_addProduct() {
           id_employee: employee.id
         }]);
 
+      // kiểm tra lỗi >> không lỗi gọi lại trang product
       if (insertError) {
         console.error("Insert error:", insertError);
       } else {
