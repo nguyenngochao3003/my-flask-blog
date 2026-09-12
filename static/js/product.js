@@ -172,7 +172,7 @@ async function get_product_data() {
       if (checkTokenError(category_error)) return;
       throw category_error;
     }
-   
+    console.log('data category', category);
     render_select(category, 'categorySelect');
    
   } catch (category_error) {
@@ -189,7 +189,7 @@ async function get_product_data() {
       if (checkTokenError(supplier_error)) return;
       throw supplier_error;
     }
-   
+    console.log('data supplier', supplier);
     render_select(supplier, 'supplierSelect');
    
   } catch (supplier_error) {
@@ -236,6 +236,7 @@ function render_product_table(data) {
 }
 
 function render_select(option_data, id) {
+  console.log('render_selection func');
   let htmlContent = '';
   for (const c of option_data) {
     console.log('id', c.id);
