@@ -38,11 +38,11 @@ function closeModal(id) {
   if (element) element.classList.remove('active');
 }
 
-window.onclick = function(event) {
-  if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
-  }
-};
+// window.onclick = function(event) {
+//   if (event.target.classList.contains('modal')) {
+//     event.target.classList.remove('active');
+//   }
+// };
 
 // Gán các hàm vào window để có thể call trực tiếp từ HTML (onclick="openModal(...)")
 window.toggleSidebar = toggleSidebar;
@@ -212,6 +212,7 @@ function render_product_table(data) {
       <td>${p.created_at}</td>
       <td>
           <button class="action-btn delete-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+          <button class="action-btn edit-btn" title="edit"><i class="fa-regular fa-pen-to-square"></i></button>
       </td>
     </tr>`;
 
@@ -226,6 +227,7 @@ function render_product_table(data) {
             <span class="label">${p.code} code</span>
             <span class="value">${p.created_at}</span>
             <button class="action-btn delete-btn" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+            <button class="action-btn edit-btn" title="edit"><i class="fa-regular fa-pen-to-square"></i></button>
         </div>
       </div>
     </div>`;
@@ -244,9 +246,92 @@ function render_select(option_data, id) {
   }
   document.querySelector(`#${id}`).innerHTML = htmlContent;
 }
+async function render_select_category_supplier() {
+  // 3. Select category
+  try {
+    const { data: category, error: category_error } = await userSupabase
+      .from('category')
+      .select('*');
 
-  // lấy id khi bấm nút xóa
-  document.querySelector('#wrapper').addEventListener('click', async function(e) {
+    if (category_error) {
+      if (checkTokenError(category_error)) return;
+      throw category_error;
+    }
+    render_select(category, 'categorySelectEdit');
+
+  } catch (category_error) {
+    console.log('category_error at func render_select: ', category_error);
+  }
+
+  // 4. Select supplier
+  try {
+    const { data: supplier, error: supplier_error } = await userSupabase
+      .from('supplier')
+      .select('*');
+
+    if (supplier_error) {
+      if (checkTokenError(supplier_error)) return;
+      throw supplier_error;
+    }
+    render_select(supplier, 'supplierSelectEdit');
+  } catch (supplier_error) {
+    console.log('supplier_error at func render_select: ', supplier_error);
+  }
+  
+  
+
+}
+
+
+// xử lý mở form edit khi user bấm vào nút edit trên bảng
+document.querySelector('#wrapper').addEventListener('click', async function(e) {
+  if (e.target.closest('.edit-btn')) {
+    console.log('func edit_product');
+    let row = null;
+
+    // lấy row
+    if (e.target.closest('tr')) {
+      row = e.target.closest('tr');
+    } else if (e.target.closest('.product-item')) {
+      row = e.target.closest('.product-item');
+    } 
+    
+    const id = row.dataset.id;
+    console.log(`edit dòng ${id} trong bảng product`);
+    // lấy dữ liệu từ supabase
+    const { data: product_data , error } = await userSupabase
+      .from('view_product_details')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('lỗi khi sửa supabase', error);
+      alert('Bạn không có quyền chỉnh sửa!');
+      return;
+    } 
+
+    console.log('product_data', product_data);
+    // load dữ liệu vào form
+    document.getElementById('editProductForm_name').value = product_data.product_name;
+    document.getElementById('editProductForm_code').value = product_data.code;
+    // document.getElementById('editProductForm_date').value = product_data.created_at;
+
+    // render select trước
+    await render_select_category_supplier();
+
+    // gán giá trị cho select sau khi render xong
+    document.getElementById('supplierSelectEdit').value = product_data.id_supplier;
+    document.getElementById('categorySelectEdit').value = product_data.id_category;
+
+    // mở form
+    openModal('modal-edit-product');
+      
+  }
+});
+
+// xử lý khi user bấm vào nút xóa trên bảng
+document.querySelector('#wrapper').addEventListener('click', async function(e) {
   if (e.target.closest('.delete-btn')) {
     console.log('func remove_product');
 

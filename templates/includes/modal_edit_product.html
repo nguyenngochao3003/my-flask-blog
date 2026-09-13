@@ -1,27 +1,27 @@
 
-<div class="modal-overlay" id="modal-add-product">
+<div class="modal-overlay" id="modal-edit-product">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id='form_add_product'>Thêm Sản phẩm Mới</h3>
-        <button class="modal-close" onclick="closeModal('modal-add-product')"><i class="fa-solid fa-xmark"></i></button>
+        <h3>Thông tin sản phẩm</h3>
+        <button class="modal-close" onclick="closeModal('modal-edit-product')"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
         
         <div class="form-group">
           <label>Tên SP</label>
-          <input id='productForm_name' type="text" class="form-control" placeholder="Nhập tên sản phẩm...">
+          <input id='editProductForm_name' type="text" class="form-control" placeholder="Nhập tên sản phẩm...">
         </div>
 
         <div class="form-group">
           <label>Mã Code</label>
-          <input type="text" class="form-control" id="productForm_code" placeholder="Nhập mã code sản phẩm...">
+          <input type="text" class="form-control" id="editProductForm_code" placeholder="Nhập mã code sản phẩm...">
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Nhà cung cấp</label>
             <div class="input-with-action">
-              <select class="form-control" id='supplierSelect'>
+              <select class="form-control" id='supplierSelectEdit'>
               
               </select>
               <button class="btn btn-secondary" title="Tạo nhà cung cấp mới" onclick="openModal('modal-supplier')">+</button>
@@ -30,19 +30,14 @@
           <div class="form-group">
             <label>Nhóm</label>
             <div class="input-with-action">
-              <select class="form-control" id='categorySelect'>
+              <select class="form-control" id='categorySelectEdit'>
               </select>
               <button class="btn btn-secondary" title="Tạo nhóm mới" onclick="openModal('modal-category')">+</button>
             </div>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Ngày tạo</label>
-            <input type="date" class="form-control" value="2023-10-25">
-          </div>
-        </div>
+
 
         <div class="form-group">
           <label>Tính năng chụp / quét</label>
@@ -54,13 +49,12 @@
 
         <div class="form-group">
           <label>Hình ảnh sản phẩm</label>
-          <input type="file" class="form-control" accept="image/*">
+          <input id='editProductForm_image' type="file" class="form-control" accept="image/*">
         </div>
-
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('modal-add-product')">Hủy</button>
-        <button class="btn btn-primary" id='btnAddProduct' onclick='submit_addProduct()'>Lưu</button>
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-product')">Hủy</button>
+        <button class="btn btn-primary" id='btnAddProduct' onclick='submit_editProduct()'>Lưu</button>
       </div>
     </div>
     <!-- 2. NƠI GỌI CÁC FILE FORM MODAL VÀO -->
