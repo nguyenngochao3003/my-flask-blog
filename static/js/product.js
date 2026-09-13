@@ -277,9 +277,6 @@ async function render_select_category_supplier() {
   } catch (supplier_error) {
     console.log('supplier_error at func render_select: ', supplier_error);
   }
-  
-  
-
 }
 
 
@@ -298,6 +295,7 @@ document.querySelector('#wrapper').addEventListener('click', async function(e) {
     
     const id = row.dataset.id;
     console.log(`edit dòng ${id} trong bảng product`);
+
     // lấy dữ liệu từ supabase
     const { data: product_data , error } = await userSupabase
       .from('view_product_details')
@@ -312,9 +310,11 @@ document.querySelector('#wrapper').addEventListener('click', async function(e) {
     } 
 
     console.log('product_data', product_data);
-    // load dữ liệu vào form
+    // load dữ liệu vào form và lưu id vói #editProductForm_id để update đúng id khi submit form
+    document.getElementById('editProductForm_id').value = product_data.id;
     document.getElementById('editProductForm_name').value = product_data.product_name;
     document.getElementById('editProductForm_code').value = product_data.code;
+
     // document.getElementById('editProductForm_date').value = product_data.created_at;
 
     // render select trước
@@ -360,6 +360,57 @@ document.querySelector('#wrapper').addEventListener('click', async function(e) {
     }
   }
 });
+
+window.submit_editProduct = submit_editProduct;
+
+async function submit_editProduct() {
+  const id = document.getElementById("editProductForm_id").value;
+  const prod_name = document.getElementById("editProductForm_name").value;
+  const code = document.getElementById("editProductForm_code").value;
+  const id_category = document.getElementById("categorySelectEdit").value;
+  const id_supplier = document.getElementById("supplierSelectEdit").value;
+
+  try {
+    // lấy user
+      const { data: { user }, error } = await userSupabase.auth.getUser();
+      if (error) {
+        if (checkTokenError(error)) return;
+        console.error("Lỗi khác:", error.message);
+        return;
+      }
+      // lấy bảng nhân viên
+      const { data: employee, error: e_err } = await userSupabase
+        .from('employees')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (e_err) throw e_err;
+
+      // chèn vào bảng product
+      const { data, error: insertError } = await userSupabase
+        .from('products')
+        .update({
+          name: prod_name,
+          code_nsx: code,
+          id_supplier,
+          id_category,
+          id_employee: employee.id
+        })
+        .eq('id', id);
+
+      // kiểm tra lỗi >> không lỗi gọi lại trang product
+      if (insertError) {
+        console.error("Insert error:", insertError);
+      } else {
+        console.log("Insert success:", data);
+        window.location.href = "/product";
+      }
+    } catch (err ){
+      console.log('1. lỗi tại nút btnAddProduct: ', err.message);
+    }
+
+}
 
 window.submit_addProduct = submit_addProduct;
 async function submit_addProduct() {
