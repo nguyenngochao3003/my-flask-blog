@@ -1,15 +1,20 @@
   :root {
-    --primary-color: #0d6efd;
+    --primary: #0d6efd;
     --primary-hover: #0b5ed7;
+    --btn-hover: #cbcff3;
     --bg-main: #f4f6f9;
     --sidebar-bg: #0f172a;
     --card-bg: #ffffff;
     --text-main: #1e293b;
     --text-muted: #64748b;
-    --border-color: #e2e8f0;
-    --danger-color: #dc3545;
+    --border: #e2e8f0;
+    --danger: #dc3545;
+    --primary-dark: #2980b9;
+    --success: #2ecc71;
+    --warning: #f1c40f;
+    --radius: 8px;
   }
-
+    
   * {
     box-sizing: border-box;
     margin: 0;
@@ -60,15 +65,9 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
   .sidebar-header i {
     font-size: 24px;
-    color: var(--primary-color);
+    color: var(--primary);
   }
 
   .sidebar-header h2 {
@@ -108,14 +107,17 @@
   }
 
   .sidebar-menu a:hover, .sidebar-menu a.active {
-    background-color: var(--primary-color);
+    background-color: var(--primary);
     color: #ffffff;
   }
 
   /* 2. Main Wrapper */
   .main-wrapper {
+    display: none; /* Ẩn mặc định */
+  }
+  .main-wrapper.active {
+    display: flex; /* Hiện ra với flex layout */
     flex: 1;
-    display: flex;
     flex-direction: column;
     overflow-y: auto;
   }
@@ -124,7 +126,7 @@
   .top-header {
     background-color: #ffffff;
     height: 64px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -185,7 +187,7 @@
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 20px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -210,7 +212,7 @@
     height: 48px;
     border-radius: 10px;
     background-color: #eff6ff;
-    color: var(--primary-color);
+    color: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -246,7 +248,7 @@
   .search-box input {
     width: 100%;
     padding: 10px 14px 10px 38px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
     border-radius: 8px;
     outline: none;
     font-size: 14px;
@@ -272,9 +274,12 @@
     border: none;
     transition: all 0.2s;
   }
+  .btn:hover {
+    background-color: var(--btn-hover);
+  }
 
   .btn-primary {
-    background-color: var(--primary-color);
+    background-color: var(--primary);
     color: #ffffff;
   }
 
@@ -285,7 +290,7 @@
   .btn-secondary {
     background-color: #f1f5f9;
     color: #334155;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
   }
 
   .btn-secondary:hover {
@@ -300,7 +305,7 @@
   .table-container {
     background-color: var(--card-bg);
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
     overflow-x: auto;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
@@ -318,13 +323,13 @@
     padding: 14px 16px;
     font-weight: 600;
     color: var(--text-muted);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
   }
 
   td {
     padding: 14px 16px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border);
     vertical-align: middle;
   }
 
@@ -342,7 +347,7 @@
     border-radius: 6px;
     object-fit: cover;
     background-color: #f1f5f9;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
   }
 
   .code-badge {
@@ -366,7 +371,7 @@
 
   .action-btn:hover {
     background-color: #fee2e2;
-    color: var(--danger-color);
+    color: var(--danger);
   }
 
   /* 6. Form Modal Add Product */
@@ -407,7 +412,7 @@
 
   .modal-header {
     padding: 18px 24px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -450,14 +455,14 @@
   .form-control {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
     outline: none;
   }
 
   .form-control:focus {
-    border-color: var(--primary-color);
+    border-color: var(--primary);
   }
 
   .form-row {
@@ -486,7 +491,7 @@
 
   .modal-footer {
     padding: 16px 24px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -523,12 +528,16 @@
     }
     /* 2. Main Wrapper */
     .main-wrapper {
+      display: none; /* Ẩn mặc định */
+    }
+    .main-wrapper.active {
+      display: flex; /* Hiện ra với flex layout */
       flex: 1;
-      display: flex;
       flex-direction: column;
       overflow-y: auto;
       height: calc(100vh - 60px);
     }
+
 
     /* Điều chỉnh Top Header */
     .top-header {
@@ -717,3 +726,125 @@
     }
     
   }
+  /* ==========================================================*/
+  /*  css cho main-wraper_inventory.html */
+     :root {
+      --bg-main: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-main: #2c3e50;
+      --text-muted: #7f8c8d;
+      --primary: #3498db;
+      --primary-dark: #2980b9;
+      --success: #2ecc71;
+      --warning: #f1c40f;
+      --danger: #e74c3c;
+      --border: #e2e8f0;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); padding-bottom: 40px; }
+
+    /* Header & Navigation */
+    .breadcrumb {
+      background: #fff;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .breadcrumb span { color: var(--primary); cursor: pointer; }
+    .breadcrumb span:hover { text-decoration: underline; }
+    .breadcrumb .current { color: var(--text-muted); cursor: default; }
+
+    
+    /* .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    } */
+    /* .btn-primary { background: var(--primary); color: white; } */
+    /* .btn-primary:hover { background: var(--primary-dark); } */
+    /* .btn-secondary { background: #94a3b8; color: white; } */
+    .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+
+    /* Main Container */
+    .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* Grid Layouts */
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* Cards (Warehouse & Rack) */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .card-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+
+    /* Progress Bar */
+    .progress-container { margin: 12px 0; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+    .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0%; transition: width 0.3s; }
+    .bg-success { background-color: var(--success); }
+    .bg-warning { background-color: var(--warning); }
+    .bg-danger { background-color: var(--danger); }
+
+    /* Cell Matrix (Level 3) */
+    .shelf-floor {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .shelf-floor-title { font-weight: 700; margin-bottom: 12px; color: #475569; border-bottom: 2px solid var(--bg-main); padding-bottom: 6px; }
+    .cells-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .cell-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fafafa;
+      position: relative;
+    }
+    .cell-box.empty { background: #ffffff; border-style: dashed; }
+    .cell-code { font-weight: 700; font-size: 0.85rem; color: var(--primary); margin-bottom: 6px; }
+    .cell-info { font-size: 0.8rem; line-height: 1.4; color: #334155; }
+    .cell-actions { margin-top: 10px; display: flex; gap: 6px; }
+
+    /* Placeholder Image */
+    .img-placeholder {
+      width: 100%;
+      height: 120px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+    }

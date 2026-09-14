@@ -19,31 +19,6 @@
   <!-- Sidebar Navigator -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-brand">
-        <i class="fa-solid fa-boxes-stacked"></i>
-        <h2>Kho Việt</h2>
-      </div>
-      <button class="close-sidebar-btn" onclick="toggleSidebar()">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-    <ul class="sidebar-menu">
-      <li><a href="#"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
-      <li><a href="#" class="active"><i class="fa-solid fa-box"></i> Sản phẩm</a></li>
-      <li><a href="#"><i class="fa-solid fa-warehouse"></i> Kho chứa</a></li>
-      <li><a href="#"><i class="fa-solid fa-arrow-right-arrow-left"></i> Giao dịch</a></li>
-      <li><a href="#"><i class="fa-solid fa-user-gear"></i> Tài khoản</a></li>
-      <li><a href="#"><i class="fa-solid fa-user-gear"></i> đăng xuất </a></li>
-    </ul>
-  </aside>
-
-  <!-- Main Container -->
-  <div class="main-wrapper">
-    <!-- Top Header -->
-    <header class="top-header">
-      <button class="toggle-sidebar-btn" onclick="toggleSidebar()">
-        <i class="fa-solid fa-bars"></i>
-      </button>
       <div class="user-profile">
         <div class="user-avatar">NV</div>
         <div class="user-info">
@@ -51,10 +26,40 @@
           <div class="user-role" id="role"></div>
         </div>
       </div>
+      <button class="close-sidebar-btn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    
+    <ul class="sidebar-menu">
+      <li><a data-target="dashboard" href="#"><i class="fa-solid fa-chart-pie" ></i> Dashboard</a></li>
+      <li><a data-target="product" href="#" class="active"><i class="fa-solid fa-box" ></i> Sản phẩm</a></li>
+      <li><a data-target="inventory" href="#"><i class="fa-solid fa-warehouse" ></i> Kho chứa</a></li>
+      <li><a data-target="transaction" href="#"><i class="fa-solid fa-arrow-right-arrow-left"></i> Giao dịch</a></li>
+      <li><a data-target="account" href="#"><i class="fa-solid fa-user-gear"></i> Tài khoản</a></li>
+      <li><a data-target="logOut" href="#"><i class="fa-solid fa-user-gear"></i> đăng xuất </a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Container -->
+   <div class="main-wrapper" id="dashboard">
+    dashboard
+  </div>
+  <div class="main-wrapper active" id="product">
+    <!-- Top Header -->
+    <header class="top-header">
+      <button class="toggle-sidebar-btn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
     </header>
 
+    <div class="breadcrumb" id="breadcrumb">
+        <span onclick="showLevel(1)">Danh mục sản phẩm</span>
+    </div>
     <!-- Content Body -->
     <main class="content-body" id='wrapper'>
+        <!-- Breadcrumb -->
       
       <!-- Cards tổng quan -->
       <div class="cards-grid">
@@ -125,42 +130,48 @@
         </div>
         <!-- card sản phẩm -->
         <div class="card-container" id="product_card">
-
         </div>
       <!-- thanh điều hướng cho điện thoại máy tính bảng -->
        <!-- Thêm thư viện Font Awesome để lấy icon -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  
-
     </main>
  
   </div>
+  <div class="main-wrapper" id="inventory">
+    {% include 'includes/main-wrapper_inventory.html' %}
+  </div>
+  <div class="main-wrapper" id="account">
+    tài khoản
+  </div>
+  <div class="main-wrapper" id="logOut">
+    đăng xuất
+  </div>
   <nav class="bottom-nav">
-  <a href="#" class="nav-item">
-      <i class="fa-solid fa-border-all nav-icon"></i>
-      <span class="nav-label">Dashboard</span>
-  </a>
+    <a data-target="dashboard" href="#" class="nav-item">
+        <i class="fa-solid fa-border-all nav-icon"></i>
+        <span class="nav-label">Dashboard</span>
+    </a>
 
-  <a href="#" class="nav-item active">
-      <i class="fa-solid fa-box nav-icon"></i>
-      <span class="nav-label">Sản phẩm</span>
-  </a>
+    <a data-target="product" href="#" class="nav-item active">
+        <i class="fa-solid fa-box nav-icon"></i>
+        <span class="nav-label">Sản phẩm</span>
+    </a>
 
-  <a href="#" class="nav-item">
-      <i class="fa-solid fa-store nav-icon"></i>
-      <span class="nav-label">Kho chứa</span>
-  </a>
+    <a data-target="inventory" href="#" class="nav-item">
+        <i class="fa-solid fa-store nav-icon"></i>
+        <span class="nav-label">Kho chứa</span>
+    </a>
 
-  <a href="#" class="nav-item">
-      <i class="fa-solid fa-arrow-right-left nav-icon"></i>
-      <span class="nav-label">Giao dịch</span>
-  </a>
+    <a href="#" class="nav-item">
+        <i class="fa-solid fa-arrow-right-left nav-icon"></i>
+        <span class="nav-label">Giao dịch</span>
+    </a>
 
-  <a href="#" class="nav-item">
-      <i class="fa-regular fa-user nav-icon"></i>
-      <span class="nav-label">Tài khoản</span>
-  </a>
+    <a data-target="account" href="#" class="nav-item">
+        <i class="fa-regular fa-user nav-icon"></i>
+        <span class="nav-label">Tài khoản</span>
+    </a>
   </nav>
   <!-- Form Modal edit Sản Phẩm -->
   {% include 'includes/modal_edit_product.html' %}
@@ -171,6 +182,6 @@
 
   <!-- Nhúng file product.js với type="module" -->
 <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
-
+<script type="module" src="{{ url_for('static', filename='js/inventory.js') }}"></script>
 </body>
 </html>

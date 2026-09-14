@@ -75,6 +75,7 @@ async function initSupabase() {
         headers: { Authorization: `Bearer ${data.access_token}` }
       }
     });
+    window.userSupabase = userSupabase;
 
     if (!userSupabase) {
       console.error("Supabase client chưa khởi tạo");
@@ -91,8 +92,7 @@ async function initSupabase() {
 }
 
 async function handleSessionExpired() {
-  alert('Phiên đăng nhập của bạn đã hết hạn hoặc tài khoản vừa được đăng nhập ở nơi khác. Bấm OK để đăng nhập lại.');
- 
+  
   localStorage.clear();
   sessionStorage.clear();
 
@@ -197,7 +197,7 @@ async function get_product_data() {
   }
 }
 
-function render_product_table(data) {
+async function render_product_table(data) {
   let htmlTableContent = '';
   let htmlCardContent = '';
 
@@ -233,8 +233,16 @@ function render_product_table(data) {
     </div>`;
   }
 
+  // render
   document.querySelector(`#product_table tbody`).innerHTML = htmlTableContent;
   document.querySelector(`#product_card`).innerHTML = htmlCardContent;
+
+  // tắt chỉnh sửa nếu người dùng là nhân viên
+  // lấy dữ liệu từ supabase
+  // if (currentUser.role === 'employee') {
+  //   document.querySelectorAll('.edit-btn').forEach(btn => btn.disabled = true);
+  // }
+  
 }
 
 function render_select(option_data, id) {
@@ -499,3 +507,40 @@ function subscribeRealtime() {
 document.addEventListener("DOMContentLoaded", () => {
   initSupabase();
 });
+
+
+// ẩn hiển các main-wrapper khi user click vào nav
+document.addEventListener("DOMContentLoaded", ()=>{
+  // lặp qua toàn bộ nav add sự kiện click 
+  const navItems  = document.querySelectorAll('.bottom-nav .nav-item, .sidebar-menu a');
+  navItems.forEach(item => {
+    item.addEventListener('click', (e)=>{
+      e.preventDefault();
+
+      // xóa hết active trong wrapper
+      navItems.forEach(nav=>nav.classList.remove('active'));
+
+      // Xóa active trên tất cả main-wrapper
+      document.querySelectorAll(".main-wrapper").forEach(wrapper => {
+        wrapper.classList.remove("active");
+      });
+
+      // add active cho element được click
+      e.currentTarget.classList.add('active');
+      
+      // add active cho cho thẻ wrapper có id trùng với data-target
+      const targetId = e.currentTarget.getAttribute("data-target");
+      console.log('targetId', targetId);
+
+      if (targetId && targetId !== 'logOut') {
+        // add class active cho element có target id
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+          targetElement.classList.add("active");
+        }
+      } else if (targetId && targetId == 'logOut') {
+        handleSessionExpired()
+      }
+    })
+  })
+})

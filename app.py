@@ -113,11 +113,6 @@ def logout():
     session.pop('access_token', None)
     session.clear()
     return jsonify({"status": "success", "message": "Logged out"})
-# ------------------
-
-# hiển thị trang web------------------------------------
-
-
 
 # 2. ROUTE PRODUCT 
 @app.route('/product')
