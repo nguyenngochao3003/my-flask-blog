@@ -218,7 +218,7 @@ async function render_product_table(data) {
 
     // ĐÃ SỬA: Thay {{ url_for(...) }} bằng đường dẫn tĩnh /static/images/image.png
     htmlCardContent += `<div class="product-item" data-id=${p.id}>
-      <img src="/static/images/image.png" alt="Áo Sơ mi Nam" class="product-img">
+      <img src="${p.image_url}" alt="Áo Sơ mi Nam" class="product-img">
       <div class="product-info">
         <h3 class="product-title">${p.product_name}</h3>
         <div class="product-details">
