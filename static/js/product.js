@@ -203,7 +203,7 @@ async function render_product_table(data) {
 
   for (const p of data) {
     htmlTableContent += `<tr data-id="${p.id}">
-      <td><img src="/static/images/image.png" alt="SP" class="product-img"></td>
+      <td><img src="${p.image_url}" alt="SP" class="product-img"></td>
       <td><span class="code-badge">${p.code}</span></td>
       <td><strong>${p.product_name}</strong></td>
       <td>${p.supplier_name}</td>
@@ -427,6 +427,7 @@ async function submit_addProduct() {
   const code = document.getElementById("productForm_code").value;
   const id_category = document.getElementById("categorySelect").value;
   const id_supplier = document.getElementById("supplierSelect").value;
+  const url = document.getElementById("productForm_urlPicture").value;
 
   try {
     // lấy user
@@ -451,9 +452,10 @@ async function submit_addProduct() {
         .insert([{
           name: prod_name,
           code_nsx: code,
-          id_supplier,
-          id_category,
-          id_employee: employee.id
+          id_supplier: id_supplier,
+          id_category: id_category,
+          id_employee: employee.id,
+          image_url: url
         }]);
 
       // kiểm tra lỗi >> không lỗi gọi lại trang product

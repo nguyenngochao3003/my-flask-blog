@@ -13,65 +13,148 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="snap">Chụp ảnh</button>
+            <button class="btn btn-secondary" id="switchCamera">Xoay camera</button>
             <button class="btn btn-secondary" onclick="closeModal('modal-take_picture')">Hủy</button>
-            <button class="btn btn-primary" id='btnAddProduct' onclick='submit_addProduct()'>Lưu</button>
+            <button class="btn btn-primary" id='btnAddProduct' onclick='uploadCanvas()'>Lưu</button>
             
         </div>
     </div>
 </div>
 <script>
-  let stream;
-  let camera_status = false;
+    let stream;
+    let currentDeviceId = null;
+    let camera_status = false;
+    let useFrontCamera = true; // mặc định dùng camera trước
+    async function startCamera(deviceId = null, useFrontCamera = true) {
+        try {
+            const constraints = {
+            video: deviceId
+                ? { deviceId: { exact: deviceId } }
+                : { facingMode: useFrontCamera ? "user" : "environment" }
+            };
 
-  async function start() {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      document.getElementById("video").srcObject = stream;
-      camera_status = true;
-    } catch (err) {
-      console.log("Lỗi: " + err);
-    }
-  }
-
-  function stop() {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      document.getElementById("video").srcObject = null;
-      camera_status = false;
-    }
-  }
-
-  const modal = document.getElementById("modal-take_picture");
-  const observer = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-      if (mutation.attributeName === "class") {
-        if (modal.classList.contains("active")) {
-          start(); // bật camera khi modal mở
-        } else {
-          stop();  // tắt camera khi modal đóng
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            const video = document.getElementById("video");
+            video.srcObject = stream;
+            video.play();
+            camera_status = true;
+        } catch (err) {
+            console.error("Lỗi mở camera:", err.name, err.message);
         }
-      }
-    });
-  });
-  observer.observe(modal, { attributes: true });
-
-  // Nút chụp ảnh
-  document.getElementById("snap").addEventListener("click", () => {
-    let canvas = document.getElementById("canvas");
-    let context = canvas.getContext("2d");
-    let video = document.getElementById("video");
-
-    if (camera_status) {
-      // Chụp ảnh
-        context.drawImage(video, 0, 0, 320, 240);
-        video.style.display = "none";   // ẩn video
-        canvas.style.display = "block"; // hiện canvas
-        stop(); // tắt camera sau khi chụp
-    } else {
-        // Chụp lại: bật camera, ẩn canvas
-        start();
-        video.style.display = "block";   // ẩn video
-        canvas.style.display = "none"; // hiện canvas
     }
-  });
+
+    function stopCamera() {
+        if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        document.getElementById("video").srcObject = null;
+        camera_status = false;
+        }
+    }
+
+    // Liệt kê camera
+    async function listCameras() {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === "videoinput");
+        console.log("Danh sách camera:", videoDevices);
+        return videoDevices;
+    }
+
+    // Ví dụ: nút đổi camera
+    document.getElementById("switchCamera").addEventListener("click", async () => {
+        stopCamera();
+        const cameras = await listCameras();
+        if (cameras.length > 1) {
+            // Đổi sang camera khác
+            currentDeviceId =
+            currentDeviceId === cameras[0].deviceId
+                ? cameras[1].deviceId
+                : cameras[0].deviceId;
+            startCamera(currentDeviceId);
+        } else {
+            // Nếu chỉ có 1 camera (PC), fallback
+            startCamera();
+        }
+    });
+
+    // kiểm tra khi người dùng thêm active hay xóa active khỏi class khi đóng mở form
+    const modal = document.getElementById("modal-take_picture");
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+        if (mutation.attributeName === "class") {
+            if (modal.classList.contains("active")) {
+            startCamera(); // bật camera khi modal mở
+            } else {
+            stopCamera();  // tắt camera khi modal đóng
+            }
+        }
+        });
+    });
+    observer.observe(modal, { attributes: true });
+
+    // Nút chụp ảnh
+    document.getElementById("snap").addEventListener("click", () => {
+        let canvas = document.getElementById("canvas");
+        let context = canvas.getContext("2d");
+        let video = document.getElementById("video");
+
+        if (camera_status) {
+        // Chụp ảnh
+            context.drawImage(video, 0, 0, 320, 240);
+            video.style.display = "none";   // ẩn video
+            canvas.style.display = "block"; // hiện canvas
+            stopCamera(); // tắt camera sau khi chụp
+        } else {
+            // Chụp lại: bật camera, ẩn canvas
+            startCamera();
+            video.style.display = "block";   // ẩn video
+            canvas.style.display = "none"; // hiện canvas
+        }
+    });
+    // Giả sử bạn đã khởi tạo supabase client
+    // Ví dụ: upload ảnh từ canvas vào Supabase Storage
+    async function uploadCanvas() {
+    const canvas = document.getElementById("canvas");
+    const dataUrl = canvas.toDataURL("image/png");
+    const blob = await (await fetch(dataUrl)).blob();
+
+    // tên ảnh sẽ được lưu vào supabase storage
+    const fileName = `snapshot_${Date.now()}.png`;
+
+    // Dùng userSupabase đã được gắn vào window
+    const { data, error } = await window.userSupabase.storage
+        .from("product-images") // bucket "images"
+        .upload(fileName, blob, { contentType: "image/png" });
+
+    if (error) {
+        console.error("Upload lỗi:", error.message);
+    } else {
+        console.log("Upload thành công:", data);
+
+        // Lấy public URL nếu bucket cho phép
+        const { data: publicUrl } = window.userSupabase.storage
+        .from("product-images")
+        .getPublicUrl(fileName);
+
+        // gán link ảnh sản phẩm và hiển thị ảnh
+        const inputUrl = document.getElementById('productForm_urlPicture');
+        if (inputUrl) inputUrl.value = publicUrl.publicUrl;
+
+
+        // gọi uploadCanvas hoặc gắn sự kiện ở đây
+        const productPic = document.getElementById("productForm_picture");
+        if (productPic) {
+            productPic.src = publicUrl.publicUrl;
+            productPic.style.display = "block"; // hiện ảnh sau khi có link
+        } else {
+            console.error("Không tìm thấy thẻ img productForm_picture trong DOM");
+        };
+
+        // in link ảnh ra console
+        console.log("Public URL:", publicUrl.publicUrl);
+    }
+
+    // đóng form modal-take_picture
+    window.closeModal('modal-take_picture');
+    }
+
 </script>
