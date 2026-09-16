@@ -1,0 +1,43 @@
+
+<div  class="modal-overlay" id="modal-import-stock">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id='form_import_stock'>📥 Nhập Hàng Nhanh</h3>
+            <button class="modal-close" onclick="closeModal('modal-import-stock')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    
+        <div class="modal-body">
+            <!-- 1. Quét QR vị trí Cell -->
+            <div class="form-group">
+                <label>Mã Ô/Kệ (Location Cell):</label>
+                <input id='productForm_name' type="text" class="form-control" placeholder="Nhập tên sản phẩm...">
+            </div>
+
+            <!-- 2. Thông tin mặt hàng -->
+            <div class="form-group">
+                <label>Mã Sản phẩm</label>
+                <input  id='productForm_name' type="text" class="form-control"  placeholder="Nhập hoặc quét mã SKU">
+            </div>
+
+            <div class="form-group">
+                <label>Số lượng</label>
+                <input  id='productForm_name' type="number" class="form-control"  value="1" min="1">
+            </div>
+
+            <!-- 3. Chụp hình ảnh thực tế lưu Supabase -->
+            <div class="form-group">
+                <label>4. Chụp hình ảnh hiện trạng sau khi lấy/đặt hàng:</label>
+                <video id="cameraPreview" autoplay playsinline></video>
+                <button class="btn btn-secondary btn-sm" style="margin-top: 6px; width: 100%;" onclick="takeSnapshot()">📸 Chụp Ảnh Hiện Trạng</button>
+                <canvas id="snapshotCanvas" style="display:none;"></canvas>
+                <img id="snapshotPreview" class="snapshot-preview" style="display:none;" alt="Preview">
+            </div>
+        </div>
+
+        <!-- Nút xác nhận -->
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-import-stock')">Hủy</button>
+            <button class="btn btn-primary" id="btnSubmitImportStock" onclick="submitInventoryAction()">Xác Nhận Lưu</button>
+        </div>
+    </div>
+</div>

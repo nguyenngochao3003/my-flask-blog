@@ -48,7 +48,7 @@
           <label>Tính năng chụp / quét</label>
           <div class="media-buttons">
             <button class="btn btn-secondary" onclick="openQRScanner()"><i class="fa-solid fa-qrcode"></i> Quét mã QR</button>
-            <button class="btn btn-secondary"><i class="fa-solid fa-camera"></i> Chụp ảnh sản phẩm</button>
+            <button class="btn btn-secondary" onclick="openModal('modal-take_picture')"><i class="fa-solid fa-camera"></i> Chụp ảnh sản phẩm</button>
           </div>
         </div>
 
@@ -66,6 +66,7 @@
     <!-- 2. NƠI GỌI CÁC FILE FORM MODAL VÀO -->
   {% include 'includes/modal_add_supplier.html' %}
   {% include 'includes/modal_add_category.html' %}
+  {% include 'includes/modal_take_picture.html' %}
     
-  </div>
+</div>
   

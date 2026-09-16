@@ -1,0 +1,77 @@
+<style>
+
+</style>
+<div class="modal-overlay" id="modal-take_picture">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id='form_add_product'>Chụp ảnh từ webcam</h3>
+            <button class="modal-close" onclick="closeModal('modal-take_picture')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <video id="video" width="320" height="240" autoplay></video>
+            <canvas id="canvas" width="320" height="240"></canvas>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="snap">Chụp ảnh</button>
+            <button class="btn btn-secondary" onclick="closeModal('modal-take_picture')">Hủy</button>
+            <button class="btn btn-primary" id='btnAddProduct' onclick='submit_addProduct()'>Lưu</button>
+            
+        </div>
+    </div>
+</div>
+<script>
+  let stream;
+  let camera_status = false;
+
+  async function start() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      document.getElementById("video").srcObject = stream;
+      camera_status = true;
+    } catch (err) {
+      console.log("Lỗi: " + err);
+    }
+  }
+
+  function stop() {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      document.getElementById("video").srcObject = null;
+      camera_status = false;
+    }
+  }
+
+  const modal = document.getElementById("modal-take_picture");
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      if (mutation.attributeName === "class") {
+        if (modal.classList.contains("active")) {
+          start(); // bật camera khi modal mở
+        } else {
+          stop();  // tắt camera khi modal đóng
+        }
+      }
+    });
+  });
+  observer.observe(modal, { attributes: true });
+
+  // Nút chụp ảnh
+  document.getElementById("snap").addEventListener("click", () => {
+    let canvas = document.getElementById("canvas");
+    let context = canvas.getContext("2d");
+    let video = document.getElementById("video");
+
+    if (camera_status) {
+      // Chụp ảnh
+        context.drawImage(video, 0, 0, 320, 240);
+        video.style.display = "none";   // ẩn video
+        canvas.style.display = "block"; // hiện canvas
+        stop(); // tắt camera sau khi chụp
+    } else {
+        // Chụp lại: bật camera, ẩn canvas
+        start();
+        video.style.display = "block";   // ẩn video
+        canvas.style.display = "none"; // hiện canvas
+    }
+  });
+</script>

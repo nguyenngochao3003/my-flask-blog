@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chụp hình bằng HTML</title>
+</head>
+<body>
+  <h2>Chụp ảnh từ webcam</h2>
+  <video id="video" width="320" height="240" autoplay></video>
+  <button id="snap">Chụp ảnh</button>
+  <canvas id="canvas" width="320" height="240"></canvas>
+
+  <script>
+    // Lấy video từ webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function(stream) {
+        document.getElementById('video').srcObject = stream;
+      })
+      .catch(function(err) {
+        console.log("Lỗi: " + err);
+      });
+
+    // Chụp ảnh khi bấm nút
+    document.getElementById("snap").addEventListener("click", function() {
+      let canvas = document.getElementById("canvas");
+      let context = canvas.getContext("2d");
+      let video = document.getElementById("video");
+      context.drawImage(video, 0, 0, 320, 240);
+    });
+  </script>
+</body>
+</html>

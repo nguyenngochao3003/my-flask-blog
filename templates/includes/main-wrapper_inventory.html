@@ -14,7 +14,7 @@
     <div class="toolbar">
       <div class="toolbar-actions" id="actionButtons">
           <button class="btn btn-primary" onclick="alert('Mở Popup Tạo Kho Mới')">+ Tạo Kho Mới</button>
-          <button class="btn btn-in" onclick="openQuickActionModal('IN')">📥 NHẬP HÀNG NHANH (QR)</button>
+          <button class="btn btn-in" onclick="openModal('modal-import-stock')">📥 NHẬP HÀNG NHANH (QR)</button>
           <button class="btn btn-out" onclick="openQuickActionModal('OUT')">📤 XUẤT HÀNG NHANH (QR)</button>
           <button class="btn btn-report" onclick="showLevel('REPORT')">📊 BÁO CÁO KHO</button>
       </div>
@@ -42,45 +42,9 @@
       </div>
 
     </div>
-    <!-- MODAL THAO TÁC NHẬP / XUẤT VÀ QUÉT MÃ QR -->
-    <div class="modal" id="actionModal">
-      <div class="modal-content">
-        <h3 id="modalTitle" style="margin-bottom: 12px;">📥 Nhập Hàng Nhanh</h3>
-        
-        <!-- 1. Quét QR vị trí Cell -->
-        <div class="form-group">
-          <label>1. Quét QR Mã Ô/Kệ (Location Cell):</label>
-          <div id="reader"></div>
-          <input type="text" id="inputCellCode" placeholder="Mã ô kệ (VD: K01-T3-O1)" readonly style="background:#f1f5f9;">
-        </div>
 
-        <!-- 2. Thông tin mặt hàng -->
-        <div class="form-group">
-          <label>2. Mã SKU / Mã vạch sản phẩm:</label>
-          <input type="text" id="inputSKU" placeholder="Nhập hoặc quét mã SKU">
-        </div>
-
-        <div class="form-group">
-          <label>3. Số lượng:</label>
-          <input type="number" id="inputQty" value="1" min="1">
-        </div>
-
-        <!-- 3. Chụp hình ảnh thực tế lưu Supabase -->
-        <div class="form-group">
-          <label>4. Chụp hình ảnh hiện trạng sau khi lấy/đặt hàng:</label>
-          <video id="cameraPreview" autoplay playsinline></video>
-          <button class="btn btn-secondary btn-sm" style="margin-top: 6px; width: 100%;" onclick="takeSnapshot()">📸 Chụp Ảnh Hiện Trạng</button>
-          <canvas id="snapshotCanvas" style="display:none;"></canvas>
-          <img id="snapshotPreview" class="snapshot-preview" style="display:none;" alt="Preview">
-        </div>
-
-        <!-- Nút xác nhận -->
-        <div style="display:flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
-          <button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
-          <button class="btn btn-in" id="btnSubmitAction" onclick="submitInventoryAction()">Xác Nhận Lưu</button>
-        </div>
-      </div>
-    </div>
   </main>
+    <!-- Form Modal nhập kho -->
+  {% include 'includes/modal_import_stock.html' %}
   
 </body>
