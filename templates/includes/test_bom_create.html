@@ -355,17 +355,18 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     let selectedRow = null;
-    let isEditing = false;
+    let isEditing = false; // là gì
     let activeCategoryCellTarget = null;
 
-    const mainTable = document.getElementById("main-bom-table");
-    const libTable = document.getElementById("lib-bom-table");
-    const selectedInfo = document.getElementById("selected-info");
+    const mainTable = document.getElementById("main-bom-table"); // bom chính
+    const libTable = document.getElementById("lib-bom-table"); // bom từ libary
+    const selectedInfo = document.getElementById("selected-info");  // thông tin hàng được chọn
 
     // 1. Quản lý Tiến trình Giai đoạn BOM (S-BOM > E-BOM > P-BOM)
     const pipelineSteps = document.querySelectorAll(".pipeline-step");
     const stageInput = document.getElementById("in-bom-stage");
 
+    // add active class cho các giai đoạn trong BOM được click >> các nút này chỉ hiển thị theo từng giai đoạn
     pipelineSteps.forEach(step => {
         step.addEventListener("click", () => {
             pipelineSteps.forEach(s => s.classList.remove("active"));
@@ -374,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Toggle Sidebar & Checkbox
+    // Toggle Sidebar & Checkbox >> chỗ này làm gì cho công đoạn sau
     document.getElementById("btn-toggle-checkbox").addEventListener("click", () => mainTable.classList.toggle("show-checkbox"));
     document.getElementById("btn-toggle-lib-checkbox").addEventListener("click", () => libTable.classList.toggle("show-checkbox"));
     document.getElementById("btn-toggle-sidebar").addEventListener("click", () => document.getElementById("sidebar-lib").classList.toggle("active"));
@@ -383,21 +384,25 @@ document.addEventListener("DOMContentLoaded", function() {
     const modal = document.getElementById("treeview-modal");
     document.getElementById("close-tree-modal").addEventListener("click", () => modal.style.display = "none");
 
+     // 2.1 khi click vào ô vật tư trong bảng bom thì hiển thị form danh mục vật tư
+    // class: cat-cell là link tới doanh mục vật tư đang chọn
     mainTable.addEventListener("click", function(e) {
         if (e.target.classList.contains("cat-cell")) {
-            activeCategoryCellTarget = e.target;
-            modal.style.display = "block";
+            activeCategoryCellTarget = e.target; // gán bằng danh mục vật tư vừa được click
+            modal.style.display = "block"; 
         }
     });
 
+    // 2.2 ẩn các hàng không trùng
     document.getElementById("tree-search").addEventListener("input", function(e) {
         let keyword = e.target.value.toLowerCase();
         document.querySelectorAll("#treeview-tbody tr").forEach(tr => {
-            let text = tr.textContent.toLowerCase();
-            tr.style.display = text.includes(keyword) ? "" : "none";
+            let text = tr.textContent.toLowerCase(); // lấy các text trong các ô 
+            tr.style.display = text.includes(keyword) ? "" : "none"; // display = '' sẽ trả về giá trị nguyên bản của display cho element đó
         });
     });
 
+    // 2.3 lấy dữ liệu trong form và gán dữ liệu vào bảng bom
     document.querySelectorAll(".btn-select-tree").forEach(btn => {
         btn.addEventListener("click", function() {
             let tr = this.closest("tr");
@@ -406,7 +411,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let mat = tr.getAttribute("data-mat");
 
             if (activeCategoryCellTarget) {
-                activeCategoryCellTarget.textContent = `${groupName} > ${mat}`;
+                activeCategoryCellTarget.textContent = `${groupName} > ${mat}`; // gán ô category mới chọn trong bảng bom bằng danh mục vừa chọn
                 let row = activeCategoryCellTarget.closest("tr");
                 // Cập nhật tự động select tương ứng trên hàng
                 if(row.querySelector(".mfg-cell")) row.querySelector(".mfg-cell").textContent = mfg;
@@ -417,29 +422,41 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     // 3. Chọn dòng & Toggle cây
+    // không chọn row nếu đang ở chế độ Edit
+    // đóng mở các toggle khi lick vào Toggle
+    // nếu có hộp kiểm thì bỏ qua class: "row-checkbox"
+    // select row = dòng được click 
     mainTable.addEventListener("click", function(e) {
-        if (isEditing) return;
+        if (isEditing) return; // isEditing là gì
         const row = e.target.closest("tr");
-        if (!row || row.parentElement.tagName === "THEAD" || e.target.classList.contains("cat-cell")) return;
 
+        // 3.1 bỏ qua nếu người dùng click nhầm vào header hay category cell
+        if (!row || row.parentElement.tagName === "THEAD" || e.target.classList.contains("cat-cell")) return;
+        
+        // 3.2  đóng hoặc mở ra khi nhấn vào toggle
         if (e.target.classList.contains("toggle-btn")) {
             const currentId = row.getAttribute("data-id");
-            const isExpanded = e.target.textContent === "▼";
-            e.target.textContent = isExpanded ? "▶" : "▼";
+            const isExpanded = e.target.textContent === "▼"; // isExpanded trả về true nếu có  "▼"
+            console.log('3. kiểm tra isExpanded: ', isExpanded);
+            e.target.textContent = isExpanded ? "▶" : "▼"; 
             toggleChildren(mainTable, currentId, !isExpanded);
             return;
         }
 
-        if (e.target.classList.contains("row-checkbox")) return;
+        // 3.3 không chọn hàng nếu có hộp kiểm được tích ????????????????
+        if (e.target.classList.contains("row-checkbox")) return; 
 
         mainTable.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
         row.classList.add("selected");
+        console.log('3.3 row', row.textContent);
+
         selectedRow = row;
         const rowName = row.querySelector(".node-name").textContent.replace(/[▶▼]/g, "").trim();
         selectedInfo.textContent = `✓ Đang chọn: "${rowName}"`;
         selectedInfo.style.color = "#28a745";
     });
 
+    // 3.4 chạy đệ quy đến khi mở hết hoặc đóng hết các id con trong bảng
     function toggleChildren(table, parentId, show) {
         table.querySelectorAll(`tr[data-parent="${parentId}"]`).forEach(child => {
             if (show) {
@@ -457,7 +474,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("btn-delete-checked").addEventListener("click", () => {
         const checkedRows = Array.from(mainTable.querySelectorAll("tbody tr")).filter(r => {
             const cb = r.querySelector(".row-checkbox");
-            return cb && cb.checked;
+            return cb && cb.checked; // checkedRows sẽ trả về các dòng được checked
         });
 
         if (checkedRows.length === 0) {
@@ -475,22 +492,26 @@ document.addEventListener("DOMContentLoaded", function() {
     // 5. Chỉnh sửa Inline (Fix lỗi lưu lặp nhiều lần không mất dòng)
     const btnEdit = document.getElementById("btn-edit-inline");
     const btnSave = document.getElementById("btn-save-inline");
-
+    // 5.1 khi bấm vào nút edit
     btnEdit.addEventListener("click", () => {
         if (!selectedRow) {
             alert("Vui lòng chọn dòng cần sửa trên bảng!");
             return;
         }
+        // ẩn nut edit và hiện nút save
         isEditing = true;
         btnEdit.style.display = "none";
         btnSave.style.display = "inline-block";
 
         // Chuyển các cột thành input/select tương ứng
         let nameTd = selectedRow.children[0];
-        let nameText = nameTd.textContent.replace(/[▶▼]/g, "").trim();
+        let nameText = nameTd.textContent.replace(/[▶▼]/g, "").trim(); // chỉ lấy tên bỏ biểu tượng toggle
+        console.log('5.1 nameTd: ', nameTd, ' nameText: ' , nameText);
         let hasToggle = nameTd.querySelector(".toggle-btn") ? nameTd.querySelector(".toggle-btn").outerHTML : '';
         let hasCb = nameTd.querySelector(".row-checkbox") ? nameTd.querySelector(".row-checkbox").outerHTML : '';
+        console.log('5.1 hasToggle: ', hasToggle, ' hasCb: ', hasCb);
         nameTd.innerHTML = `${hasCb}${hasToggle}<input type="text" class="inline-input" value="${nameText}">`;
+
 
         for (let i = 1; i < selectedRow.children.length; i++) {
             let td = selectedRow.children[i];
@@ -505,13 +526,19 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+    //5.2 lưu dữ liệu được chỉnh sửa vào bảng BOM
     btnSave.addEventListener("click", () => {
         if (!selectedRow) return;
         isEditing = false;
         btnSave.style.display = "none";
         btnEdit.style.display = "inline-block";
+        console.log('5.2 selectRow.children ', selectedRow.children);
 
-        let newName = selectedRow.children[0].querySelector("input").value;
+        // Tìm chính xác input nhập tên (loại bỏ checkbox)
+        let nameInput = selectedRow.children[0].querySelector("input[type='text']") 
+                    || selectedRow.children[0].querySelector("input:not(.row-checkbox)");
+
+        let newName = nameInput ? nameInput.value : "";
         let l = selectedRow.children[1].querySelector("input").value;
         let w = selectedRow.children[2].querySelector("input").value;
         let h = selectedRow.children[3].querySelector("input").value;
@@ -525,7 +552,8 @@ document.addEventListener("DOMContentLoaded", function() {
         let badgeClass = stage === 'S-BOM' ? 'badge-s-bom' : (stage === 'E-BOM' ? 'badge-e-bom' : 'badge-p-bom');
         let hasToggle = selectedRow.children[0].querySelector(".toggle-btn") ? selectedRow.children[0].querySelector(".toggle-btn").outerHTML : '<span class="toggle-btn" style="visibility:hidden">▶</span>';
         let hasCb = selectedRow.children[0].querySelector(".row-checkbox") ? selectedRow.children[0].querySelector(".row-checkbox").outerHTML : '<input type="checkbox" class="row-checkbox">';
-
+        
+        console.log('5.2 kiểm tra newName khi bấm nút lưu: ', newName);
         selectedRow.children[0].innerHTML = `${hasCb}${hasToggle} ${newName}`;
         selectedRow.children[1].textContent = l;
         selectedRow.children[2].textContent = w;
