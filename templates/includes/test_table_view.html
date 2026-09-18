@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Table Tree View với Form và Phím tắt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .toggle-btn {
+            cursor: pointer;
+            margin-right: 5px;
+            display: inline-block;
+            width: 15px;
+            user-select: none;
+        }
+        /* Thụt lề động tùy theo level */
+        .level-0 .node-name { padding-left: 0px; }
+        .level-1 .node-name { padding-left: 20px; }
+        .level-2 .node-name { padding-left: 40px; }
+        .level-3 .node-name { padding-left: 60px; }
+        .level-4 .node-name { padding-left: 80px; }
+        
+        .hidden {
+            display: none !important;
+        }
+        /* Style cho dòng đang được chọn */
+        tr.selected {
+            background-color: #e2f0d9 !important;
+        }
+        tr {
+            cursor: pointer;
+        }
+        /* Style cho Form nhập liệu */
+        .form-container {
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .form-container h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #333;
+        }
+        .form-group {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .form-group input, .form-group select {
+            padding: 6px;
+            width: 180px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .form-actions {
+            margin-top: 5px;
+        }
+        .form-actions button {
+            padding: 8px 14px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+        .form-actions button:hover {
+            background-color: #0056b3;
+        }
+        .hint {
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- FORM NHẬP LIỆU -->
+<div class="form-container">
+    <h3>📝 Thêm Thành Phần Mới</h3>
+    <div class="form-group">
+        <label>Tên Thành Phần:</label>
+        <input type="text" id="input-name" placeholder="Nhập tên...">
+    </div>
+    <div class="form-group">
+        <label>Loại:</label>
+        <select id="input-type">
+            <option value="Thư mục">Thư mục</option>
+            <option value="Tệp tin">Tệp tin</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Mô tả:</label>
+        <input type="text" id="input-desc" placeholder="Nhập mô tả...">
+    </div>
+    <div class="form-actions">
+        <button id="btn-add-child">➕ Thêm dòng con</button>
+        <button id="btn-add-sibling" style="background-color: #28a745;">➕ Thêm dòng cùng cấp</button>
+        <span id="selected-info" style="margin-left: 15px; font-style: italic; color: #d9534f; font-size: 13px;">⚠️ Chưa chọn dòng nào trên bảng!</span>
+    </div>
+</div>
+
+<div class="hint">
+    💡 <b>Mẹo thao tác nhanh:</b> Click chọn dòng trên bảng, sau đó dùng phím <b>Tab / Shift+Tab</b> để thụt lề (đổi cấp), hoặc <b>Alt + Mũi tên Lên/Xuống</b> để đổi vị trí.
+</div>
+
+<!-- BẢNG HIỂN THỊ -->
+<table>
+    <thead>
+        <tr>
+            <th>Tên Thành Phần</th>
+            <th>Loại</th>
+            <th>Mô tả</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Gốc cấp 0 -->
+        <tr data-id="1" data-parent="" class="level-0">
+            <td class="node-name"><span class="toggle-btn">▶</span> Dự án A</td>
+            <td>Thư mục</td>
+            <td>Dự án chính</td>
+        </tr>
+        <!-- Con cấp 1 của Gốc 1 -->
+        <tr data-id="1-1" data-parent="1" class="level-1 hidden">
+            <td class="node-name"><span class="toggle-btn">▶</span> Frontend</td>
+            <td>Thư mục</td>
+            <td>Mã nguồn giao diện</td>
+        </tr>
+        <!-- Con cấp 2 của Con 1-1 -->
+        <tr data-id="1-1-1" data-parent="1-1" class="level-2 hidden">
+            <td class="node-name">index.html</td>
+            <td>Tệp tin</td>
+            <td>Trang chủ</td>
+        </tr>
+        <tr data-id="1-1-2" data-parent="1-1" class="level-2 hidden">
+            <td class="node-name">style.css</td>
+            <td>Tệp tin</td>
+            <td>Định dạng slide</td>
+        </tr>
+        <!-- Con cấp 1 khác của Gốc 1 -->
+        <tr data-id="1-2" data-parent="1" class="level-1 hidden">
+            <td class="node-name"><span class="toggle-btn">▶</span> Backend</td>
+            <td>Thư mục</td>
+            <td>Mã nguồn xử lý</td>
+        </tr>
+        <tr data-id="1-2-1" data-parent="1-2" class="level-2 hidden">
+            <td class="node-name">server.js</td>
+            <td>Tệp tin</td>
+            <td>Khởi tạo server</td>
+        </tr>
+        
+        <!-- Gốc cấp 0 khác -->
+        <tr data-id="2" data-parent="" class="level-0">
+            <td class="node-name"><span class="toggle-btn">▶</span> Dự án B</td>
+            <td>Thư mục</td>
+            <td>Dự án phụ</td>
+        </tr>
+        <tr data-id="2-1" data-parent="2" class="level-1 hidden">
+            <td class="node-name">README.md</td>
+            <td>Tệp tin</td>
+            <td>Hướng dẫn</td>
+        </tr>
+    </tbody>
+</table>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const table = document.querySelector("table");
+    let selectedRow = null;
+    const selectedInfo = document.getElementById("selected-info");
+
+    // 1. Click chọn dòng trên bảng
+    table.addEventListener("click", function(e) {
+        const row = e.target.closest("tr");
+        if (!row || row.parentElement.tagName === "THEAD") return;
+
+        // Nếu click vào nút toggle thì mở rộng/thu gọn nhánh
+        if (e.target.classList.contains("toggle-btn")) {
+            const currentId = row.getAttribute("data-id");
+            if (e.target.textContent === "▶") {
+                e.target.textContent = "▼";
+                expandNode(currentId);
+            } else {
+                e.target.textContent = "▶";
+                collapseNode(currentId);
+            }
+            return;
+        }
+
+        // Đổi trạng thái chọn dòng
+        if (selectedRow) {
+            selectedRow.classList.remove("selected");
+        }
+        selectedRow = row;
+        selectedRow.classList.add("selected");
+        
+        // Hiển thị tên dòng đang chọn ra thông báo
+        const rowName = selectedRow.querySelector(".node-name").textContent.replace(/[▶▼]/g, "").trim();
+        selectedInfo.textContent = `✓ Đang chọn: "${rowName}"`;
+        selectedInfo.style.color = "#28a745";
+    });
+
+    function expandNode(parentId) {
+        const children = table.querySelectorAll(`tr[data-parent="${parentId}"]`);
+        children.forEach(child => child.classList.remove("hidden"));
+    }
+
+    function collapseNode(parentId) {
+        const children = table.querySelectorAll(`tr[data-parent="${parentId}"]`);
+        children.forEach(child => {
+            child.classList.add("hidden");
+            const toggleBtn = child.querySelector(".toggle-btn");
+            if (toggleBtn && toggleBtn.textContent === "▼") {
+                toggleBtn.textContent = "▶";
+            }
+            collapseNode(child.getAttribute("data-id"));
+        });
+    }
+
+    // 2. Xử lý thêm dòng qua Form
+    function handleAddRow(isChild) {
+        if (!selectedRow) {
+            alert("Vui lòng click chọn một dòng trên bảng để làm mốc trước!");
+            return;
+        }
+
+        const nameInput = document.getElementById("input-name");
+        const typeInput = document.getElementById("input-type");
+        const descInput = document.getElementById("input-desc");
+
+        const name = nameInput.value.trim();
+        if (!name) {
+            alert("Vui lòng nhập tên thành phần!");
+            nameInput.focus();
+            return;
+        }
+
+        const type = typeInput.value;
+        const desc = descInput.value.trim();
+
+        // Xác định cấp độ (level) và parentId dựa vào dòng đang chọn
+        const currentLevel = parseInt(selectedRow.className.match(/level-(\d+)/)[1]);
+        const parentId = isChild ? selectedRow.getAttribute("data-id") : selectedRow.getAttribute("data-parent");
+        const newLevel = isChild ? currentLevel + 1 : currentLevel;
+
+        const newId = 'row_' + Math.random().toString(36).substr(2, 9);
+
+        // Tạo thẻ tr mới
+        const newTr = document.createElement("tr");
+        newTr.setAttribute("data-id", newId);
+        newTr.setAttribute("data-parent", parentId || "");
+        newTr.className = `level-${newLevel}`;
+
+        // Nếu là thư mục thì thêm sẵn nút toggle (ẩn đi nếu chưa có con, hoặc để mặc định)
+        let toggleHtml = '';
+        if (type === 'Thư mục') {
+            toggleHtml = '<span class="toggle-btn">▶</span>';
+        } else {
+            toggleHtml = '<span class="toggle-btn" style="visibility:hidden;">▶</span>';
+        }
+
+        newTr.innerHTML = `
+            <td class="node-name">${toggleHtml}${name}</td>
+            <td>${type}</td>
+            <td>${desc}</td>
+        `;
+
+        // Xác định vị trí chèn vào bảng
+        let insertTarget = selectedRow;
+        if (isChild) {
+            // Mở rộng dòng cha nếu đang đóng
+            const toggleBtn = selectedRow.querySelector(".toggle-btn");
+            if (toggleBtn && toggleBtn.style.visibility !== 'hidden') {
+                toggleBtn.textContent = "▼";
+            }
+            expandNode(selectedRow.getAttribute("data-id"));
+            // Chèn ngay sau dòng cha hoặc cuối nhánh con hiện có
+            insertTarget = getLastNodeOfBranch(selectedRow);
+        } else {
+            // Thêm cùng cấp: chèn sau nhánh hiện tại của dòng đang chọn
+            insertTarget = getLastNodeOfBranch(selectedRow);
+        }
+
+        insertTarget.after(newTr);
+
+        // Đảm bảo dòng cha có nút toggle nếu đây là con đầu tiên
+        if (isChild) {
+            ensureToggleExists(selectedRow);
+        }
+
+        // Reset form và chuyển lựa chọn sang dòng mới tạo
+        nameInput.value = "";
+        descInput.value = "";
+        selectedRow.classList.remove("selected");
+        selectedRow = newTr;
+        selectedRow.classList.add("selected");
+        selectedInfo.textContent = `✓ Đang chọn: "${name}"`;
+        nameInput.focus();
+    }
+
+    function ensureToggleExists(row) {
+        const toggleBtn = row.querySelector(".toggle-btn");
+        if (toggleBtn && toggleBtn.style.visibility === 'hidden') {
+            toggleBtn.style.visibility = 'visible';
+            toggleBtn.textContent = "▼";
+        }
+    }
+
+    function getLastNodeOfBranch(row) {
+        let last = row;
+        const rowId = row.getAttribute("data-id");
+        const children = table.querySelectorAll(`tr[data-parent="${rowId}"]`);
+        if (children.length > 0) {
+            const lastChild = children[children.length - 1];
+            last = getLastNodeOfBranch(lastChild);
+        }
+        return last;
+    }
+
+    // Sự kiện bấm nút trên Form
+    document.getElementById("btn-add-child").addEventListener("click", () => handleAddRow(true));
+    document.getElementById("btn-add-sibling").addEventListener("click", () => handleAddRow(false));
+
+    // 3. Phím tắt: Tab, Shift+Tab, Alt + Up/Down
+    document.addEventListener("keydown", function(e) {
+        // Tránh bắt sự kiện phím khi đang gõ trong ô Input của form
+        if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "SELECT") {
+            return;
+        }
+        if (!selectedRow) return;
+
+        // Phím Tab / Shift + Tab (Thụt lề / Đẩy cấp)
+        if (e.key === "Tab") {
+            e.preventDefault();
+            const currentLevel = parseInt(selectedRow.className.match(/level-(\d+)/)[1]);
+            
+            if (!e.shiftKey) {
+                // Tab: Tăng cấp (thành con của dòng phía trên nó)
+                const prevRow = selectedRow.previousElementSibling;
+                if (prevRow && !prevRow.classList.contains("hidden")) {
+                    const prevLevel = parseInt(prevRow.className.match(/level-(\d+)/)[1]);
+                    if (currentLevel <= prevLevel) {
+                        const newLevel = currentLevel + 1;
+                        selectedRow.className = `level-${newLevel}`;
+                        selectedRow.setAttribute("data-parent", prevRow.getAttribute("data-id"));
+                        ensureToggleExists(prevRow);
+                    }
+                }
+            } else {
+                // Shift + Tab: Giảm cấp (đẩy ra ngoài)
+                if (currentLevel > 0) {
+                    const parentId = selectedRow.getAttribute("data-parent");
+                    const parentRow = table.querySelector(`tr[data-id="${parentId}"]`);
+                    if (parentRow) {
+                        const grandParentId = parentRow.getAttribute("data-parent");
+                        const newLevel = currentLevel - 1;
+                        selectedRow.className = `level-${newLevel}`;
+                        selectedRow.setAttribute("data-parent", grandParentId || "");
+                    }
+                }
+            }
+        }
+
+        // Alt + Mũi tên Lên/Xuống (Dời vị trí dòng)
+        if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            e.preventDefault();
+            if (e.key === "ArrowUp") {
+                const prev = selectedRow.previousElementSibling;
+                if (prev) {
+                    selectedRow.parentNode.insertBefore(selectedRow, prev);
+                }
+            } else if (e.key === "ArrowDown") {
+                const next = selectedRow.nextElementSibling;
+                if (next) {
+                    next.after(selectedRow);
+                }
+            }
+        }
+    });
+});
+</script>
+
+</body>
+</html>

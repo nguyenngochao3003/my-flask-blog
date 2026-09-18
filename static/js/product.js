@@ -242,7 +242,8 @@ async function render_product_table(data) {
   // if (currentUser.role === 'employee') {
   //   document.querySelectorAll('.edit-btn').forEach(btn => btn.disabled = true);
   // }
-  
+
+   
 }
 
 function render_select(option_data, id) {
