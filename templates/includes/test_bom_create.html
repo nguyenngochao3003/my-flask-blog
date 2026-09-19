@@ -380,6 +380,21 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("btn-toggle-lib-checkbox").addEventListener("click", () => libTable.classList.toggle("show-checkbox"));
     document.getElementById("btn-toggle-sidebar").addEventListener("click", () => document.getElementById("sidebar-lib").classList.toggle("active"));
 
+   
+    
+    // check box cho row và các child trong treeview của bảng
+    function setRowAndSubtreeChecked(table, row, isChecked) {
+        let cb = row.querySelector(".row-checkbox");
+        if (cb) cb.checked = isChecked;
+
+        let rowId = row.getAttribute("data-id");
+        let children = table.querySelectorAll(`tr[data-parent="${rowId}"]`);
+        children.forEach(child => {
+            setRowAndSubtreeChecked(table, child, isChecked);
+        });
+    }
+
+
     // 2. Treeview Modal xử lý danh mục vật tư
     const modal = document.getElementById("treeview-modal");
     document.getElementById("close-tree-modal").addEventListener("click", () => modal.style.display = "none");
@@ -421,29 +436,54 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
+    // chọn các check box con cho lib-bom
+    function checkboxAndToggle(table, check=true, toggle=true){
+        table.addEventListener("click", function(e) {
+            if (isEditing) return; // isEditing là khi bấm vào nút edit
+
+            const row = e.target.closest("tr");
+
+            // 3.1 bỏ qua nếu người dùng click nhầm vào header hay category cell
+            if (!row || row.parentElement.tagName === "THEAD" || e.target.classList.contains("cat-cell")) return;
+
+            const checkbox = row.querySelector(".row-checkbox");
+
+            // Nếu click trực tiếp vào checkbox sẽ chọn tất cả các check box trong các dòng con
+            if (e.target === checkbox) {
+                let newState = checkbox.checked;
+                console.log('kiểm tra giá trị của newState khi check box: ', newState);
+                setRowAndSubtreeChecked(table, row, newState);
+            } 
+            // đóng mở các toggle
+            // 3.2  đóng hoặc mở ra khi nhấn vào toggle
+            if (e.target.classList.contains("toggle-btn")) {
+                const currentId = row.getAttribute("data-id");
+                const isExpanded = e.target.textContent === "▼"; // isExpanded trả về true nếu có  "▼"
+                console.log('3. kiểm tra isExpanded: ', isExpanded);
+                e.target.textContent = isExpanded ? "▶" : "▼"; 
+                toggleChildren(table, currentId, !isExpanded);
+                return;
+            }
+        })
+    };
+    checkboxAndToggle(libTable);
+    checkboxAndToggle(mainTable);
+    
+
     // 3. Chọn dòng & Toggle cây
     // không chọn row nếu đang ở chế độ Edit
     // đóng mở các toggle khi lick vào Toggle
     // nếu có hộp kiểm thì bỏ qua class: "row-checkbox"
     // select row = dòng được click 
     mainTable.addEventListener("click", function(e) {
-        if (isEditing) return; // isEditing là gì
+        if (isEditing) return; // isEditing là khi bấm vào nút edit
         const row = e.target.closest("tr");
 
         // 3.1 bỏ qua nếu người dùng click nhầm vào header hay category cell
         if (!row || row.parentElement.tagName === "THEAD" || e.target.classList.contains("cat-cell")) return;
         
-        // 3.2  đóng hoặc mở ra khi nhấn vào toggle
-        if (e.target.classList.contains("toggle-btn")) {
-            const currentId = row.getAttribute("data-id");
-            const isExpanded = e.target.textContent === "▼"; // isExpanded trả về true nếu có  "▼"
-            console.log('3. kiểm tra isExpanded: ', isExpanded);
-            e.target.textContent = isExpanded ? "▶" : "▼"; 
-            toggleChildren(mainTable, currentId, !isExpanded);
-            return;
-        }
-
-        // 3.3 không chọn hàng nếu có hộp kiểm được tích ????????????????
+        
+        // 3.3 không chọn hàng nếu có hộp kiểm được tích 
         if (e.target.classList.contains("row-checkbox")) return; 
 
         mainTable.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
@@ -492,8 +532,9 @@ document.addEventListener("DOMContentLoaded", function() {
     // 5. Chỉnh sửa Inline (Fix lỗi lưu lặp nhiều lần không mất dòng)
     const btnEdit = document.getElementById("btn-edit-inline");
     const btnSave = document.getElementById("btn-save-inline");
+
     // 5.1 khi bấm vào nút edit
-    btnEdit.addEventListener("click", () => {
+    function editRowBOM() {
         if (!selectedRow) {
             alert("Vui lòng chọn dòng cần sửa trên bảng!");
             return;
@@ -524,6 +565,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 td.innerHTML = `<input type="text" class="inline-input" value="${val}">`;
             }
         }
+    };
+    btnEdit.addEventListener("click", () => {
+        editRowBOM();
     });
 
     //5.2 lưu dữ liệu được chỉnh sửa vào bảng BOM
@@ -573,10 +617,10 @@ document.addEventListener("DOMContentLoaded", function() {
         alert("Đã cập nhật dòng thành công!");
     });
 
-    // 6. Thêm dòng qua Form chính
+    // 6. Thêm row mới vào table 
     function addRowToTable(table, parentId, level, data) {
         const tr = document.createElement("tr");
-        const newId = 'id_' + Math.random().toString(36).substr(2, 9);
+        const newId = 'id_' + Math.random().toString(36).substr(2, 9); // tạo id mới bằng hàm random
         tr.setAttribute("data-id", newId);
         tr.setAttribute("data-parent", parentId || "");
         tr.className = `level-${level}`;
@@ -604,11 +648,13 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("btn-add-child").addEventListener("click", () => handleFormSubmit(true));
     document.getElementById("btn-add-sibling").addEventListener("click", () => handleFormSubmit(false));
 
+    // thêm dòng mới vào bảng dữ liệu tùy vào tạo dòng con hay dòng như cấp hiện tại
     function handleFormSubmit(isChild) {
         if (!selectedRow) {
             alert("Vui lòng chọn dòng mốc trên bảng chính!");
             return;
         }
+        // lấy dữ liệu từ thông tin sản phẩm >> đưa vào dòng mới trong bảng bom ???????????????? sửa lại thành rỗng hết
         const data = {
             name: document.getElementById("in-name").value.trim() || "Thành phần mới",
             stage: document.getElementById("in-bom-stage").value,
@@ -623,6 +669,7 @@ document.addEventListener("DOMContentLoaded", function() {
             hasChildren: false
         };
 
+        // lấy level, parent và tạo level mới từ current level
         const currentLevel = parseInt(selectedRow.className.match(/level-(\d+)/)[1]);
         const parentId = isChild ? selectedRow.getAttribute("data-id") : selectedRow.getAttribute("data-parent");
         const newLevel = isChild ? currentLevel + 1 : currentLevel;
@@ -632,7 +679,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (isChild) {
             const toggle = selectedRow.querySelector(".toggle-btn");
             if (toggle) { toggle.style.visibility = "visible"; toggle.textContent = "▼"; }
-            selectedRow.after(tr);
+            selectedRow.after(tr); // dòng con được thêm ngay sau dòng được chọn
         } else {
             let lastNode = getLastNodeOfBranch(mainTable, selectedRow);
             lastNode.after(tr);
@@ -641,20 +688,23 @@ document.addEventListener("DOMContentLoaded", function() {
         selectedRow.classList.remove("selected");
         selectedRow = tr;
         selectedRow.classList.add("selected");
+        editRowBOM();
     }
 
     function getLastNodeOfBranch(table, row) {
         let last = row;
         const rowId = row.getAttribute("data-id");
-        const children = table.querySelectorAll(`tr[data-parent="${rowId}"]`);
-        if (children.length > 0) last = getLastNodeOfBranch(table, children[children.length - 1]);
+        const children = table.querySelectorAll(`tr[data-parent="${rowId}"]`);  // tìm child của dòng hiện tại
+        if (children.length > 0) last = getLastNodeOfBranch(table, children[children.length - 1]); ///???????????????
         return last;
     }
 
     // 7. Kéo thả & Paste từ thư viện mẫu chuẩn xác
     let draggedRow = null;
     libTable.addEventListener("dragstart", (e) => {
-        draggedRow = e.target.closest("tr");
+        draggedRow = e.target.closest("tr");  // lấy dữ liệu của dòng được kéo
+        // lấy các dòng được chọn và thả vào form chính
+        
     });
 
     mainTable.addEventListener("dragover", (e) => e.preventDefault());

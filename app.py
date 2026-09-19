@@ -264,6 +264,10 @@ def update_user_role():
 
     return redirect('/admin')
 
+@app.route('/BOM')
+def take_picture():
+    # Flask sẽ tự động tìm file index.html nằm trong thư mục templates/
+    return render_template('test_bom_create.html')
 
 @app.route('/qrcode')
 def qrcode_tracker():
