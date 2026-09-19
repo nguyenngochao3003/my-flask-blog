@@ -625,9 +625,9 @@ document.addEventListener("DOMContentLoaded", function() {
         nameTd.innerHTML = `${hasCb}${hasToggle}<input type="text" class="inline-input" value="${nameText}">`;
 
 
-        for (let i = 1; i < selectedRow.children.length; i++) {
+        for (let i = 1; i < selectedRow.children.length -1; i++) {
             let td = selectedRow.children[i];
-            if (i === 8 || i === 12) continue; // Khóa cột kích thước NCC (index 8) không cho sửa trực tiếp nếu muốn
+            if (i === 8) continue; // Khóa cột kích thước NCC (index 8) không cho sửa trực tiếp nếu muốn
             let val = td.textContent.trim();
             if (i === 4) { // Cột giai đoạn
                 td.innerHTML = `<select class="inline-select"><option value="S-BOM">S-BOM</option><option value="E-BOM">E-BOM</option><option value="P-BOM">P-BOM</option></select>`;
@@ -662,7 +662,8 @@ document.addEventListener("DOMContentLoaded", function() {
         let mfg = selectedRow.children[6].querySelector("input").value;
         let mat = selectedRow.children[7].querySelector("input").value;
         let qty = selectedRow.children[9].querySelector("input").value;
-        let desc = selectedRow.children[10].querySelector("input").value;
+        let unitCost = selectedRow.children[10].querySelector("input").value;
+        let cost = parseFloat(qty) * parseInt(unitCost.replace(/\D/g, ""), 10);
 
         let badgeClass = stage === 'S-BOM' ? 'badge-s-bom' : (stage === 'E-BOM' ? 'badge-e-bom' : 'badge-p-bom');
         let hasToggle = selectedRow.children[0].querySelector(".toggle-btn") ? selectedRow.children[0].querySelector(".toggle-btn").outerHTML : '<span class="toggle-btn" style="visibility:hidden">▶</span>';
@@ -683,7 +684,8 @@ document.addEventListener("DOMContentLoaded", function() {
         selectedRow.children[7].className = "mat-cell";
         selectedRow.children[8].textContent = `${l}x${w}x${h}`; // Cập nhật kích thước NCC tự động theo L,W,H
         selectedRow.children[9].textContent = qty;
-        selectedRow.children[10].textContent = desc;
+        selectedRow.children[10].textContent = unitCost;
+        selectedRow.children[11].textContent = cost.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 
         alert("Đã cập nhật dòng thành công!");
     });
