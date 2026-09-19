@@ -284,7 +284,8 @@
                 <th>Vật Tư</th>
                 <th>Kích Thước NCC (L-W-H)</th>
                 <th>Qty</th>
-                <th>Mô Tả</th>
+                <th>Giá đơn vị</th>
+                <th>Thành Tiền</th>
             </tr>
         </thead>
         <tbody>
@@ -301,7 +302,8 @@
                 <td>Thép hộp 40x80</td>
                 <td>1200x800x1500</td>
                 <td>1</td>
-                <td>Khung chính kết cấu thép</td>
+                <td>150,000đ</td>
+                <td>150,000đ</td>
             </tr>
             <tr data-id="1-1" data-parent="1" class="level-1">
                 <td class="node-name">
@@ -316,7 +318,8 @@
                 <td>Thép hộp 40x80</td>
                 <td>1200x80x40</td>
                 <td>4</td>
-                <td>Cắt gia công CNC</td>
+                <td>150,000đ</td>
+                <td>150,000đ</td>
             </tr>
         </tbody>
     </table>
@@ -624,7 +627,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         for (let i = 1; i < selectedRow.children.length; i++) {
             let td = selectedRow.children[i];
-            if (i === 8) continue; // Khóa cột kích thước NCC (index 8) không cho sửa trực tiếp nếu muốn
+            if (i === 8 || i === 12) continue; // Khóa cột kích thước NCC (index 8) không cho sửa trực tiếp nếu muốn
             let val = td.textContent.trim();
             if (i === 4) { // Cột giai đoạn
                 td.innerHTML = `<select class="inline-select"><option value="S-BOM">S-BOM</option><option value="E-BOM">E-BOM</option><option value="P-BOM">P-BOM</option></select>`;
@@ -810,8 +813,8 @@ document.addEventListener("DOMContentLoaded", function() {
             const toggle = targetTr.querySelector(".toggle-btn");
             if (toggle) { toggle.style.visibility = "visible"; toggle.textContent = "▼"; }
 
-            addHistoryLog("KÉO THẢ", `Đã thêm ${draggedRows.length} mục từ thư viện mẫu vào BOM.`);
-            alert("Kéo thả nhánh thành công!");
+            addHistoryLog("KÉO THẢ", `Đã thêm part: ${data.name} của sản phẩm A  mục từ thư viện mẫu vào BOM.`);
+
             // Reset lại danh sách kéo thả sau khi drop xong
             draggedRows = [];
         })
