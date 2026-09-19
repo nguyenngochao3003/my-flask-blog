@@ -5,29 +5,67 @@
     <title>Quản lý BOM Chuyên Sâu - E/P/S-BOM & Treeview</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
             display: flex;
             height: 100vh;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
+
+        .sidebar {
+            position: relative;
+            width: 200px; /* Độ rộng mặc định */
+            min-width: 100px; /* Độ rộng tối thiểu khi kéo */
+            max-width: 300px; /* Độ rộng tối đa khi kéo */
+            background: #f8f9fa;
+            border-right: 1px solid #ccc;
+            transition: width 0.2s ease; /* Hiệu ứng mượt khi toggle */
+            box-sizing: border-box;
+        }
+
+        /* Class khi thu nhỏ sidebar */
+        .sidebar.collapsed {
+            width: 40px !important;
+            min-width: 40px !important;
+            padding: 0;
+            overflow: hidden;
+        }
+        /* Ẩn hoàn toàn nội dung bên trong khi Sidebar có class .collapsed */
+        .sidebar.collapsed .sidebar-content {
+            visibility: hidden; /* Hoặc visibility: hidden; opacity: 0; */
+        }
+
         .main-content {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            box-sizing: border-box;
         }
-        .sidebar {
-            width: 400px;
-            background: #f8f9fa;
-            border-left: 1px solid #ccc;
-            padding: 15px;
-            overflow-y: auto;
-            box-sizing: border-box;
-            display: none;
+
+        /* Thanh nắm kéo thả */
+        .resizer {
+            width: 6px;
+            height: 100%;
+            background: transparent;
+            position: absolute;
+            left: 0;
+            top: 0;
+            cursor: col-resize;
+            user-select: none;
         }
-        .sidebar.active { display: block; }
-        
+
+        .resizer:hover, .resizer:active {
+            background: #0d6efd; /* Đổi màu xanh khi di chuột vào */
+        }
+
+        /* Nút Thu nhỏ / Phóng to */
+        #btn-toggle-sidebar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            cursor: pointer;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -172,7 +210,7 @@
     <h2>🛠️ Quản Lý BOM Sản Phẩm Chuyên Sâu & Tích Hợp Treeview Vật Tư</h2>
     
     <div class="toolbar">
-        <button id="btn-toggle-sidebar" class="btn-warning">📂 Thư viện mẫu BOM</button>
+        <!-- <button id="btn-toggle-sidebar" class="btn-warning">📂 Thư viện mẫu BOM</button> -->
         <button id="btn-toggle-checkbox" class="btn-secondary">☑ Bật/Tắt Checkbox</button>
         <button id="btn-delete-checked" class="btn-danger">🗑️ Xóa các dòng đã chọn</button>
         <button id="btn-export-csv" class="btn-success">📤 Xuất CSV</button>
@@ -251,7 +289,11 @@
         </thead>
         <tbody>
             <tr data-id="1" data-parent="" class="level-0">
-                <td class="node-name"><input type="checkbox" class="row-checkbox"><span class="toggle-btn">▼</span> Cụm Khung Máy</td>
+                <td class="node-name">
+                    <input type="checkbox" class="row-checkbox">
+                    <span class="info-icon-col" title="Thay đổi mới nhất: Khởi tạo E-BOM">ℹ️</span>
+                    <span class="toggle-btn">▼</span> Cụm Khung Máy
+                </td>
                 <td>1200</td><td>800</td><td>1500</td>
                 <td><span class="badge-stage badge-e-bom">E-BOM</span></td>
                 <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Kết cấu cơ khí > Thép khung</td>
@@ -262,7 +304,11 @@
                 <td>Khung chính kết cấu thép</td>
             </tr>
             <tr data-id="1-1" data-parent="1" class="level-1">
-                <td class="node-name"><input type="checkbox" class="row-checkbox"><span class="toggle-btn" style="visibility:hidden">▶</span> Thanh Trụ Đứng</td>
+                <td class="node-name">
+                    <input type="checkbox" class="row-checkbox">
+                    <span class="info-icon-col" title="Thay đổi mới nhất: Khởi tạo E-BOM">ℹ️</span>
+                    <span class="toggle-btn" style="visibility:hidden">▶</span> Thanh Trụ Đứng
+                </td>
                 <td>1200</td><td>80</td><td>40</td>
                 <td><span class="badge-stage badge-p-bom">P-BOM</span></td>
                 <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Vật liệu thô > Thép hộp</td>
@@ -324,32 +370,44 @@
 
 <!-- TAB THƯ VIỆN BÊN HÔNG -->
 <div class="sidebar" id="sidebar-lib">
-    <h3 style="margin-top:0; font-size:15px; color:#333;">📚 Thư Viện Mẫu BOM</h3>
-    <p style="font-size:11px; color:#666;">Kéo thả nhánh sang bảng chính hoặc chọn dòng rồi bấm Paste.</p>
-    <button id="btn-toggle-lib-checkbox" class="btn-secondary" style="width:100%; margin-bottom: 5px; font-size: 12px;">☑ Bật/Tắt Checkbox</button>
-    <button id="btn-paste-branch" class="btn-success" style="width:100%; margin-bottom: 15px;">📥 Paste Nhánh Vào Dòng Chọn</button>
+    <!-- Thanh nắm để kéo thay đổi độ rộng -->
+    <div class="resizer" id="resizer"></div>
+    <button id="btn-toggle-sidebar" class="icon-btn btn-secondary" data-tooltip="Thu nhỏ / Mở rộng Sidebar" style="margin-bottom: 15px;">◀</button>
+    <div class="sidebar-content">
+
+        <h3 style="margin-top:0; font-size:15px; color:#333;">📚 Thư Viện Mẫu BOM</h3>
+        <p style="font-size:11px; color:#666;">Kéo thả nhánh sang bảng chính hoặc chọn dòng rồi bấm Paste.</p>
+        <button id="btn-toggle-lib-checkbox" class="btn-secondary" style="width:100%; margin-bottom: 5px; font-size: 12px;">☑ Bật/Tắt Checkbox</button>
+        <button id="btn-paste-branch" class="btn-success" style="width:100%; margin-bottom: 15px;">📥 Paste Nhánh Vào Dòng Chọn</button>
+        
+        <table id="lib-bom-table">
+            <thead>
+                <tr>
+                    <th>Tên Mẫu</th>
+                    <th>Giai đoạn</th>
+                    <th>Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-id="lib-1" data-parent="" class="level-0" draggable="true">
+                    <td class="node-name"><input type="checkbox" class="row-checkbox"><span class="toggle-btn">▼</span> Cụm Băng Tải Service</td>
+                    <td>S-BOM</td>
+                    <td>1</td>
+                </tr>
+                <tr data-id="lib-1-1" data-parent="lib-1" class="level-1" draggable="true">
+                    <td class="node-name"><input type="checkbox" class="row-checkbox">Kiện con lăn phụ tùng</td>
+                    <td>S-BOM</td>
+                    <td>2</td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- lịch sử -->
+        <h3 style="font-size: 14px; color:#333;">📜 Nhật Ký Lịch Sử (Audit Trail)</h3>
+        <div id="history-log-container" style="max-height: 250px; overflow-y: auto; background: #fdfdfd; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
+            <div class="history-item"><b>[Khởi tạo]</b> Tải hệ thống thành công.</div>
+        </div>
+    </div>
     
-    <table id="lib-bom-table">
-        <thead>
-            <tr>
-                <th>Tên Mẫu</th>
-                <th>Giai đoạn</th>
-                <th>Qty</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr data-id="lib-1" data-parent="" class="level-0" draggable="true">
-                <td class="node-name"><input type="checkbox" class="row-checkbox"><span class="toggle-btn">▼</span> Cụm Băng Tải Service</td>
-                <td>S-BOM</td>
-                <td>1</td>
-            </tr>
-            <tr data-id="lib-1-1" data-parent="lib-1" class="level-1" draggable="true">
-                <td class="node-name"><input type="checkbox" class="row-checkbox">Kiện con lăn phụ tùng</td>
-                <td>S-BOM</td>
-                <td>2</td>
-            </tr>
-        </tbody>
-    </table>
 </div>
 
 <script>
@@ -361,6 +419,17 @@ document.addEventListener("DOMContentLoaded", function() {
     const mainTable = document.getElementById("main-bom-table"); // bom chính
     const libTable = document.getElementById("lib-bom-table"); // bom từ libary
     const selectedInfo = document.getElementById("selected-info");  // thông tin hàng được chọn
+
+
+    // 2. Nhật ký Lịch sử
+    function addHistoryLog(action, details) {
+        const container = document.getElementById("history-log-container");
+        const timeStr = new Date().toTimeString().split(' ')[0];
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `[${timeStr}] <b>${action}</b>: ${details}`;
+        container.prepend(div);
+    }
 
     // 1. Quản lý Tiến trình Giai đoạn BOM (S-BOM > E-BOM > P-BOM)
     const pipelineSteps = document.querySelectorAll(".pipeline-step");
@@ -378,10 +447,9 @@ document.addEventListener("DOMContentLoaded", function() {
     // Toggle Sidebar & Checkbox >> chỗ này làm gì cho công đoạn sau
     document.getElementById("btn-toggle-checkbox").addEventListener("click", () => mainTable.classList.toggle("show-checkbox"));
     document.getElementById("btn-toggle-lib-checkbox").addEventListener("click", () => libTable.classList.toggle("show-checkbox"));
-    document.getElementById("btn-toggle-sidebar").addEventListener("click", () => document.getElementById("sidebar-lib").classList.toggle("active"));
+    //document.getElementById("btn-toggle-sidebar").addEventListener("click", () => document.getElementById("sidebar-lib").classList.toggle("active"));
 
-   
-    
+
     // check box cho row và các child trong treeview của bảng
     function setRowAndSubtreeChecked(table, row, isChecked) {
         let cb = row.querySelector(".row-checkbox");
@@ -700,41 +768,109 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // 7. Kéo thả & Paste từ thư viện mẫu chuẩn xác
-    let draggedRow = null;
+    let draggedRows = null;
     libTable.addEventListener("dragstart", (e) => {
-        draggedRow = e.target.closest("tr");  // lấy dữ liệu của dòng được kéo
+        //draggedRow = e.target.closest("tr");  // lấy dữ liệu của dòng được kéo
         // lấy các dòng được chọn và thả vào form chính
+        let checkedRows = libTable.querySelectorAll('#lib-bom-table tbody tr input.row-checkbox:checked');
         
+        if (checkedRows.length === 0 ) {
+            alert('bạn chưa chọn vào checkbox');
+            return
+        } else {
+            draggedRows = Array.from(checkedRows).map(cb => cb.closest("tr"));
+        }
     });
 
     mainTable.addEventListener("dragover", (e) => e.preventDefault());
     mainTable.addEventListener("drop", (e) => {
         e.preventDefault();
         let targetTr = e.target.closest("tr");
-        if (!targetTr || !draggedRow) return;
+        if (!targetTr || !draggedRows) return;
 
-        const data = {
-            name: draggedRow.children[0].textContent.replace(/[▶▼]/g, "").trim(),
-            stage: draggedRow.children[1].textContent.trim(),
-            mfg: "VinFram",
-            material: "Thép hộp 40x80",
-            l: 100, w: 50, h: 20,
-            category: "Thư viện > Mẫu chuẩn",
-            qty: draggedRow.children[2].textContent.trim(),
-            desc: "Kéo thả từ thư viện mẫu",
-            hasChildren: false
-        };
+        draggedRows.forEach((draggedRow) => {
+            const data = {
+                name: draggedRow.children[0].textContent.replace(/[▶▼]/g, "").trim(),
+                stage: draggedRow.children[1].textContent.trim(),
+                mfg: "VinFram",
+                material: "Thép hộp 40x80",
+                l: 100, w: 50, h: 20,
+                category: "Thư viện > Mẫu chuẩn",
+                qty: draggedRow.children[2].textContent.trim(),
+                desc: "Kéo thả từ thư viện mẫu",
+                hasChildren: false
+            };
 
-        const targetParentId = targetTr.getAttribute("data-id");
-        const targetLevel = parseInt(targetTr.className.match(/level-(\d+)/)[1]);
-        const { tr } = addRowToTable(mainTable, targetParentId, targetLevel + 1, data);
-        targetTr.after(tr);
+            const targetParentId = targetTr.getAttribute("data-id");
+            const targetLevel = parseInt(targetTr.className.match(/level-(\d+)/)[1]);
+            const { tr } = addRowToTable(mainTable, targetParentId, targetLevel + 1, data);
+            targetTr.after(tr);
+            insertAfterRow = tr; // Dịch chuyển vị trí chèn để các dòng tiếp theo nằm nối tiếp nhau đúng thứ tự
+            
+            const toggle = targetTr.querySelector(".toggle-btn");
+            if (toggle) { toggle.style.visibility = "visible"; toggle.textContent = "▼"; }
+
+            addHistoryLog("KÉO THẢ", `Đã thêm ${draggedRows.length} mục từ thư viện mẫu vào BOM.`);
+            alert("Kéo thả nhánh thành công!");
+            // Reset lại danh sách kéo thả sau khi drop xong
+            draggedRows = [];
+        })
         
-        const toggle = targetTr.querySelector(".toggle-btn");
-        if (toggle) { toggle.style.visibility = "visible"; toggle.textContent = "▼"; }
-        alert("Kéo thả nhánh thành công!");
+    });
+
+    //=====================================================
+    /// tính năng resize cho size bar
+    const sidebar = document.getElementById('sidebar-lib');
+    const resizer = document.getElementById('resizer');
+    const toggleBtn = document.getElementById('btn-toggle-sidebar');
+
+    // --- 1. TÍNH NĂNG BẬT / TẮT (COLLAPSE / EXPAND) ---
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        if (sidebar.classList.contains('collapsed')) {
+            toggleBtn.textContent = '▶';
+        } else {
+            toggleBtn.textContent = '◀';
+        }
+    });
+
+    // --- 2. TÍNH NĂNG KÉO THẢ ĐỘ RỘNG (RESIZABLE) ---
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+        // Không cho phép kéo nếu Sidebar đang bị collapse
+        if (sidebar.classList.contains('collapsed')) return;
+        
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        sidebar.style.transition = 'none'; // Tắt transition để kéo không bị giật
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        // Tính độ rộng từ con trỏ chuột đến mép phải màn hình
+        // - Rê sang TRÁI  => e.clientX nhỏ đi => newWidth LỚN LÊN (phóng to)
+        // - Rê sang PHẢI => e.clientX lớn lên => newWidth NHỎ ĐI (thu nhỏ)
+        const newWidth = window.innerWidth - e.clientX;
+
+        // Giới hạn độ rộng tối thiểu và tối đa
+        if (newWidth >= 200 && newWidth <= 600) {
+            sidebar.style.width = `${newWidth}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+            sidebar.style.transition = 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+        }
     });
 });
+
+
+
 </script>
 
 </body>
