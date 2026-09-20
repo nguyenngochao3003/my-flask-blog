@@ -762,12 +762,18 @@ document.addEventListener("DOMContentLoaded", function() {
         // 3. Nếu bấm vào nút Lưu (Lưu lại dữ liệu)
         const infoBtn = e.target.closest(".info-icon-col");
         if (infoBtn) {
-            const row = saveBtn.closest("tr");
-            
-            // Đổi Icon Save -> Bút chì lại
-            infoBtn.className = "info-icon-col";
-            infoBtn.innerHTML = "✏️"; // Hoặc icon Bút chì  
+            const infoId = infoBtn.closest('tr').getAttribute('data-id');
+            console.log('print infoBtn id: ', infoId);
+            let historyID = `history-${infoId}`;
 
+            // lọc dữ liệu lịch sử trong thẻ div
+            document.querySelectorAll('.history-item').forEach(div =>{
+                console.log('test: ', div.id.includes(historyID));
+
+                // kiểm tra nếu không có giống id thì none 
+                let checkid = div.id ==historyID;
+                div.style.display = (checkid) ? "": "none" ;
+            });
         }
     });
 
