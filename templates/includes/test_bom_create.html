@@ -431,15 +431,18 @@
             </div>
         </div>
         <!-- lịch sử -->
-        <h3 style="font-size: 14px; color:#333;">📜 Nhật Ký Lịch Sử (Audit Trail)</h3>
-        <div id="history-log-container" style="max-height: 250px; overflow-y: auto; background: #fdfdfd; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
-            <div class="history-item"><b>[Khởi tạo]</b> Tải hệ thống thành công.</div>
+        <div id="history-container" style="max-height: 250px; overflow-y: auto; background: #f2f1f1; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
+            <h5 style="font-size: 14px; color:#333;">📜 Nhật Ký Lịch Sử (Audit Trail)</h3>
+            <div id="history-log-container" style="max-height: 250px; overflow-y: auto; background: #fdfdfd; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
+   
+            </div>
         </div>
     </div>
     
 </div>
 
 <script>
+
 document.addEventListener("DOMContentLoaded", function() {
     let selectedRow = null;
     let isEditing = false; // là gì
@@ -449,14 +452,13 @@ document.addEventListener("DOMContentLoaded", function() {
     const libTable = document.getElementById("lib-bom-table"); // bom từ libary
     const selectedInfo = document.getElementById("selected-info");  // thông tin hàng được chọn
 
-
     // 2. Nhật ký Lịch sử
     function addHistoryLog(action, details) {
         const container = document.getElementById("history-log-container");
         const timeStr = new Date().toTimeString().split(' ')[0];
         const div = document.createElement("div");
         div.className = "history-item";
-        div.innerHTML = `[${timeStr}] <b>${action}</b>: ${details}`;
+        div.innerHTML = `<p style="font-size:11px; color:#666;">[${timeStr}] <b>${action}</b>: ${details}<p>`;
         container.prepend(div);
     }
 
@@ -757,6 +759,16 @@ document.addEventListener("DOMContentLoaded", function() {
             saveRowData(row);
             return;
         }
+        // 3. Nếu bấm vào nút Lưu (Lưu lại dữ liệu)
+        const infoBtn = e.target.closest(".info-icon-col");
+        if (infoBtn) {
+            const row = saveBtn.closest("tr");
+            
+            // Đổi Icon Save -> Bút chì lại
+            infoBtn.className = "info-icon-col";
+            infoBtn.innerHTML = "✏️"; // Hoặc icon Bút chì  
+
+        }
     });
 
  
@@ -764,7 +776,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function addRowToTable(table, parentId, level, data) {
         const tr = document.createElement("tr");
         const newId = 'id_' + Math.random().toString(36).substr(2, 9); // tạo id mới bằng hàm random
-        tr.setAttribute("data-id", newId);
+        tr.setAttribute("data-id", data.id);
         tr.setAttribute("data-parent", parentId || "");
         tr.className = `level-${level}`;
         if(table === libTable) tr.setAttribute("draggable", "true");
@@ -773,17 +785,24 @@ document.addEventListener("DOMContentLoaded", function() {
         let badgeClass = data.stage === 'S-BOM' ? 'badge-s-bom' : (data.stage === 'E-BOM' ? 'badge-e-bom' : 'badge-p-bom');
 
         tr.innerHTML = `
+            <td class="func">
+                <input type="checkbox" class="row-checkbox">
+                <span class="info-icon-col" title="info">ℹ️</span>
+                <span class="edit-icon-col" title="Edit">✏️</span>
+            </td>
             <td class="node-name"><input type="checkbox" class="row-checkbox">${toggleIcon}${data.name}</td>
             <td>${data.l}</td>
             <td>${data.w}</td>
             <td>${data.h}</td>
+            <td>${data.qty}</td>
             <td><span class="badge-stage ${badgeClass}">${data.stage}</span></td>
             <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">${data.category}</td>
             <td class="mfg-cell">${data.mfg}</td>
             <td class="mat-cell">${data.material}</td>
             <td style="background-color: #f9f9f9; color: #666;">${data.l}x${data.w}x${data.h}</td>
-            <td>${data.qty}</td>
-            <td>${data.desc}</td>
+            
+            <td class="unitCost-cell"></td>
+            <td></td>
         `;
         return { tr, newId };
     }
@@ -857,17 +876,27 @@ document.addEventListener("DOMContentLoaded", function() {
             draggedRows = Array.from(checkedRows).map(cb => cb.closest("tr"));
         }
     });
-
     mainTable.addEventListener("dragover", (e) => e.preventDefault());
     mainTable.addEventListener("drop", (e) => {
         e.preventDefault();
+        // lấy tr trong bảng chính gần nhất
         let targetTr = e.target.closest("tr");
         if (!targetTr || !draggedRows) return;
 
+        // lặp qua các hàng và truyền dữ liệu vào
+        let libStartLevel = parseInt(draggedRows[0].className.match(/level-(\d+)/)[1]);
+        let targetParentId = targetTr.getAttribute("data-id");
+        let targetLevel = parseInt(targetTr.className.match(/level-(\d+)/)[1]);
+
+        console.log('0. libStartLevel', libStartLevel);
         draggedRows.forEach((draggedRow) => {
-            const data = {
+            
+            let data = {
                 name: draggedRow.children[0].textContent.replace(/[▶▼]/g, "").trim(),
                 stage: draggedRow.children[1].textContent.trim(),
+                parent: draggedRow.getAttribute('data-parent'),
+                id: draggedRow.getAttribute('data-id'),
+                class: draggedRow.className,
                 mfg: "VinFram",
                 material: "Thép hộp 40x80",
                 l: 100, w: 50, h: 20,
@@ -877,21 +906,30 @@ document.addEventListener("DOMContentLoaded", function() {
                 hasChildren: false
             };
 
-            const targetParentId = targetTr.getAttribute("data-id");
-            const targetLevel = parseInt(targetTr.className.match(/level-(\d+)/)[1]);
-            const { tr } = addRowToTable(mainTable, targetParentId, targetLevel + 1, data);
-            targetTr.after(tr);
-            insertAfterRow = tr; // Dịch chuyển vị trí chèn để các dòng tiếp theo nằm nối tiếp nhau đúng thứ tự
+            console.log('1. data draggedRow: ', data);
             
+            // level ************
+            let libLevel = parseInt(draggedRow.className.match(/level-(\d+)/)[1]);
+            let newLVL = targetLevel + libLevel - libStartLevel + 1 ;
+            console.log('2. libLevel', libLevel, 'targetLevel', targetLevel, 'newLevel', newLVL);
+
+            ////////////////////////////***************
+            const { tr } = addRowToTable(mainTable, targetParentId, newLVL, data);
+            targetTr.after(tr);
+            // Reset lại danh sách kéo thả sau khi drop xong, và targetParentId
+            draggedRows = [];
+            targetParentId = data.id;
+            targetTr = tr; // Dịch chuyển vị trí chèn để các dòng tiếp theo nằm nối tiếp nhau đúng thứ tự
+
+
             const toggle = targetTr.querySelector(".toggle-btn");
             if (toggle) { toggle.style.visibility = "visible"; toggle.textContent = "▼"; }
 
-            addHistoryLog("KÉO THẢ", `Đã thêm part: ${data.name} của sản phẩm A  mục từ thư viện mẫu vào BOM.`);
+            addHistoryLog("KÉO THẢ", `id: ${data.id} <b>Part: ${data.name}</b> parent: ${data.parent}`);
 
-            // Reset lại danh sách kéo thả sau khi drop xong
-            draggedRows = [];
+            // set lại toggle
+           updateToggleButtonsByLooping(mainTable);
         })
-        
     });
 
     //=====================================================
@@ -1051,6 +1089,8 @@ document.addEventListener("DOMContentLoaded", function() {
         updateToggleButtonsByLooping(mainTable);
     });
     //=======================================
+    updateToggleButtonsByLooping(libTable);
+    updateToggleButtonsByLooping(mainTable);
 });
 
 
