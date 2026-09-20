@@ -291,7 +291,6 @@
                     <th>Nhà Sản Xuất</th>
                     <th>Vật Tư</th>
                     <th>Kích Thước NCC (L-W-H)</th>
-                    
                     <th>Giá đơn vị</th>
                     <th>Thành Tiền</th>
                 </tr>
@@ -453,11 +452,12 @@ document.addEventListener("DOMContentLoaded", function() {
     const selectedInfo = document.getElementById("selected-info");  // thông tin hàng được chọn
 
     // 2. Nhật ký Lịch sử
-    function addHistoryLog(action, details) {
+    function addHistoryLog(action, details, id) {
         const container = document.getElementById("history-log-container");
         const timeStr = new Date().toTimeString().split(' ')[0];
         const div = document.createElement("div");
         div.className = "history-item";
+        div.id = `history-${id}`;
         div.innerHTML = `<p style="font-size:11px; color:#666;">[${timeStr}] <b>${action}</b>: ${details}<p>`;
         container.prepend(div);
     }
@@ -544,7 +544,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Cập nhật tự động select tương ứng trên hàng
                 if(row.querySelector(".mfg-cell")) row.querySelector(".mfg-cell").textContent = mfg;
                 if(row.querySelector(".mat-cell")) row.querySelector(".mat-cell").textContent = mat;
-                if(row.querySelector(".unitCost-cell")) row.querySelector(".unitCost-cell").textContent = mat;
+                if(row.querySelector(".unitCost-cell")) row.querySelector(".unitCost-cell").textContent = unitCost;
             }
             modal.style.display = "none";
         });
@@ -887,7 +887,7 @@ document.addEventListener("DOMContentLoaded", function() {
         let libStartLevel = parseInt(draggedRows[0].className.match(/level-(\d+)/)[1]);
         let targetParentId = targetTr.getAttribute("data-id");
         let targetLevel = parseInt(targetTr.className.match(/level-(\d+)/)[1]);
-
+    
         console.log('0. libStartLevel', libStartLevel);
         draggedRows.forEach((draggedRow) => {
             
@@ -916,19 +916,24 @@ document.addEventListener("DOMContentLoaded", function() {
             ////////////////////////////***************
             const { tr } = addRowToTable(mainTable, targetParentId, newLVL, data);
             targetTr.after(tr);
+            
+            // ghi lại lịch sử thay đổi
+            let parent_name = targetTr.querySelector('.node-name').innerHTML;
+            addHistoryLog("KÉO THẢ", `p_id: ${targetParentId}--<b>${parent_name}</b> >> id: ${data.id}-<b>--${data.name}</b>`, data.id);
+
             // Reset lại danh sách kéo thả sau khi drop xong, và targetParentId
             draggedRows = [];
             targetParentId = data.id;
             targetTr = tr; // Dịch chuyển vị trí chèn để các dòng tiếp theo nằm nối tiếp nhau đúng thứ tự
 
 
-            const toggle = targetTr.querySelector(".toggle-btn");
-            if (toggle) { toggle.style.visibility = "visible"; toggle.textContent = "▼"; }
+            //const toggle = targetTr.querySelector(".toggle-btn");
+            //if (toggle) { toggle.style.visibility = "visible"; toggle.textContent = "▼"; }
 
-            addHistoryLog("KÉO THẢ", `id: ${data.id} <b>Part: ${data.name}</b> parent: ${data.parent}`);
+            
 
             // set lại toggle
-           updateToggleButtonsByLooping(mainTable);
+            updateToggleButtonsByLooping(mainTable);
         })
     });
 
