@@ -285,12 +285,13 @@
                     <th>L</th>
                     <th>W</th>
                     <th>H</th>
+                    <th>Qty</th>
                     <th>Giai Đoạn</th>
                     <th>Danh Mục Vật Tư</th>
                     <th>Nhà Sản Xuất</th>
                     <th>Vật Tư</th>
                     <th>Kích Thước NCC (L-W-H)</th>
-                    <th>Qty</th>
+                    
                     <th>Giá đơn vị</th>
                     <th>Thành Tiền</th>
                 </tr>
@@ -305,14 +306,14 @@
                     <td class="node-name">
                         <span class="toggle-btn">▼</span> Cụm Khung Máy
                     </td>
-                    <td>1200</td><td>800</td><td>1500</td>
+                    <td>1200</td><td>800</td><td>1500</td><td>1</td>
                     <td><span class="badge-stage badge-e-bom">E-BOM</span></td>
                     <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Kết cấu cơ khí > Thép khung</td>
-                    <td>VinFram</td>
-                    <td>Thép hộp 40x80</td>
+                    <td class="mfg-cell">VinFram</td>
+                    <td class="mat-cell">Thép hộp 40x80</td>
                     <td>1200x800x1500</td>
-                    <td>1</td>
-                    <td>150,000đ</td>
+                    
+                    <td class="unitCost-cell">150,000đ</td>
                     <td>150,000đ</td>
                 </tr>
                 <tr data-id="1-1" data-parent="1" class="level-1">
@@ -324,14 +325,14 @@
                     <td class="node-name">
                         <span class="toggle-btn">▼</span> nawps
                     </td>
-                    <td>1200</td><td>80</td><td>40</td>
+                    <td>1200</td><td>80</td><td>40</td><td>4</td>
                     <td><span class="badge-stage badge-p-bom">P-BOM</span></td>
                     <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Vật liệu thô > Thép hộp</td>
-                    <td>A-Steel</td>
-                    <td>Thép hộp 40x80</td>
+                    <td class="mfg-cell">A-Steel</td>
+                    <td class="mat-cell">Thép hộp 40x80</td>
                     <td>1200x80x40</td>
-                    <td>4</td>
-                    <td>150,000đ</td>
+                    
+                    <td class="unitCost-cell">150,000đ</td>
                     <td>150,000đ</td>
                 </tr>
             </tbody>
@@ -533,6 +534,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let mfg = tr.getAttribute("data-mfg");
             let mat = tr.getAttribute("data-mat");
             let unitCost = tr.getAttribute("data-unitCost");
+            console.log('mfg', mfg, 'mat', mat, 'unitCost', unitCost)
 
             if (activeCategoryCellTarget) {
                 activeCategoryCellTarget.textContent = `${groupName} > ${mat}`; // gán ô category mới chọn trong bảng bom bằng danh mục vừa chọn
@@ -540,6 +542,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Cập nhật tự động select tương ứng trên hàng
                 if(row.querySelector(".mfg-cell")) row.querySelector(".mfg-cell").textContent = mfg;
                 if(row.querySelector(".mat-cell")) row.querySelector(".mat-cell").textContent = mat;
+                if(row.querySelector(".unitCost-cell")) row.querySelector(".unitCost-cell").textContent = mat;
             }
             modal.style.display = "none";
         });
@@ -666,14 +669,14 @@ document.addEventListener("DOMContentLoaded", function() {
             if (index < 2) return; 
 
             // 3. Khóa cột kích thước NCC (ví dụ nếu ô này có class hoặc thuộc tính riêng)
-            if ( index === 6 || index === 7 || index === 8 || index === 9) {
+            if ( [ 7, 8, 9, 10, 12].includes(index)) {
                 return;
             }
 
             let val = td.textContent.trim();
 
             // 4. Kiểm tra cột Giai đoạn bằng class hoặc dataset (Tránh bị lệch index)
-            if (td.classList.contains("col-stage") || index === 5) {
+            if (td.classList.contains("col-stage") || index === 6) {
                 td.innerHTML = `
                     <select class="inline-select">
                         <option value="S-BOM">S-BOM</option>
@@ -700,9 +703,9 @@ document.addEventListener("DOMContentLoaded", function() {
         let l = row.children[2].querySelector("input").value;
         let w = row.children[3].querySelector("input").value;
         let h = row.children[4].querySelector("input").value;
-        let stage = row.children[5].querySelector("select").value;
+        let qty = row.children[5].querySelector("input").value;
+        let stage = row.children[6].querySelector("select").value;
         
-        let qty = row.children[10].querySelector("input").value;
         let unitCost = row.children[11].querySelector("input").value;
         let cost = parseFloat(qty) * parseInt(unitCost.replace(/\D/g, ""), 10);
 
@@ -714,9 +717,8 @@ document.addEventListener("DOMContentLoaded", function() {
         row.children[2].textContent = l;
         row.children[3].textContent = w;
         row.children[4].textContent = h;
-        row.children[5].innerHTML = `<span class="badge-stage ${badgeClass}">${stage}</span>`;
-
-        row.children[10].textContent = qty;
+        row.children[5].textContent = qty;
+        row.children[6].innerHTML = `<span class="badge-stage ${badgeClass}">${stage}</span>`;
         row.children[11].textContent = unitCost;
         row.children[12].textContent = cost.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 
