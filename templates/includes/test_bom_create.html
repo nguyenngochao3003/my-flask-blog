@@ -209,12 +209,7 @@
 <div class="main-content">
     <h2>🛠️ Quản Lý BOM Sản Phẩm Chuyên Sâu & Tích Hợp Treeview Vật Tư</h2>
     
-    <div class="toolbar">
-        <!-- <button id="btn-toggle-sidebar" class="btn-warning">📂 Thư viện mẫu BOM</button> -->
-        <button id="btn-toggle-checkbox" class="btn-secondary">☑ Bật/Tắt Checkbox</button>
-        <button id="btn-delete-checked" class="btn-danger">🗑️ Xóa các dòng đã chọn</button>
-        <button id="btn-export-csv" class="btn-success">📤 Xuất CSV</button>
-    </div>
+
 
     <!-- FORM THÔNG TIN SẢN PHẨM & TIẾN TRÌNH GIAI ĐOẠN BOM -->
     <div class="form-container">
@@ -261,68 +256,87 @@
         <div class="form-group"><label>Số lượng (Qty):</label><input type="number" id="in-qty" value="1"></div>
         <div class="form-group" style="width:100%"><label>Mô tả chi tiết:</label><input type="text" id="in-desc" style="width:95%" placeholder="Mô tả kỹ thuật..."></div>
         
-        <div style="margin-top: 8px;">
-            <button id="btn-add-child">➕ Thêm dòng con</button>
-            <button id="btn-add-sibling" class="btn-success">➕ Thêm dòng cùng cấp</button>
-            <button id="btn-edit-inline" class="btn-warning">✏️ Chỉnh sửa (Edit)</button>
-            <button id="btn-save-inline" class="btn-success" style="display:none;">💾 Lưu (Save)</button>
-            <span id="selected-info" style="margin-left: 10px; font-style: italic; color: #d9534f; font-size: 12px;">⚠️ Chưa chọn dòng mốc!</span>
-        </div>
+
     </div>
 
-    <!-- BẢNG DỮ LIỆU CHÍNH -->
-    <table id="main-bom-table">
-        <thead>
-            <tr>
-                <th>Tên Thành Phần</th>
-                <th>L</th>
-                <th>W</th>
-                <th>H</th>
-                <th>Giai Đoạn</th>
-                <th>Danh Mục Vật Tư</th>
-                <th>Nhà Sản Xuất</th>
-                <th>Vật Tư</th>
-                <th>Kích Thước NCC (L-W-H)</th>
-                <th>Qty</th>
-                <th>Giá đơn vị</th>
-                <th>Thành Tiền</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr data-id="1" data-parent="" class="level-0">
-                <td class="node-name">
-                    <input type="checkbox" class="row-checkbox">
-                    <span class="info-icon-col" title="Thay đổi mới nhất: Khởi tạo E-BOM">ℹ️</span>
-                    <span class="toggle-btn">▼</span> Cụm Khung Máy
-                </td>
-                <td>1200</td><td>800</td><td>1500</td>
-                <td><span class="badge-stage badge-e-bom">E-BOM</span></td>
-                <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Kết cấu cơ khí > Thép khung</td>
-                <td>VinFram</td>
-                <td>Thép hộp 40x80</td>
-                <td>1200x800x1500</td>
-                <td>1</td>
-                <td>150,000đ</td>
-                <td>150,000đ</td>
-            </tr>
-            <tr data-id="1-1" data-parent="1" class="level-1">
-                <td class="node-name">
-                    <input type="checkbox" class="row-checkbox">
-                    <span class="info-icon-col" title="Thay đổi mới nhất: Khởi tạo E-BOM">ℹ️</span>
-                    <span class="toggle-btn" style="visibility:hidden">▶</span> Thanh Trụ Đứng
-                </td>
-                <td>1200</td><td>80</td><td>40</td>
-                <td><span class="badge-stage badge-p-bom">P-BOM</span></td>
-                <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Vật liệu thô > Thép hộp</td>
-                <td>A-Steel</td>
-                <td>Thép hộp 40x80</td>
-                <td>1200x80x40</td>
-                <td>4</td>
-                <td>150,000đ</td>
-                <td>150,000đ</td>
-            </tr>
-        </tbody>
-    </table>
+
+
+    <div class="toolbar">
+        <div style="margin-top: 8px; background-color: #f1f1f1; padding: 10px; border-radius: 4px;">
+            <!-- <button id="btn-toggle-sidebar" class="btn-warning">📂 Thư viện mẫu BOM</button> -->
+            <button title="Bật/Tắt Checkbox" id="btn-toggle-checkbox" class="btn-secondary">☑</button>
+            <button title="Xóa các dòng đã chọn" id="btn-delete-checked" class="btn-danger">🗑️</button>
+            <button title="Xuất CSV" id="btn-export-csv" class="btn-success">📤</button>
+            <button id="btn-add-child">➕ Thêm dòng con</button>
+            <button id="btn-add-sibling" class="btn-success">➕ Thêm dòng cùng cấp</button>
+            <button id="btn-save-inline" class="btn-success" style="display:none;">💾 Lưu (Save)</button>
+            <div>
+
+                <span id="selected-info" style="margin-left: 10px; font-style: italic; color: #d9534f; font-size: 12px;">⚠️ Chưa chọn dòng mốc!</span>
+            </div>
+        </div>
+        
+        <!-- BẢNG DỮ LIỆU CHÍNH -->
+        <table id="main-bom-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Tên Thành Phần</th>
+                    <th>L</th>
+                    <th>W</th>
+                    <th>H</th>
+                    <th>Giai Đoạn</th>
+                    <th>Danh Mục Vật Tư</th>
+                    <th>Nhà Sản Xuất</th>
+                    <th>Vật Tư</th>
+                    <th>Kích Thước NCC (L-W-H)</th>
+                    <th>Qty</th>
+                    <th>Giá đơn vị</th>
+                    <th>Thành Tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-id="1" data-parent="" class="level-0">
+                    <td class="func">
+                        <input type="checkbox" class="row-checkbox">
+                        <span class="info-icon-col" title="info">ℹ️</span>
+                        <span class="edit-icon-col" title="Edit">✏️</span>
+                    </td>
+                    <td class="node-name">
+                        <span class="toggle-btn">▼</span> Cụm Khung Máy
+                    </td>
+                    <td>1200</td><td>800</td><td>1500</td>
+                    <td><span class="badge-stage badge-e-bom">E-BOM</span></td>
+                    <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Kết cấu cơ khí > Thép khung</td>
+                    <td>VinFram</td>
+                    <td>Thép hộp 40x80</td>
+                    <td>1200x800x1500</td>
+                    <td>1</td>
+                    <td>150,000đ</td>
+                    <td>150,000đ</td>
+                </tr>
+                <tr data-id="1-1" data-parent="1" class="level-1">
+                    <td class="func">
+                        <input type="checkbox" class="row-checkbox">
+                        <span class="info-icon-col" title="info">ℹ️</span>
+                        <span class="edit-icon-col" title="Edit">✏️</span>
+                    </td>
+                    <td class="node-name">
+                        <span class="toggle-btn">▼</span> nawps
+                    </td>
+                    <td>1200</td><td>80</td><td>40</td>
+                    <td><span class="badge-stage badge-p-bom">P-BOM</span></td>
+                    <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Vật liệu thô > Thép hộp</td>
+                    <td>A-Steel</td>
+                    <td>Thép hộp 40x80</td>
+                    <td>1200x80x40</td>
+                    <td>4</td>
+                    <td>150,000đ</td>
+                    <td>150,000đ</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- MODAL TREEVIEW DANH MỤC VẬT TƯ -->
@@ -342,21 +356,21 @@
                 </tr>
             </thead>
             <tbody id="treeview-tbody">
-                <tr data-group="Kết cấu cơ khí" data-mfg="VinFram" data-mat="Thép hộp 40x80">
+                <tr data-group="Kết cấu cơ khí" data-mfg="VinFram" data-mat="Thép hộp 40x80" data-unitCost="150000">
                     <td><b>📁 Kết cấu cơ khí</b><br>&nbsp;&nbsp;└─ Thép khung</td>
                     <td>VinFram</td>
                     <td>Thép hộp 40x80</td>
                     <td>150,000đ</td>
                     <td><button class="btn-select-tree btn-success" style="padding: 2px 6px; margin:0;">Chọn</button></td>
                 </tr>
-                <tr data-group="Vật liệu thô" data-mfg="A-Steel" data-mat="Thép hộp 40x80">
+                <tr data-group="Vật liệu thô" data-mfg="A-Steel" data-mat="Thép hộp 40x80" data-unitCost="120000">
                     <td><b>📁 Vật liệu thô</b><br>&nbsp;&nbsp;└─ Thép hộp</td>
                     <td>A-Steel</td>
                     <td>Thép hộp 40x80</td>
                     <td>120,000đ</td>
                     <td><button class="btn-select-tree btn-success" style="padding: 2px 6px; margin:0;">Chọn</button></td>
                 </tr>
-                <tr data-group="Phụ kiện Inox" data-mfg="Inox Asia" data-mat="Inox 304">
+                <tr data-group="Phụ kiện Inox" data-mfg="Inox Asia" data-mat="Inox 304" data-unitCost="250000">
                     <td><b>📁 Phụ kiện Inox</b><br>&nbsp;&nbsp;└─ Thanh tròn</td>
                     <td>Inox Asia</td>
                     <td>Inox 304</td>
@@ -378,32 +392,43 @@
     <button id="btn-toggle-sidebar" class="icon-btn btn-secondary" data-tooltip="Thu nhỏ / Mở rộng Sidebar" style="margin-bottom: 15px;">◀</button>
     <div class="sidebar-content">
 
-        <h3 style="margin-top:0; font-size:15px; color:#333;">📚 Thư Viện Mẫu BOM</h3>
+        <h3 style="margin-top:0; font-size:15px; color:#333;">
+            📚 Thư Viện Mẫu BOM
+        </h3>
         <p style="font-size:11px; color:#666;">Kéo thả nhánh sang bảng chính hoặc chọn dòng rồi bấm Paste.</p>
-        <button id="btn-toggle-lib-checkbox" class="btn-secondary" style="width:100%; margin-bottom: 5px; font-size: 12px;">☑ Bật/Tắt Checkbox</button>
-        <button id="btn-paste-branch" class="btn-success" style="width:100%; margin-bottom: 15px;">📥 Paste Nhánh Vào Dòng Chọn</button>
-        
-        <table id="lib-bom-table">
-            <thead>
-                <tr>
-                    <th>Tên Mẫu</th>
-                    <th>Giai đoạn</th>
-                    <th>Qty</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr data-id="lib-1" data-parent="" class="level-0" draggable="true">
-                    <td class="node-name"><input type="checkbox" class="row-checkbox"><span class="toggle-btn">▼</span> Cụm Băng Tải Service</td>
-                    <td>S-BOM</td>
-                    <td>1</td>
-                </tr>
-                <tr data-id="lib-1-1" data-parent="lib-1" class="level-1" draggable="true">
-                    <td class="node-name"><input type="checkbox" class="row-checkbox">Kiện con lăn phụ tùng</td>
-                    <td>S-BOM</td>
-                    <td>2</td>
-                </tr>
-            </tbody>
-        </table>
+
+        <div class="frame">
+            <div class="frame-title" style="background-color: rgb(237, 231, 231); border-radius: 4px;">
+                <h3>BOM mẫu</h3>
+                <button id="close">x</button>
+
+                <button id="btn-toggle-lib-checkbox" class="btn-secondary" style="width:100%; margin-bottom: 5px; font-size: 12px;">☑ Checkbox</button>
+            </div>
+            <div class="frame-content" style="background-color: #c6c3c3; padding: 10px;  border-radius: 4px">
+                <input id="search_libBOMTable" type="search" placeholder="lọc component, part theo tên">
+                <table id="lib-bom-table">
+                    <thead>
+                        <tr>
+                            <th>Tên Mẫu</th>
+                            <th>Giai đoạn</th>
+                            <th>Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr data-id="lib-1" data-parent="" class="level-0" draggable="true">
+                            <td class="node-name"><input type="checkbox" class="row-checkbox"><span class="toggle-btn">▼</span> Cụm Băng Tải Service</td>
+                            <td>S-BOM</td>
+                            <td>1</td>
+                        </tr>
+                        <tr data-id="lib-1-1" data-parent="lib-1" class="level-1" draggable="true">
+                            <td class="node-name"><input type="checkbox" class="row-checkbox"><span class="toggle-btn">▼</span>Kiện con lăn phụ tùng</td>
+                            <td>S-BOM</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
         <!-- lịch sử -->
         <h3 style="font-size: 14px; color:#333;">📜 Nhật Ký Lịch Sử (Audit Trail)</h3>
         <div id="history-log-container" style="max-height: 250px; overflow-y: auto; background: #fdfdfd; border: 1px solid #eee; padding: 5px; border-radius: 4px;">
@@ -453,7 +478,7 @@ document.addEventListener("DOMContentLoaded", function() {
     //document.getElementById("btn-toggle-sidebar").addEventListener("click", () => document.getElementById("sidebar-lib").classList.toggle("active"));
 
 
-    // check box cho row và các child trong treeview của bảng
+    // tự động check box cho row và các child trong treeview của bảng
     function setRowAndSubtreeChecked(table, row, isChecked) {
         let cb = row.querySelector(".row-checkbox");
         if (cb) cb.checked = isChecked;
@@ -464,6 +489,18 @@ document.addEventListener("DOMContentLoaded", function() {
             setRowAndSubtreeChecked(table, child, isChecked);
         });
     }
+    // search cho lib-bom
+    document.getElementById('search_libBOMTable').addEventListener('input', (e) =>{
+        // lấy keyword
+        let keyword = e.target.value.toLowerCase();
+    
+        // ẩn hết các dòng không chứa keyword
+        libTable.querySelectorAll('tr').forEach(r =>{
+            let text = r.textContent.toLowerCase();
+            r.style.display = text.includes(keyword)? "": "none";
+        })
+    });
+
 
 
     // 2. Treeview Modal xử lý danh mục vật tư
@@ -495,6 +532,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let groupName = tr.getAttribute("data-group");
             let mfg = tr.getAttribute("data-mfg");
             let mat = tr.getAttribute("data-mat");
+            let unitCost = tr.getAttribute("data-unitCost");
 
             if (activeCategoryCellTarget) {
                 activeCategoryCellTarget.textContent = `${groupName} > ${mat}`; // gán ô category mới chọn trong bảng bom bằng danh mục vừa chọn
@@ -559,7 +597,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         mainTable.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
         row.classList.add("selected");
-        console.log('3.3 row', row.textContent);
 
         selectedRow = row;
         const rowName = row.querySelector(".node-name").textContent.replace(/[▶▼]/g, "").trim();
@@ -600,96 +637,127 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // 5. Chỉnh sửa Inline (Fix lỗi lưu lặp nhiều lần không mất dòng)
-    const btnEdit = document.getElementById("btn-edit-inline");
-    const btnSave = document.getElementById("btn-save-inline");
+    let btnSave = document.getElementById('btn-save-inline');
 
     // 5.1 khi bấm vào nút edit
-    function editRowBOM() {
-        if (!selectedRow) {
-            alert("Vui lòng chọn dòng cần sửa trên bảng!");
-            return;
-        }
+    function enableRowEdit(selectedRow) {
+   
         // ẩn nut edit và hiện nút save
         isEditing = true;
-        btnEdit.style.display = "none";
-        btnSave.style.display = "inline-block";
 
         // Chuyển các cột thành input/select tương ứng
-        let nameTd = selectedRow.children[0];
+        let nameTd = selectedRow.children[1];
         let nameText = nameTd.textContent.replace(/[▶▼]/g, "").trim(); // chỉ lấy tên bỏ biểu tượng toggle
+        
         console.log('5.1 nameTd: ', nameTd, ' nameText: ' , nameText);
         let hasToggle = nameTd.querySelector(".toggle-btn") ? nameTd.querySelector(".toggle-btn").outerHTML : '';
-        let hasCb = nameTd.querySelector(".row-checkbox") ? nameTd.querySelector(".row-checkbox").outerHTML : '';
-        console.log('5.1 hasToggle: ', hasToggle, ' hasCb: ', hasCb);
-        nameTd.innerHTML = `${hasCb}${hasToggle}<input type="text" class="inline-input" value="${nameText}">`;
+        
+        nameTd.innerHTML = `${hasToggle}<input type="text" class="inline-input" value="${nameText}">`;
 
+        // Duyệt trực tiếp qua tất cả các ô td trong dòng
+        selectedRow.querySelectorAll("td").forEach((td, index) => {
 
-        for (let i = 1; i < selectedRow.children.length -1; i++) {
-            let td = selectedRow.children[i];
-            if (i === 8) continue; // Khóa cột kích thước NCC (index 8) không cho sửa trực tiếp nếu muốn
+            // 1. Nếu ô là nút chức năng (có class func) -> Bỏ qua ngay lập tức
+            if (td.classList.contains("func") || td.querySelector(".func")) {
+                return; // Tương đương 'continue' trong forEach
+            }
+
+            // 2. Bỏ qua ô đầu tiên/ô checkboxes/ô thao tác nếu cần
+            if (index < 2) return; 
+
+            // 3. Khóa cột kích thước NCC (ví dụ nếu ô này có class hoặc thuộc tính riêng)
+            if ( index === 6 || index === 7 || index === 8 || index === 9) {
+                return;
+            }
+
             let val = td.textContent.trim();
-            if (i === 4) { // Cột giai đoạn
-                td.innerHTML = `<select class="inline-select"><option value="S-BOM">S-BOM</option><option value="E-BOM">E-BOM</option><option value="P-BOM">P-BOM</option></select>`;
+
+            // 4. Kiểm tra cột Giai đoạn bằng class hoặc dataset (Tránh bị lệch index)
+            if (td.classList.contains("col-stage") || index === 5) {
+                td.innerHTML = `
+                    <select class="inline-select">
+                        <option value="S-BOM">S-BOM</option>
+                        <option value="E-BOM">E-BOM</option>
+                        <option value="P-BOM">P-BOM</option>
+                    </select>`;
                 td.querySelector("select").value = val.replace(/[^A-Z-]/g, "");
             } else {
+                // Gán input cho các ô dữ liệu còn lại
                 td.innerHTML = `<input type="text" class="inline-input" value="${val}">`;
             }
-        }
+        });
     };
-    btnEdit.addEventListener("click", () => {
-        editRowBOM();
-    });
-
-    //5.2 lưu dữ liệu được chỉnh sửa vào bảng BOM
-    btnSave.addEventListener("click", () => {
-        if (!selectedRow) return;
+   //5.3 lưu dữ liệu được chỉnh sửa vào bảng BOM
+    function saveRowData(row) {
         isEditing = false;
-        btnSave.style.display = "none";
-        btnEdit.style.display = "inline-block";
-        console.log('5.2 selectRow.children ', selectedRow.children);
+        console.log('xxxxx');
 
         // Tìm chính xác input nhập tên (loại bỏ checkbox)
-        let nameInput = selectedRow.children[0].querySelector("input[type='text']") 
-                    || selectedRow.children[0].querySelector("input:not(.row-checkbox)");
+        let nameInput = row.children[1].querySelector("input[type='text']") 
+                    || row.children[1].querySelector("input:not(.row-checkbox)");
 
         let newName = nameInput ? nameInput.value : "";
-        let l = selectedRow.children[1].querySelector("input").value;
-        let w = selectedRow.children[2].querySelector("input").value;
-        let h = selectedRow.children[3].querySelector("input").value;
-        let stage = selectedRow.children[4].querySelector("select").value;
-        let cat = selectedRow.children[5].querySelector("input").value;
-        let mfg = selectedRow.children[6].querySelector("input").value;
-        let mat = selectedRow.children[7].querySelector("input").value;
-        let qty = selectedRow.children[9].querySelector("input").value;
-        let unitCost = selectedRow.children[10].querySelector("input").value;
+        let l = row.children[2].querySelector("input").value;
+        let w = row.children[3].querySelector("input").value;
+        let h = row.children[4].querySelector("input").value;
+        let stage = row.children[5].querySelector("select").value;
+        
+        let qty = row.children[10].querySelector("input").value;
+        let unitCost = row.children[11].querySelector("input").value;
         let cost = parseFloat(qty) * parseInt(unitCost.replace(/\D/g, ""), 10);
 
         let badgeClass = stage === 'S-BOM' ? 'badge-s-bom' : (stage === 'E-BOM' ? 'badge-e-bom' : 'badge-p-bom');
-        let hasToggle = selectedRow.children[0].querySelector(".toggle-btn") ? selectedRow.children[0].querySelector(".toggle-btn").outerHTML : '<span class="toggle-btn" style="visibility:hidden">▶</span>';
-        let hasCb = selectedRow.children[0].querySelector(".row-checkbox") ? selectedRow.children[0].querySelector(".row-checkbox").outerHTML : '<input type="checkbox" class="row-checkbox">';
+        let hasToggle = row.children[1].querySelector(".toggle-btn") ? row.children[1].querySelector(".toggle-btn").outerHTML : '<span class="toggle-btn" style="visibility:hidden">▶</span>';
         
         console.log('5.2 kiểm tra newName khi bấm nút lưu: ', newName);
-        selectedRow.children[0].innerHTML = `${hasCb}${hasToggle} ${newName}`;
-        selectedRow.children[1].textContent = l;
-        selectedRow.children[2].textContent = w;
-        selectedRow.children[3].textContent = h;
-        selectedRow.children[4].innerHTML = `<span class="badge-stage ${badgeClass}">${stage}</span>`;
-        selectedRow.children[5].textContent = cat;
-        selectedRow.children[5].className = "cat-cell";
-        selectedRow.children[5].style.cssText = "cursor:pointer; color:#007bff; text-decoration:underline;";
-        selectedRow.children[6].textContent = mfg;
-        selectedRow.children[6].className = "mfg-cell";
-        selectedRow.children[7].textContent = mat;
-        selectedRow.children[7].className = "mat-cell";
-        selectedRow.children[8].textContent = `${l}x${w}x${h}`; // Cập nhật kích thước NCC tự động theo L,W,H
-        selectedRow.children[9].textContent = qty;
-        selectedRow.children[10].textContent = unitCost;
-        selectedRow.children[11].textContent = cost.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+        row.children[1].innerHTML = `${hasToggle} ${newName}`;
+        row.children[2].textContent = l;
+        row.children[3].textContent = w;
+        row.children[4].textContent = h;
+        row.children[5].innerHTML = `<span class="badge-stage ${badgeClass}">${stage}</span>`;
 
-        alert("Đã cập nhật dòng thành công!");
+        row.children[10].textContent = qty;
+        row.children[11].textContent = unitCost;
+        row.children[12].textContent = cost.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+
+        selectedInfo.textContent = "⚠️ đã lưu!";
+    
+    };
+
+    // 5.2 Gắn sự kiện edit save 1 lần duy nhất vào <tbody> hoặc <table> có sẵn từ đầu
+    const tableBody = document.querySelector("#main-bom-table tbody");
+
+    tableBody.addEventListener("click", function (e) {
+        // 1. Nếu bấm vào nút Chỉnh sửa (Cây bút chì)
+        const editBtn = e.target.closest(".edit-icon-col");
+        if (editBtn) {
+            const row = editBtn.closest("tr");
+            
+            // Đổi icon Bút chì -> Icon Save
+            editBtn.className = "save-icon-col"; 
+            editBtn.innerHTML = "💾"; // Hoặc icon/svg Save của bạn
+            
+            // Chuyển các ô thành Input/Select
+            enableRowEdit(row);
+            return;
+        }
+
+        // 2. Nếu bấm vào nút Lưu (Lưu lại dữ liệu)
+        const saveBtn = e.target.closest(".save-icon-col");
+        if (saveBtn) {
+            const row = saveBtn.closest("tr");
+            
+            // Đổi Icon Save -> Bút chì lại
+            saveBtn.className = "edit-icon-col";
+            saveBtn.innerHTML = "✏️"; // Hoặc icon Bút chì
+            
+            // Lưu dữ liệu và chuyển về dạng Text
+            saveRowData(row);
+            return;
+        }
     });
 
+ 
     // 6. Thêm row mới vào table 
     function addRowToTable(table, parentId, level, data) {
         const tr = document.createElement("tr");
@@ -761,9 +829,10 @@ document.addEventListener("DOMContentLoaded", function() {
         selectedRow.classList.remove("selected");
         selectedRow = tr;
         selectedRow.classList.add("selected");
-        editRowBOM();
+        enableRowEdit(selectedRow);
     }
 
+    // tìm dòng cuối cùng của nhánh trong bảng
     function getLastNodeOfBranch(table, row) {
         let last = row;
         const rowId = row.getAttribute("data-id");
@@ -872,6 +941,114 @@ document.addEventListener("DOMContentLoaded", function() {
             sidebar.style.transition = 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
         }
     });
+    //==================================================
+    // SHIFT TAB ALT MOVE UP Down
+    function ensureToggleExists(row) {
+        const toggleBtn = row.querySelector(".toggle-btn");
+        if (toggleBtn && toggleBtn.style.visibility === 'hidden') {
+            toggleBtn.style.visibility = 'visible';
+            toggleBtn.textContent = "▼";
+        }
+    }
+    function updateToggleButtonsByLooping(table) {
+        const rows = Array.from(table.querySelectorAll("tr[data-id]"));
+
+        rows.forEach((currentRow, index) => {
+            const currentId = currentRow.getAttribute("data-id");
+            const currentLevel = parseInt(currentRow.className.match(/level-(\d+)/)[1]);
+            
+            // Kiểm tra xem dòng kế tiếp ngay sau có phải là dòng con của dòng hiện tại không
+            const nextRow = rows[index + 1];
+            const hasChildNext = nextRow && nextRow.getAttribute("data-parent") === currentId;
+        
+
+            const toggleBtn = currentRow.querySelector(".toggle-btn");
+            if (toggleBtn) {
+                if (hasChildNext) {
+                    toggleBtn.classList.remove("hidden");
+                } else {
+                    toggleBtn.classList.add("hidden");
+                }
+            }
+        });
+    }
+    // 3. Phím tắt: Tab, Shift+Tab, Alt + Up/Down
+    document.addEventListener("keydown", function(e) {
+        // Tránh bắt sự kiện phím khi đang gõ trong ô Input của form
+        if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "SELECT") {
+            return;
+        }
+        if (!selectedRow) return;
+        const currentLevel = parseInt(selectedRow.className.match(/level-(\d+)/)[1]);
+        const prevRow = selectedRow.previousElementSibling;
+        // Phím Tab / Shift + Tab (Thụt lề / Đẩy cấp)
+        if (e.key === "Tab") {
+            e.preventDefault();
+            
+            
+            if (!e.shiftKey) {
+                // Tab: Tăng cấp (thành con của dòng phía trên nó)
+                
+                if (prevRow && !prevRow.classList.contains("hidden")) {
+                    const prevLevel = parseInt(prevRow.className.match(/level-(\d+)/)[1]);
+                    if (currentLevel <= prevLevel) {
+                        const newLevel = currentLevel + 1;
+                        selectedRow.className = `level-${newLevel}`;
+                        selectedRow.setAttribute("data-parent", prevRow.getAttribute("data-id"));
+                        ensureToggleExists(prevRow);
+                    }
+                }
+            } else {
+                // Shift + Tab: Giảm cấp (đẩy ra ngoài)
+                if (currentLevel > 0) {
+                    const parentId = selectedRow.getAttribute("data-parent");
+                    const parentRow = mainTable.querySelector(`tr[data-id="${parentId}"]`);
+                    if (parentRow) {
+                        const grandParentId = parentRow.getAttribute("data-parent");
+                        const newLevel = currentLevel - 1;
+                        selectedRow.className = `level-${newLevel}`;
+                        selectedRow.setAttribute("data-parent", grandParentId || "");
+                    }
+                }
+            }
+            
+        }
+
+        // Alt + Mũi tên Lên/Xuống (Dời vị trí dòng)
+        if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            e.preventDefault();
+            if (e.key === "ArrowUp") {
+                //const prev = selectedRow.previousElementSibling;
+                if (prevRow) {
+                    // thiết lập level
+                    const prevLevel = parseInt(prevRow.className.match(/level-(\d+)/)[1]);
+                    console.warn('prevLevel', prevLevel, 'currentLevel', currentLevel);
+                    if (prevLevel == currentLevel -1) {
+                        selectedRow.classList.remove(`level-${currentLevel}`);
+                        selectedRow.classList.add(`level-${prevLevel}`);
+                        // đẩy level lên trên
+                        selectedRow.parentNode.insertBefore(selectedRow, prevRow);
+                    } else if (prevLevel == currentLevel){
+                        selectedRow.parentNode.insertBefore(selectedRow, prevRow);
+                    } else if (prevLevel < currentLevel) {
+                        return;
+                    }
+                    
+                }
+            } else if (e.key === "ArrowDown") {
+                const nextRow = selectedRow.nextElementSibling;
+                if (nextRow) {
+                    // thiết lập level
+                    const nextLevel = parseInt(nextRow.className.match(/level-(\d+)/)[1]);
+                    if (nextLevel == currentLevel) {
+                        nextRow.after(selectedRow);
+                    }
+                }
+            }
+        }
+        updateToggleButtonsByLooping(mainTable);
+    });
+    //=======================================
 });
 
 
