@@ -264,8 +264,8 @@ def update_user_role():
 
     return redirect('/admin')
 
-@app.route('/BOM')
-def take_picture():
+@app.route('/bom')
+def bom():
     # Flask sẽ tự động tìm file index.html nằm trong thư mục templates/
     return render_template('test_bom_create.html')
 
