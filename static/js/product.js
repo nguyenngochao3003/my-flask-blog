@@ -13,7 +13,7 @@ function openQRScanner(idGetQRCode) {
   // lưu mã id vào thẻ
   document.getElementById('hidden_id_qr').value = idGetQRCode;
   window.open(
-    "http://127.0.0.1:5000/QR",
+    "https://nguyenngochao3003.github.io/QR",
     "_blank"
   );
 }
