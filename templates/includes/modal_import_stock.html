@@ -10,28 +10,36 @@
             <!-- 1. Quét QR vị trí Cell -->
             <div class="form-group">
                 <label>Mã Ô/Kệ (Location Cell):</label>
-                <input id='productForm_name' type="text" class="form-control" placeholder="Nhập tên sản phẩm...">
+                <input id='stockForm_name' type="text" class="form-control" placeholder="Nhập tên sản phẩm...">
             </div>
 
             <!-- 2. Thông tin mặt hàng -->
             <div class="form-group">
-                <label>Mã Sản phẩm</label>
-                <input  id='productForm_name' type="text" class="form-control"  placeholder="Nhập hoặc quét mã SKU">
+                <label>Mã Code sản phẩm</label>
+                <div class="input-with-action">
+                    <input type="text" class="form-control" id="stockForm_code" placeholder="Nhập mã code sản phẩm...">
+                    <button class="btn btn-secondary" onclick="openQRScanner('stockForm_code')"><i class="fa-solid fa-qrcode"></i></button> 
+                </div>
             </div>
 
             <div class="form-group">
                 <label>Số lượng</label>
-                <input  id='productForm_name' type="number" class="form-control"  value="1" min="1">
+                <input  id='stockForm_name' type="number" class="form-control"  value="1" min="1">
             </div>
 
             <!-- 3. Chụp hình ảnh thực tế lưu Supabase -->
+              
             <div class="form-group">
-                <label>4. Chụp hình ảnh hiện trạng sau khi lấy/đặt hàng:</label>
-                <video id="cameraPreview" autoplay playsinline></video>
-                <button class="btn btn-secondary btn-sm" style="margin-top: 6px; width: 100%;" onclick="takeSnapshot()">📸 Chụp Ảnh Hiện Trạng</button>
-                <canvas id="snapshotCanvas" style="display:none;"></canvas>
-                <img id="snapshotPreview" class="snapshot-preview" style="display:none;" alt="Preview">
+                <label>URL ảnh sản phẩm</label>
+                <div class="input-with-action">
+                    <input disabled type="text" class="form-control" id="stockForm_urlPicture" placeholder="url hình ảnh sản phẩm...">
+                    <button class="btn btn-secondary" onclick="window.takePicture('stockForm_picture', 'stockForm_urlPicture')">
+                    <i class="fa-solid fa-camera"></i>
+                    </button>
+                </div>
             </div>
+            <img id="stockForm_picture" src="" alt="" width="200" height="200" style="display: none;">
+
         </div>
 
         <!-- Nút xác nhận -->

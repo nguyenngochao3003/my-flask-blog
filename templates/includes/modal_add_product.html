@@ -16,7 +16,7 @@
           <label>Mã Code sản phẩm</label>
           <div class="input-with-action">
             <input type="text" class="form-control" id="productForm_code" placeholder="Nhập mã code sản phẩm...">
-            <button class="btn btn-secondary" onclick="openQRScanner()"><i class="fa-solid fa-qrcode"></i></button> 
+            <button class="btn btn-secondary" onclick="openQRScanner('productForm_code')"><i class="fa-solid fa-qrcode"></i></button> 
           </div>
         </div>
 
@@ -50,8 +50,10 @@
         <div class="form-group">
           <label>URL ảnh sản phẩm</label>
           <div class="input-with-action">
-            <input type="text" class="form-control" id="productForm_urlPicture" placeholder="url hình ảnh sản phẩm...">
-            <button class="btn btn-secondary" onclick="openModal('modal-take_picture')"><i class="fa-solid fa-camera"></i></button>
+            <input disabled type="text" class="form-control" id="productForm_urlPicture" placeholder="url hình ảnh sản phẩm...">
+            <button class="btn btn-secondary" onclick="window.takePicture('productForm_picture', 'productForm_urlPicture')">
+              <i class="fa-solid fa-camera"></i>
+            </button>
           </div>
         </div>
         <img id="productForm_picture" src="" alt="" width="200" height="200" style="display: none;">
@@ -69,7 +71,7 @@
     <!-- 2. NƠI GỌI CÁC FILE FORM MODAL VÀO -->
   {% include 'includes/modal_add_supplier.html' %}
   {% include 'includes/modal_add_category.html' %}
-  {% include 'includes/modal_take_picture.html' %}
+  
     
 </div>
   

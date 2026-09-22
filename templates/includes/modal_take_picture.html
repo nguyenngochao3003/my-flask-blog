@@ -1,6 +1,4 @@
-<style>
 
-</style>
 <div class="modal-overlay" id="modal-take_picture">
     <div class="modal-card">
         <div class="modal-header">
@@ -81,7 +79,9 @@
     const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
         if (mutation.attributeName === "class") {
+            
             if (modal.classList.contains("active")) {
+                console.log('class: ', modal.className);
             startCamera(); // bật camera khi modal mở
             } else {
             stopCamera();  // tắt camera khi modal đóng
@@ -113,48 +113,52 @@
     // Giả sử bạn đã khởi tạo supabase client
     // Ví dụ: upload ảnh từ canvas vào Supabase Storage
     async function uploadCanvas() {
-    const canvas = document.getElementById("canvas");
-    const dataUrl = canvas.toDataURL("image/png");
-    const blob = await (await fetch(dataUrl)).blob();
+        const canvas = document.getElementById("canvas");
+        const dataUrl = canvas.toDataURL("image/png");
+        const blob = await (await fetch(dataUrl)).blob();
 
-    // tên ảnh sẽ được lưu vào supabase storage
-    const fileName = `snapshot_${Date.now()}.png`;
+        // tên ảnh sẽ được lưu vào supabase storage
+        const fileName = `snapshot_${Date.now()}.png`;
 
-    // Dùng userSupabase đã được gắn vào window
-    const { data, error } = await window.userSupabase.storage
-        .from("product-images") // bucket "images"
-        .upload(fileName, blob, { contentType: "image/png" });
+        // Dùng userSupabase đã được gắn vào window
+        const { data, error } = await window.userSupabase.storage
+            .from("product-images") // bucket "images"
+            .upload(fileName, blob, { contentType: "image/png" });
 
-    if (error) {
-        console.error("Upload lỗi:", error.message);
-    } else {
-        console.log("Upload thành công:", data);
-
-        // Lấy public URL nếu bucket cho phép
-        const { data: publicUrl } = window.userSupabase.storage
-        .from("product-images")
-        .getPublicUrl(fileName);
-
-        // gán link ảnh sản phẩm và hiển thị ảnh
-        const inputUrl = document.getElementById('productForm_urlPicture');
-        if (inputUrl) inputUrl.value = publicUrl.publicUrl;
-
-
-        // gọi uploadCanvas hoặc gắn sự kiện ở đây
-        const productPic = document.getElementById("productForm_picture");
-        if (productPic) {
-            productPic.src = publicUrl.publicUrl;
-            productPic.style.display = "block"; // hiện ảnh sau khi có link
+        if (error) {
+            console.error("Upload lỗi:", error.message);
         } else {
-            console.error("Không tìm thấy thẻ img productForm_picture trong DOM");
-        };
+            console.log("Upload thành công:", data);
 
-        // in link ảnh ra console
-        console.log("Public URL:", publicUrl.publicUrl);
-    }
+            // Lấy public URL nếu bucket cho phép
+            const { data: publicUrl } = window.userSupabase.storage
+            .from("product-images")
+            .getPublicUrl(fileName);
 
-    // đóng form modal-take_picture
-    window.closeModal('modal-take_picture');
+            // gán link ảnh
+            const idImg = document.getElementById('hidden_id_img').value;
+            const idImgUrl = document.getElementById('hidden_id_img_url').value;
+            console.log(`btn save picture: idImg ${idImg} idImgUrl: ${idImgUrl}`);
+
+            const inputUrl = document.getElementById(idImgUrl);
+            if (inputUrl) inputUrl.value = publicUrl.publicUrl;
+
+
+            // gắn link ảnh và hiện thẻ img
+            const productPic = document.getElementById(idImg);
+            if (productPic) {
+                productPic.src = publicUrl.publicUrl;
+                productPic.style.display = "block"; // hiện ảnh sau khi có link
+            } else {
+                console.error("Không tìm thấy thẻ img productForm_picture trong DOM");
+            };
+
+            // in link ảnh ra console
+            console.log("Public URL:", publicUrl.publicUrl);
+        }
+
+        // đóng form modal-take_picture
+        window.closeModal('modal-take_picture');
     }
 
 </script>

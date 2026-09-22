@@ -848,3 +848,8 @@
       font-size: 0.85rem;
       margin-bottom: 12px;
     }
+    /* chụp ảnh lên trên cùng */
+    #modal-take_picture {
+      position: fixed !important;
+      z-index: 9999 !important; /* Giá trị vượt trội so với các modal khác */
+    }

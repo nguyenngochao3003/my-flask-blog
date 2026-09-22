@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quét Mã QR Live Stream</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 20px 10px;
+    }
+    .card {
+      background: white;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    #reader {
+      width: 100%;
+      margin-top: 15px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+    #status {
+      margin-top: 15px;
+      padding: 12px;
+      font-weight: bold;
+      border-radius: 6px;
+      display: none;
+    }
+    .success { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>🎥 Quét Mã QR Live</h2>
+    <p style="color: #666; font-size: 14px;">Đưa mã QR vào khung camera để quét</p>
+
+    <div id="reader"></div>
+    <div id="status"></div>
+  </div>
+
+<script>
+  // ⚠️ LINK WEB APP GOOGLE APPS SCRIPT CỦA BẠN:
+  let html5QrCode;
+  let isProcessing = false;
+
+  window.addEventListener('DOMContentLoaded', () => {
+    html5QrCode = new Html5Qrcode("reader");
+    const config = {
+  fps: 10,
+  qrbox: {
+    width: 300,
+    height: 450
+  },
+  formatsToSupport: [
+    Html5QrcodeSupportedFormats.QR_CODE,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.EAN_8,
+    Html5QrcodeSupportedFormats.UPC_A,
+    Html5QrcodeSupportedFormats.UPC_E
+  ]
+};
+
+    // Bật camera
+    html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      onScanSuccess
+    ).catch(err => {
+      showStatus("✕ Không thể mở Camera: " + err, "error");
+    });
+  });
+
+  // Xử lý khi quét thành công
+async function onScanSuccess(qrCodeMessage) {
+  if (isProcessing) return;
+
+  isProcessing = true;
+
+  // 1. Dừng camera
+  if (html5QrCode) {
+    try {
+      await html5QrCode.stop();
+    } catch (err) {
+      console.error("Lỗi khi dừng camera:", err);
+    }
+  }
+
+  // 2. Ẩn camera
+  document.getElementById("reader").style.display = "none";
+
+  showStatus(
+    "✓ Đã quét thành công!\nMã QR: " + qrCodeMessage,
+    "success"
+  );
+
+  // 3. Gửi dữ liệu QR về cửa sổ Apps Script đã mở scanner
+  if (window.opener) {
+
+    window.opener.postMessage(
+      {
+        type: "QR_SCANNED",
+        code: qrCodeMessage,
+        scanner: "hao",
+        timestamp: Date.now(),
+        location: "shell 1"
+      },
+      "*"
+    );
+
+  } else {
+
+    console.error("Không tìm thấy cửa sổ Apps Script.");
+
+  }
+
+  // 4. Đóng cửa sổ scanner sau 1 giây
+  setTimeout(() => {
+    window.close();
+  }, 1000);
+}
+
+  function showStatus(msg, className) {
+    const statusDiv = document.getElementById('status');
+    statusDiv.innerText = msg;
+    statusDiv.className = className;
+    statusDiv.style.display = 'block';
+  }
+</script>
+</body>
+</html>

@@ -9,22 +9,25 @@ function toggleSidebar() {
   document.getElementById('sidebarOverlay').classList.toggle('active');
 }
 
-function openQRScanner() {
+function openQRScanner(idGetQRCode) {
+  // lưu mã id vào thẻ
+  document.getElementById('hidden_id_qr').value = idGetQRCode;
   window.open(
-    "https://nguyenngochao3003.github.io/qr-scanner/",
+    "http://127.0.0.1:5000/QR",
     "_blank"
   );
 }
 
 // Bắt sự kiện nhận dữ liệu QR Scanner
 window.addEventListener("message", function(event) {
-  if (event.origin !== "https://nguyenngochao3003.github.io") return;
+  if (event.origin !== "http://127.0.0.1:5000") return;
   if (!event.data || event.data.type !== "QR_SCANNED") return;
 
   const qrCode = event.data.code;
   console.log("Đã nhận QR:", qrCode);
 
-  const inputEl = document.getElementById("productForm_productCode");
+  const idGetQRCode = this.document.getElementById('hidden_id_qr').value;
+  const inputEl = document.getElementById(idGetQRCode);
   if (inputEl) inputEl.value = qrCode;
 });
 
@@ -38,6 +41,17 @@ function closeModal(id) {
   if (element) element.classList.remove('active');
 }
 
+// chức năng chung >> main.js
+
+function takePicture(id_image, id_url){
+  
+  // gắn thẻ inputE
+  document.getElementById('hidden_id_img').value = id_image;
+  document.getElementById('hidden_id_img_url').value = id_url;
+  
+  // mở giao diện chụp ảnh
+  window.openModal('modal-take_picture');  
+};
 // window.onclick = function(event) {
 //   if (event.target.classList.contains('modal')) {
 //     event.target.classList.remove('active');
@@ -49,7 +63,7 @@ window.toggleSidebar = toggleSidebar;
 window.openQRScanner = openQRScanner;
 window.openModal = openModal;
 window.closeModal = closeModal;
-
+window.takePicture = takePicture;
 
 // ========================================================
 // 2. CÁC HÀM XỬ LÝ SUPABASE & DỮ LIỆU PRODUCT

@@ -34,6 +34,10 @@
         .sidebar.collapsed .sidebar-content {
             visibility: hidden; /* Hoặc visibility: hidden; opacity: 0; */
         }
+        /* ẩn thẻ frame khi click vào nút ẩn hiện*/
+        .frame-content.collapsed{
+            display: none;
+        } 
 
         .main-content {
             flex: 1;
@@ -207,13 +211,11 @@
 <body>
 
 <div class="main-content">
-    <h2>🛠️ Quản Lý BOM Sản Phẩm Chuyên Sâu & Tích Hợp Treeview Vật Tư</h2>
+    <h2>🛠️ Quản Lý BOM</h2>
     
-
-
     <!-- FORM THÔNG TIN SẢN PHẨM & TIẾN TRÌNH GIAI ĐOẠN BOM -->
     <div class="form-container">
-        <h3 style="margin:0 0 5px 0; font-size:14px;">📦 Thông Tin Sản Phẩm & Tiến Trình Giai Đoạn BOM</h3>
+        <h3 style="margin:0 0 5px 0; font-size:14px;">📦 Thông Tin Sản Phẩm</h3>
         
         <!-- Tiến trình S-BOM > E-BOM > P-BOM -->
         <div class="bom-pipeline">
@@ -386,26 +388,28 @@
 </div>
 
 <!-- TAB THƯ VIỆN BÊN HÔNG -->
-<div class="sidebar" id="sidebar-lib">
+<div class="sidebar" id="sidebar-lib" >
     <!-- Thanh nắm để kéo thay đổi độ rộng -->
     <div class="resizer" id="resizer"></div>
     <button id="btn-toggle-sidebar" class="icon-btn btn-secondary" data-tooltip="Thu nhỏ / Mở rộng Sidebar" style="margin-bottom: 15px;">◀</button>
-    <div class="sidebar-content">
+    <div class="sidebar-content" style="overflow-y: auto;">
 
         <h3 style="margin-top:0; font-size:15px; color:#333;">
             📚 Thư Viện Mẫu BOM
         </h3>
         <p style="font-size:11px; color:#666;">Kéo thả nhánh sang bảng chính hoặc chọn dòng rồi bấm Paste.</p>
 
-        <div class="frame">
-            <div class="frame-title" style="background-color: rgb(237, 231, 231); border-radius: 4px;">
+        <div class="frame" style=" margin: 10px;">
+            <div class="frame-title" style="display: flex; justify-content: space-between; background-color: rgb(237, 231, 231); border-radius: 4px;">
                 <h3>BOM mẫu</h3>
-                <button id="close">x</button>
-
-                <button id="btn-toggle-lib-checkbox" class="btn-secondary" style="width:100%; margin-bottom: 5px; font-size: 12px;">☑ Checkbox</button>
+                <button id="closeFrameBOM"  data-fr="frameContentBOM" style=" display: block; box-sizing: border-box; padding: 5px;">x</button>
             </div>
-            <div class="frame-content" style="background-color: #c6c3c3; padding: 10px;  border-radius: 4px">
-                <input id="search_libBOMTable" type="search" placeholder="lọc component, part theo tên">
+            <div class="frame-content" id="frameContentBOM" style="background-color: #c6c3c3; padding: 10px;  border-radius: 4px">
+                <div style="display: flex; justify-content: space-between;">
+                    <button id="btn-toggle-lib-checkbox" class="btn-secondary" style=" margin-bottom: 5px; font-size: 12px;">☑</button>
+                    <input id="search_libBOMTable" type="search" placeholder="lọc component, part theo tên">
+                </div>
+                
                 <table id="lib-bom-table">
                     <thead>
                         <tr>
@@ -1105,6 +1109,22 @@ document.addEventListener("DOMContentLoaded", function() {
     //=======================================
     updateToggleButtonsByLooping(libTable);
     updateToggleButtonsByLooping(mainTable);
+
+    // close cho frame
+    document.getElementById('sidebar-lib').addEventListener('click', e => {
+        let close = e.target.closest('closeFrameBOM');
+
+        if (close) {
+            let fr = close.getAttribute('data-fr');
+
+            close.addEventListener('click', e=>{
+                console.log('test đóng mở side bard bom')
+                fr.classList.toggle('collapsed');
+            });
+        };
+
+    });
+
 });
 
 

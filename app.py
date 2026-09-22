@@ -28,11 +28,16 @@ app = Flask(__name__)
 # dùng kèm với password để mã hóa dữ liệu key cho mỗi session 
 app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 
+# 0. trang chủ
+@app.route('/home')
+def home():
+    return render_template('main.html')
+
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/login')
 def login():
     if 'access_token' in session:
-        return redirect(url_for('product'))
+        return redirect(url_for('home'))
     return render_template('login.html')
 
 # 2. Route Xử lý Đăng ký
@@ -82,7 +87,7 @@ def api_login():
     return (
         jsonify({
             'message': 'Đăng nhập thành công',
-            'redirect_url': url_for('product'),
+            'redirect_url': url_for("home"),
         }),
         200,
     )
@@ -104,7 +109,7 @@ def dashboard():
     )
     
     return jsonify({"message": f"Xin chào {session.get('email')}, bạn đã đăng nhập thành công!", 
-                    "redirect_url": url_for("product")}) 
+                    "redirect_url": url_for("home")}) 
 
 # 5. Route Đăng xuất
 @app.route('/logout', methods=['GET', 'POST'])
@@ -114,10 +119,11 @@ def logout():
     session.clear()
     return jsonify({"status": "success", "message": "Logged out"})
 
-# 2. ROUTE PRODUCT 
-@app.route('/product')
-def product():
-    return render_template('product.html')
+
+# 3. ROUTE permission 
+@app.route('/QR')
+def QR():
+    return render_template('QR.html')
 
 # 3. ROUTE permission 
 @app.route('/permission')
@@ -264,10 +270,6 @@ def update_user_role():
 
     return redirect('/admin')
 
-@app.route('/bom')
-def bom():
-    # Flask sẽ tự động tìm file index.html nằm trong thư mục templates/
-    return render_template('test_bom_create.html')
 
 @app.route('/qrcode')
 def qrcode_tracker():
