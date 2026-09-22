@@ -20,7 +20,8 @@ function openQRScanner(idGetQRCode) {
 
 // Bắt sự kiện nhận dữ liệu QR Scanner
 window.addEventListener("message", function(event) {
-  if (event.origin !== "http://127.0.0.1:5000") return;
+  // tạm thời bỏ check link web bên dưới trong quá trình test sản phẩm
+  // if (event.origin !== "http://127.0.0.1:5000") return;
   if (!event.data || event.data.type !== "QR_SCANNED") return;
 
   const qrCode = event.data.code;
