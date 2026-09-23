@@ -24,20 +24,63 @@
     </div>
 
     <!-- Main Content -->
-    <div class="container">
-      <h2>danh sách kho kệ</h2>
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th></th>
-            <th></th>
-          </tr>
-        </thead>
-      </table>
- 
+    <div class="toolbar">
+        <div style="margin-top: 8px; background-color: #f1f1f1; padding: 10px; border-radius: 4px;">
+            <!-- <button id="btn-toggle-sidebar" class="btn-warning">📂 Thư viện mẫu BOM</button> -->
+            <button title="Bật/Tắt Checkbox" id="btn-toggle-checkbox" class="btn-secondary">☑</button>
+            <button title="Xóa các dòng đã chọn" id="btn-delete-checked" class="btn-danger">🗑️</button>
+            <button title="Xuất CSV" id="btn-export-csv" class="btn-success">📤</button>
+            <button id="btn-add-child">➕ Thêm dòng con</button>
+            <button id="btn-add-sibling" class="btn-success">➕ Thêm dòng cùng cấp</button>
+            <button id="btn-save-inline" class="btn-success" style="display:none;">💾 Lưu (Save)</button>
+            <div>
 
+                <span id="selected-info" style="margin-left: 10px; font-style: italic; color: #d9534f; font-size: 12px;">⚠️ Chưa chọn dòng mốc!</span>
+            </div>
+        </div>
+        
+        <!-- BẢNG DỮ LIỆU CHÍNH -->
+        <table id="main-bom-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Kho</th>
+                    <th>Lo</th>
+                    <th>Danh Mục Vật Tư</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-id="1" data-parent="" class="level-0">
+                    <td class="func">
+                        <input type="checkbox" class="row-checkbox">
+                        <span class="info-icon-col" title="info">ℹ️</span>
+                        <span class="edit-icon-col" title="Edit">✏️</span>
+                    </td>
+                    <td class="node-name">
+                        <span class="toggle-btn">▼</span> Cụm Khung Máy
+                    </td>
+                    <td>1200</td>
+                    <td><span class="badge-stage badge-e-bom">E-BOM</span></td>
+                    <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Kết cấu cơ khí > Thép khung</td>
+                </tr>
+                <tr data-id="1-1" data-parent="1" class="level-1">
+                    <td class="func">
+                        <input type="checkbox" class="row-checkbox">
+                        <span class="info-icon-col" title="info">ℹ️</span>
+                        <span class="edit-icon-col" title="Edit">✏️</span>
+                    </td>
+                    <td class="node-name">
+                        <span class="toggle-btn">▼</span> nawps
+                    </td>
+                    <td>1200</td>
+                    <td><span class="badge-stage badge-p-bom">P-BOM</span></td>
+                    <td class="cat-cell" style="cursor:pointer; color:#007bff; text-decoration:underline;">Vật liệu thô > Thép hộp</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
+
 
   </main>
     <!-- Form Modal nhập kho -->
