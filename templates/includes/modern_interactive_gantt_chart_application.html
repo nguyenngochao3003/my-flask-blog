@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Interactive Gantt Chart System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; user-select: none; }
+        
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Diagonal corner cuts for Gantt task bars */
+        .gantt-bar-bevel {
+            clip-path: polygon(
+                0% 0%, 
+                calc(100% - 6px) 0%, 
+                100% 6px, 
+                100% 100%, 
+                6px 100%, 
+                0% calc(100% - 6px)
+            );
+        }
+
+        /* Splitter handle resize indicator */
+        .resizer-col {
+            width: 4px;
+            cursor: col-resize;
+            transition: background-color 0.15s;
+        }
+        .resizer-col:hover, .resizer-col.resizing {
+            background-color: #0284c7;
+        }
+
+        .pane-splitter {
+            width: 6px;
+            cursor: col-resize;
+            background-color: #e2e8f0;
+            transition: background-color 0.2s;
+        }
+        .dark .pane-splitter { background-color: #334155; }
+        .pane-splitter:hover, .pane-splitter.active { background-color: #0284c7; }
+
+        /* Disable text selection during drag operations */
+        .dragging { cursor: grabbing !important; }
+    </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col overflow-hidden font-sans">
+
+    <!-- TOP NAVIGATION & APP HEADER -->
+    <header class="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 flex items-center justify-between z-20 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-2 rounded-lg shadow">
+                <i class="fa-solid font-bold fa-chart-gantt text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-2">
+                    Enterprise Project Gantt Studio
+                    <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">Pro 2026</span>
+                </h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Smart Auto-Scheduling & Cost Management</p>
+            </div>
+        </div>
+
+        <!-- Project KPI Quick Summary -->
+        <div class="hidden lg:flex items-center space-x-6 text-xs">
+            <div class="bg-slate-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700">
+                <span class="text-slate-500 dark:text-slate-400">Total Budget:</span>
+                <span id="kpi-budget" class="font-bold ml-1 text-emerald-600 dark:text-emerald-400">$0</span>
+            </div>
+            <div class="bg-slate-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700">
+                <span class="text-slate-500 dark:text-slate-400">Total Work:</span>
+                <span id="kpi-hours" class="font-bold ml-1 text-blue-600 dark:text-blue-400">0h</span>
+            </div>
+            <div class="bg-slate-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700">
+                <span class="text-slate-500 dark:text-slate-400">Completion:</span>
+                <span id="kpi-progress" class="font-bold ml-1 text-purple-600 dark:text-purple-400">0%</span>
+            </div>
+        </div>
+
+        <!-- Actions & Configuration Tools -->
+        <div class="flex items-center space-x-2">
+            <button id="btn-add-task" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded-md shadow flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-plus"></i> Add Task
+            </button>
+            <button id="btn-manage-resources" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-users"></i> Resources & Rates
+            </button>
+            <button id="btn-manage-calendar" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-calendar-days"></i> Holidays & Shifts
+            </button>
+            <button id="btn-toggle-theme" class="p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-300 dark:border-slate-600">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:inline"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- TOOLBAR FOR ZOOM & FILTER CONTROLS -->
+    <div class="h-12 bg-white dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 px-4 flex items-center justify-between text-xs gap-4 flex-shrink-0 z-10">
+        <div class="flex items-center space-x-3 overflow-x-auto">
+            <!-- Zoom Time Scale Select -->
+            <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                <span class="text-slate-500 dark:text-slate-400 px-1 font-medium">Zoom:</span>
+                <button class="zoom-btn px-2 py-1 rounded font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600" data-scale="hour">Hour</button>
+                <button class="zoom-btn active px-2 py-1 rounded font-medium bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm" data-scale="day">Day</button>
+                <button class="zoom-btn px-2 py-1 rounded font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600" data-scale="week">Week</button>
+                <button class="zoom-btn px-2 py-1 rounded font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600" data-scale="month">Month</button>
+            </div>
+
+            <!-- Date Jump Navigation -->
+            <button id="btn-today" class="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium transition">
+                Today
+            </button>
+
+            <!-- Employee Column Highlight Filter -->
+            <div class="flex items-center space-x-1.5">
+                <label for="filter-resource" class="text-slate-500 dark:text-slate-400 font-medium">Filter Member Days Off:</label>
+                <select id="filter-resource" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
+                    <option value="all">All (Global Holidays & Sun)</option>
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+        </div>
+
+        <!-- Gantt Display Features Toggles -->
+        <div class="flex items-center space-x-3 text-slate-600 dark:text-slate-300">
+            <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" id="toggle-task-labels" checked class="rounded text-blue-600 focus:ring-blue-500">
+                <span>Task Names</span>
+            </label>
+            <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" id="toggle-bar-avatars" checked class="rounded text-blue-600 focus:ring-blue-500">
+                <span>Avatars</span>
+            </label>
+            <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" id="toggle-progress" checked class="rounded text-blue-600 focus:ring-blue-500">
+                <span>Progress %</span>
+            </label>
+            <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" id="toggle-dependencies" checked class="rounded text-blue-600 focus:ring-blue-500">
+                <span>Dependencies</span>
+            </label>
+            
+            <!-- Column Display Popover Toggle -->
+            <button id="btn-columns-menu" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 relative" title="Toggle Grid Columns">
+                <i class="fa-solid fa-columns text-slate-500 dark:text-slate-400 text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APPLICATION SPLIT WORKSPACE -->
+    <div id="workspace-container" class="flex-1 flex overflow-hidden relative">
+        
+        <!-- LEFT PANEL: TREE VIEW GRID -->
+        <div id="left-tree-panel" class="flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-hidden" style="width: 520px;">
+            <!-- Tree Grid Header -->
+            <div id="tree-header" class="h-12 bg-slate-100 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-700 flex items-center font-semibold text-xs text-slate-600 dark:text-slate-300 relative select-none">
+                <div class="col-header flex items-center px-2 border-r border-slate-200 dark:border-slate-700 h-full relative" data-col="name" style="width: 200px;">
+                    <span>Task Name</span>
+                    <div class="resizer-col absolute right-0 top-0 bottom-0"></div>
+                </div>
+                <div class="col-header flex items-center px-2 border-r border-slate-200 dark:border-slate-700 h-full relative" data-col="duration" style="width: 60px;">
+                    <span>Dur</span>
+                    <div class="resizer-col absolute right-0 top-0 bottom-0"></div>
+                </div>
+                <div class="col-header flex items-center px-2 border-r border-slate-200 dark:border-slate-700 h-full relative" data-col="start" style="width: 80px;">
+                    <span>Start</span>
+                    <div class="resizer-col absolute right-0 top-0 bottom-0"></div>
+                </div>
+                <div class="col-header flex items-center px-2 border-r border-slate-200 dark:border-slate-700 h-full relative" data-col="end" style="width: 80px;">
+                    <span>End</span>
+                    <div class="resizer-col absolute right-0 top-0 bottom-0"></div>
+                </div>
+                <div class="col-header flex items-center px-2 border-r border-slate-200 dark:border-slate-700 h-full relative" data-col="assignees" style="width: 70px;">
+                    <span>People</span>
+                    <div class="resizer-col absolute right-0 top-0 bottom-0"></div>
+                </div>
+                <div class="col-header flex items-center px-2 border-r border-slate-200 dark:border-slate-700 h-full relative" data-col="hours" style="width: 60px;">
+                    <span>Est. (h)</span>
+                    <div class="resizer-col absolute right-0 top-0 bottom-0"></div>
+                </div>
+                <div class="col-header flex items-center px-2 border-r border-slate-200 dark:border-slate-700 h-full relative" data-col="cost" style="width: 70px;">
+                    <span>Cost ($)</span>
+                    <div class="resizer-col absolute right-0 top-0 bottom-0"></div>
+                </div>
+            </div>
+
+            <!-- Tree Grid Scrollable Body -->
+            <div id="tree-body" class="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                <!-- Tree rows generated dynamically by JS -->
+            </div>
+        </div>
+
+        <!-- PANEL SPLITTER HANDLE -->
+        <div id="pane-splitter" class="pane-splitter flex-shrink-0 z-20"></div>
+
+        <!-- RIGHT PANEL: GANTT TIMELINE CHART -->
+        <div id="right-gantt-panel" class="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
+            
+            <!-- Timeline Time Header Container -->
+            <div id="gantt-timeline-header" class="h-12 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 overflow-hidden relative select-none flex-shrink-0">
+                <div id="timeline-scale-container" class="h-full relative">
+                    <!-- Scale ticks dynamically rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Gantt Body Canvas Scrollable Area -->
+            <div id="gantt-scroll-body" class="flex-1 overflow-auto relative">
+                <!-- SVG Container for Task Dependency Connector Lines -->
+                <svg id="gantt-svg-dependencies" class="absolute top-0 left-0 pointer-events-none z-10 w-full h-full">
+                    <defs>
+                        <marker id="arrowhead" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#0284c7" />
+                        </marker>
+                    </defs>
+                </svg>
+
+                <!-- Background Grid (Days / Holidays columns) -->
+                <div id="gantt-grid-background" class="absolute top-0 left-0 bottom-0 pointer-events-none"></div>
+
+                <!-- Interactive Task Bars Container -->
+                <div id="gantt-bars-container" class="absolute top-0 left-0 right-0 bottom-0 z-10">
+                    <!-- Gantt task bars generated dynamically by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: TASK CREATION & EDIT MODAL -->
+    <div id="modal-task" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="px-5 py-3.5 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 id="modal-task-title" class="font-bold text-slate-800 dark:text-white text-base">Edit Task</h3>
+                <button class="btn-close-modal text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="form-task" class="p-5 overflow-y-auto space-y-4 text-xs">
+                <input type="hidden" id="task-id">
+                
+                <div>
+                    <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Task Title</label>
+                    <input type="text" id="task-title" required class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Type</label>
+                        <select id="task-type" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                            <option value="task">Standard Task</option>
+                            <option value="summary">Summary Task Group</option>
+                            <option value="milestone">Milestone</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Parent Task</label>
+                        <select id="task-parent" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                            <option value="">(None - Top Level)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Auto Calculation Block -->
+                <div class="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-lg space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calculator"></i> Smart Workload Engine
+                        </span>
+                        <label class="flex items-center gap-1 text-slate-600 dark:text-slate-300 text-[11px]">
+                            <input type="checkbox" id="task-auto-calc" checked class="rounded text-blue-600"> Auto-Calculate Duration
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Estimated Effort (Hours)</label>
+                            <input type="number" min="1" id="task-estimated-hours" value="16" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Start Date</label>
+                            <input type="date" id="task-start-date" class="w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-blue-800 dark:text-blue-300 leading-tight">
+                        * Formula: Duration (days) = Estimated Effort ÷ (Assigned Team Count × Daily Working Shift Hours). Skips weekends/holidays!
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">End Date (Manual Overwrite)</label>
+                        <input type="date" id="task-end-date" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Progress (%)</label>
+                        <input type="number" min="0" max="100" id="task-progress" value="0" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Bar Color</label>
+                        <input type="color" id="task-color" value="#0284c7" class="w-full h-9 p-1 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Material Cost ($)</label>
+                        <input type="number" min="0" id="task-material-cost" value="0" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Assignees</label>
+                    <div id="task-assignees-container" class="flex flex-wrap gap-2 p-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600 rounded-md max-h-28 overflow-y-auto">
+                        <!-- Populated checkboxes dynamically -->
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Predecessor Task (Dependency)</label>
+                    <select id="task-dependency" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2">
+                        <option value="">(None)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center space-x-3 py-1">
+                    <label class="flex items-center space-x-2 cursor-pointer font-medium text-slate-700 dark:text-slate-300">
+                        <input type="checkbox" id="task-flagged" class="rounded text-amber-500 focus:ring-amber-400">
+                        <span><i class="fa-solid fa-flag text-amber-500 mr-1"></i> Bookmark / Flag as Critical</span>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Notes & Details</label>
+                    <textarea id="task-notes" rows="2" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Task requirements or specifications..."></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between">
+                    <button type="button" id="btn-delete-task" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/40 dark:hover:bg-red-900/70 dark:text-red-300 rounded-md font-medium transition">
+                        <i class="fa-solid fa-trash mr-1"></i> Delete
+                    </button>
+                    <div class="flex space-x-2">
+                        <button type="button" class="btn-close-modal px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-md font-medium">Cancel</button>
+                        <button type="submit" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium shadow">Save Task</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: TEAM & RESOURCE MANAGEMENT MODAL -->
+    <div id="modal-resources" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="px-5 py-3.5 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 dark:text-white text-base"><i class="fa-solid fa-users text-blue-500 mr-2"></i>Resource Roster & Wage Rates</h3>
+                <button class="btn-close-modal text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto space-y-4 text-xs">
+                <!-- Add New Member Form -->
+                <form id="form-add-resource" class="p-3 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700 rounded-lg space-y-2">
+                    <span class="font-semibold text-slate-800 dark:text-slate-200 block">Add New Team Member</span>
+                    <div class="grid grid-cols-4 gap-2">
+                        <input type="text" id="res-name" placeholder="Full Name" required class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-1.5">
+                        <input type="number" id="res-rate" placeholder="Hourly Rate ($)" required min="0" value="35" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-1.5">
+                        <input type="number" id="res-shift" placeholder="Daily Shift (h)" required min="1" max="12" value="8" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-1.5">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded p-1.5 shadow">Add Member</button>
+                    </div>
+                </form>
+
+                <!-- Resource List Table -->
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                            <th class="py-2">Member</th>
+                            <th class="py-2">Hourly Rate</th>
+                            <th class="py-2">Shift (h/day)</th>
+                            <th class="py-2">Personal Leave / Off Days</th>
+                            <th class="py-2 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resource-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-3 bg-slate-100 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700 text-right">
+                <button class="btn-close-modal px-4 py-1.5 bg-blue-600 text-white rounded-md font-medium text-xs">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CALENDAR & SHIFT MANAGEMENT -->
+    <div id="modal-calendar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="px-5 py-3.5 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 dark:text-white text-base"><i class="fa-solid fa-calendar-check text-blue-500 mr-2"></i>Global Working Calendar & Holidays</h3>
+                <button class="btn-close-modal text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto space-y-4 text-xs">
+                <div>
+                    <label class="block font-medium mb-1 text-slate-700 dark:text-slate-300">Global Default Shift Hours / Day</label>
+                    <input type="number" id="global-shift-hours" min="1" max="16" value="8" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-2">
+                </div>
+
+                <form id="form-add-holiday" class="p-3 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700 rounded-lg space-y-2">
+                    <span class="font-semibold text-slate-800 dark:text-slate-200 block">Add Public Holiday / Non-Working Day (e.g., Tết, New Year)</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="holiday-name" placeholder="Holiday Title" required class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-1.5">
+                        <input type="date" id="holiday-date" required class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-1.5">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded p-1.5 shadow">Add Holiday</button>
+                    </div>
+                </form>
+
+                <div>
+                    <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-2">Configured Project Holidays</h4>
+                    <ul id="holiday-list" class="divide-y divide-slate-100 dark:divide-slate-700/50 max-h-40 overflow-y-auto">
+                        <!-- Populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-100 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700 text-right">
+                <button class="btn-close-modal px-4 py-1.5 bg-blue-600 text-white rounded-md font-medium text-xs">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPOVER: COLUMNS SELECTOR MENU -->
+    <div id="popover-columns" class="fixed bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs z-40 hidden space-y-2 w-44">
+        <span class="font-semibold text-slate-700 dark:text-slate-300 block border-b pb-1">Visible Columns</span>
+        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-col="duration" checked class="col-toggle"> <span>Duration</span></label>
+        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-col="start" checked class="col-toggle"> <span>Start Date</span></label>
+        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-col="end" checked class="col-toggle"> <span>End Date</span></label>
+        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-col="assignees" checked class="col-toggle"> <span>People</span></label>
+        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-col="hours" checked class="col-toggle"> <span>Est. Hours</span></label>
+        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-col="cost" checked class="col-toggle"> <span>Cost ($)</span></label>
+    </div>
+
+    <!-- RICH TASK HOVER TOOLTIP -->
+    <div id="gantt-tooltip" class="fixed bg-slate-900/95 text-white p-3 rounded-lg shadow-xl text-xs z-50 pointer-events-none hidden max-w-xs border border-slate-700 backdrop-blur-sm transition-opacity duration-150">
+        <div id="tooltip-content"></div>
+    </div>
+
+    <script>
+        // Core Application State
+        const AppState = {
+            scale: 'day', // 'hour', 'day', 'week', 'month'
+            pxPerUnit: 40, // Base pixel width per scale unit
+            startDate: new Date(2026, 8, 1), // Default start date: Sept 1, 2026
+            rowHeight: 40,
+            filterResource: 'all',
+            showTaskLabels: true,
+            showBarAvatars: true,
+            showProgress: true,
+            showDependencies: true,
+            globalShiftHours: 8,
+            
+            // Resources Roster
+            resources: [
+                { id: 'res_1', name: 'Alex Rivera', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', hourlyRate: 45, shiftHours: 8, leaveDays: ['2026-09-07'] },
+                { id: 'res_2', name: 'Minh Tran', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', hourlyRate: 50, shiftHours: 8, leaveDays: ['2026-09-14'] },
+                { id: 'res_3', name: 'Sophia Chen', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', hourlyRate: 40, shiftHours: 4, leaveDays: [] },
+                { id: 'res_4', name: 'David Kim', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', hourlyRate: 55, shiftHours: 8, leaveDays: ['2026-09-20'] }
+            ],
+
+            // Global Public Holidays (e.g., Vietnam National Day Sept 2)
+            holidays: [
+                { date: '2026-09-02', name: 'National Day / Lễ 2/9' }
+            ],
+
+            // Project Tasks Tree Data
+            tasks: [
+                {
+                    id: 'task_1',
+                    title: '1. UI/UX & Architecture Design',
+                    type: 'summary',
+                    expanded: true,
+                    startDate: '2026-09-01',
+                    endDate: '2026-09-10',
+                    estimatedHours: 80,
+                    progress: 75,
+                    color: '#4f46e5',
+                    assignees: ['res_1', 'res_3'],
+                    materialCost: 500,
+                    flagged: true,
+                    notes: 'Core architecture and design wireframes package.',
+                    predecessor: null
+                },
+                {
+                    id: 'task_1_1',
+                    parentId: 'task_1',
+                    title: 'System Requirements & Wireframes',
+                    type: 'task',
+                    startDate: '2026-09-01',
+                    endDate: '2026-09-04',
+                    estimatedHours: 24,
+                    progress: 100,
+                    color: '#0284c7',
+                    assignees: ['res_1'],
+                    materialCost: 0,
+                    flagged: false,
+                    notes: 'Gather specs and finalize Figma mockups.',
+                    predecessor: null
+                },
+                {
+                    id: 'task_1_2',
+                    parentId: 'task_1',
+                    title: 'Database Schema & API Design',
+                    type: 'task',
+                    startDate: '2026-09-05',
+                    endDate: '2026-09-10',
+                    estimatedHours: 32,
+                    progress: 50,
+                    color: '#0284c7',
+                    assignees: ['res_2', 'res_3'],
+                    materialCost: 150,
+                    flagged: false,
+                    notes: 'Database normalization and OpenAPI specs.',
+                    predecessor: 'task_1_1'
+                },
+                {
+                    id: 'task_2',
+                    title: '2. Frontend & Gantt Engine Development',
+                    type: 'summary',
+                    expanded: true,
+                    startDate: '2026-09-08',
+                    endDate: '2026-09-25',
+                    estimatedHours: 120,
+                    progress: 30,
+                    color: '#0891b2',
+                    assignees: ['res_2', 'res_4'],
+                    materialCost: 1200,
+                    flagged: true,
+                    notes: 'Gantt chart rendering canvas and interaction loop.',
+                    predecessor: 'task_1'
+                },
+                {
+                    id: 'task_2_1',
+                    parentId: 'task_2',
+                    title: 'TreeView Grid & Column Resizer',
+                    type: 'task',
+                    startDate: '2026-09-08',
+                    endDate: '2026-09-13',
+                    estimatedHours: 40,
+                    progress: 60,
+                    color: '#0284c7',
+                    assignees: ['res_2'],
+                    materialCost: 0,
+                    flagged: false,
+                    notes: 'Implement collapsible tree structure with dynamic resizing.',
+                    predecessor: 'task_1_2'
+                },
+                {
+                    id: 'task_2_2',
+                    parentId: 'task_2',
+                    title: 'Gantt Timeline Drag & Resize Engine',
+                    type: 'task',
+                    startDate: '2026-09-14',
+                    endDate: '2026-09-22',
+                    estimatedHours: 48,
+                    progress: 10,
+                    color: '#d97706',
+                    assignees: ['res_4'],
+                    materialCost: 200,
+                    flagged: true,
+                    notes: 'Interactive drag bars, auto-scheduling engine, and dependencies.',
+                    predecessor: 'task_2_1'
+                },
+                {
+                    id: 'task_3',
+                    title: '3. QA, Integration & Deployment',
+                    type: 'summary',
+                    expanded: true,
+                    startDate: '2026-09-23',
+                    endDate: '2026-09-30',
+                    estimatedHours: 40,
+                    progress: 0,
+                    color: '#16a34a',
+                    assignees: ['res_1', 'res_2', 'res_3', 'res_4'],
+                    materialCost: 300,
+                    flagged: false,
+                    notes: 'Final system audit and cloud deployment.',
+                    predecessor: 'task_2'
+                }
+            ]
+        };
+
+        /**
+         * Checks if a date is a non-working day (Sunday or Global Holiday or Employee Time-Off)
+         */
+        function isNonWorkingDay(dateObj, resourceId = 'all') {
+            const dayOfWeek = dateObj.getDay();
+            const dateStr = dateObj.toISOString().split('T')[0];
+
+            // Standard Weekend: Sunday (0) is default off
+            if (dayOfWeek === 0) return true;
+
+            // Global Holidays
+            if (AppState.holidays.some(h => h.date === dateStr)) return true;
+
+            // Specific Employee Leave Days
+            if (resourceId !== 'all') {
+                const res = AppState.resources.find(r => r.id === resourceId);
+                if (res && res.leaveDays.includes(dateStr)) return true;
+            } else {
+                // If checking generally, check if all assigned members have leave
+            }
+
+            return false;
+        }
+
+        /**
+         * Auto Scheduling Calculation Engine
+         * Calculates end date based on effort (hours), assigned resources, shifts, and skips holidays.
+         */
+        function calculateTaskAutoSchedule(estimatedHours, startDateStr, assigneeIds) {
+            const start = new Date(startDateStr);
+            if (isNaN(start.getTime())) return { endDateStr: startDateStr, durationDays: 1 };
+
+            // Compute total capacity per working day from assignees
+            let dailyCapacity = 0;
+            if (assigneeIds && assigneeIds.length > 0) {
+                assigneeIds.forEach(id => {
+                    const r = AppState.resources.find(res => res.id === id);
+                    dailyCapacity += r ? (r.shiftHours || AppState.globalShiftHours) : AppState.globalShiftHours;
+                });
+            } else {
+                dailyCapacity = AppState.globalShiftHours;
+            }
+
+            let remainingHours = Number(estimatedHours) || 8;
+            let current = new Date(start);
+            let durationDays = 0;
+
+            while (remainingHours > 0) {
+                // Check if current date is working day for assigned staff
+                let isOff = false;
+                if (current.getDay() === 0) isOff = true; // Sunday
+                const dateStr = current.toISOString().split('T')[0];
+                if (AppState.holidays.some(h => h.date === dateStr)) isOff = true;
+
+                if (!isOff) {
+                    remainingHours -= dailyCapacity;
+                    durationDays++;
+                }
+
+                if (remainingHours > 0) {
+                    current.setDate(current.getDate() + 1);
+                }
+            }
+
+            const endDateStr = current.toISOString().split('T')[0];
+            return { endDateStr, durationDays: Math.max(1, durationDays) };
+        }
+
+        /**
+         * Computes total cost for a task (Material Cost + Hourly Wage Rate * Hours)
+         */
+        function calculateTaskCost(task) {
+            let laborCost = 0;
+            const hours = task.estimatedHours || 0;
+            if (task.assignees && task.assignees.length > 0) {
+                const costPerHour = task.assignees.reduce((acc, resId) => {
+                    const r = AppState.resources.find(x => x.id === resId);
+                    return acc + (r ? r.hourlyRate : 0);
+                }, 0);
+                laborCost = costPerHour * (hours / task.assignees.length);
+            } else {
+                laborCost = hours * 30; // default base rate
+            }
+            return (task.materialCost || 0) + laborCost;
+        }
+
+        /**
+         * Main Render Controller
+         */
+        function renderAll() {
+            renderKPIs();
+            renderTreeGrid();
+            renderGanttTimelineHeader();
+            renderGanttBarsAndGrid();
+            renderDependencies();
+        }
+
+        /**
+         * Update Summary KPIs on Header
+         */
+        function renderKPIs() {
+            let totalBudget = 0;
+            let totalHours = 0;
+            let totalProgressWeighted = 0;
+
+            const nonSummaryTasks = AppState.tasks.filter(t => t.type !== 'summary');
+            
+            AppState.tasks.forEach(task => {
+                totalBudget += calculateTaskCost(task);
+            });
+
+            nonSummaryTasks.forEach(task => {
+                totalHours += (task.estimatedHours || 0);
+                totalProgressWeighted += (task.progress || 0) * (task.estimatedHours || 1);
+            });
+
+            const avgProgress = totalHours > 0 ? Math.round(totalProgressWeighted / totalHours) : 0;
+
+            document.getElementById('kpi-budget').textContent = `$${totalBudget.toLocaleString()}`;
+            document.getElementById('kpi-hours').textContent = `${totalHours}h`;
+            document.getElementById('kpi-progress').textContent = `${avgProgress}%`;
+        }
+
+        /**
+         * Render TreeView Grid (Left Panel)
+         */
+        function renderTreeGrid() {
+            const container = document.getElementById('tree-body');
+            container.innerHTML = '';
+
+            // Filter visible tasks considering summary collapse state
+            const visibleTasks = getVisibleTaskList();
+
+            visibleTasks.forEach(task => {
+                const row = document.createElement('div');
+                row.className = `tree-row flex items-center text-xs hover:bg-slate-50 dark:hover:bg-slate-700/40 transition border-b border-slate-100 dark:border-slate-700/50 cursor-pointer ${task.type === 'summary' ? 'font-semibold bg-slate-50/50 dark:bg-slate-800/60' : ''}`;
+                row.style.height = `${AppState.rowHeight}px`;
+                row.dataset.taskId = task.id;
+
+                // Indentation calculation for tree depth
+                const depth = task.parentId ? 1 : 0;
+                const indentPx = depth * 16 + 8;
+
+                // Assigned Person Badges / Avatars
+                let assigneesHtml = '<div class="flex -space-x-1 overflow-hidden">';
+                if (task.assignees && task.assignees.length > 0) {
+                    task.assignees.forEach(resId => {
+                        const res = AppState.resources.find(r => r.id === resId);
+                        if (res) {
+                            assigneesHtml += `<img class="inline-block h-5 w-5 rounded-full ring-1 ring-white dark:ring-slate-800 object-cover" src="${res.avatar}" title="${res.name}">`;
+                        }
+                    });
+                } else {
+                    assigneesHtml += '<span class="text-slate-400 text-[10px]">-</span>';
+                }
+                assigneesHtml += '</div>';
+
+                const taskCost = calculateTaskCost(task);
+                const durationDays = getTaskDurationDays(task);
+
+                row.innerHTML = `
+                    <!-- Name Column -->
+                    <div class="col-cell flex items-center px-2 truncate border-r border-slate-100 dark:border-slate-700/50 h-full" data-col="name" style="width: 200px; padding-left: ${indentPx}px;">
+                        ${task.type === 'summary' ? `
+                            <button class="toggle-expand mr-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200">
+                                <i class="fa-solid fa-chevron-${task.expanded ? 'down' : 'right'} text-[10px]"></i>
+                            </button>
+                        ` : '<span class="w-4"></span>'}
+                        ${task.flagged ? '<i class="fa-solid fa-flag text-amber-500 text-[10px] mr-1"></i>' : ''}
+                        <span class="truncate" title="${task.title}">${task.title}</span>
+                    </div>
+
+                    <!-- Duration Column -->
+                    <div class="col-cell flex items-center px-2 text-slate-600 dark:text-slate-300 border-r border-slate-100 dark:border-slate-700/50 h-full" data-col="duration" style="width: 60px;">
+                        ${durationDays}d
+                    </div>
+
+                    <!-- Start Date Column -->
+                    <div class="col-cell flex items-center px-2 text-slate-500 dark:text-slate-400 border-r border-slate-100 dark:border-slate-700/50 h-full text-[11px]" data-col="start" style="width: 80px;">
+                        ${task.startDate || '-'}
+                    </div>
+
+                    <!-- End Date Column -->
+                    <div class="col-cell flex items-center px-2 text-slate-500 dark:text-slate-400 border-r border-slate-100 dark:border-slate-700/50 h-full text-[11px]" data-col="end" style="width: 80px;">
+                        ${task.endDate || '-'}
+                    </div>
+
+                    <!-- Assignees Column -->
+                    <div class="col-cell flex items-center px-2 border-r border-slate-100 dark:border-slate-700/50 h-full" data-col="assignees" style="width: 70px;">
+                        ${assigneesHtml}
+                    </div>
+
+                    <!-- Estimated Hours Column -->
+                    <div class="col-cell flex items-center px-2 text-slate-600 dark:text-slate-300 border-r border-slate-100 dark:border-slate-700/50 h-full" data-col="hours" style="width: 60px;">
+                        ${task.estimatedHours || 0}h
+                    </div>
+
+                    <!-- Cost Column -->
+                    <div class="col-cell flex items-center px-2 text-emerald-600 dark:text-emerald-400 font-medium border-r border-slate-100 dark:border-slate-700/50 h-full" data-col="cost" style="width: 70px;">
+                        $${taskCost}
+                    </div>
+                `;
+
+                // Single-click to open editor modal
+                row.addEventListener('click', (e) => {
+                    if (e.target.closest('.toggle-expand')) {
+                        task.expanded = !task.expanded;
+                        renderAll();
+                        return;
+                    }
+                    openTaskModal(task.id);
+                });
+
+                container.appendChild(row);
+            });
+        }
+
+        /**
+         * Get flattened list of tasks taking toggle expansion state into account
+         */
+        function getVisibleTaskList() {
+            const list = [];
+            AppState.tasks.forEach(task => {
+                if (!task.parentId) {
+                    list.push(task);
+                    if (task.type === 'summary' && task.expanded) {
+                        const children = AppState.tasks.filter(c => c.parentId === task.id);
+                        list.push(...children);
+                    }
+                }
+            });
+            return list;
+        }
+
+        function getTaskDurationDays(task) {
+            const start = new Date(task.startDate);
+            const end = new Date(task.endDate);
+            if (isNaN(start) || isNaN(end)) return 1;
+            const diffTime = Math.abs(end - start);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        /**
+         * Render Header Timeline Ticks (Day, Hour, Week, Month)
+         */
+        function renderGanttTimelineHeader() {
+            const container = document.getElementById('timeline-scale-container');
+            container.innerHTML = '';
+
+            const totalUnits = 60; // 60 scale units rendered into timeline canvas
+            const unitWidth = AppState.pxPerUnit;
+
+            container.style.width = `${totalUnits * unitWidth}px`;
+
+            for (let i = 0; i < totalUnits; i++) {
+                const tickDate = new Date(AppState.startDate);
+                
+                if (AppState.scale === 'day') {
+                    tickDate.setDate(tickDate.getDate() + i);
+                } else if (AppState.scale === 'hour') {
+                    tickDate.setHours(tickDate.getHours() + i * 2);
+                } else if (AppState.scale === 'week') {
+                    tickDate.setDate(tickDate.getDate() + i * 7);
+                } else if (AppState.scale === 'month') {
+                    tickDate.setMonth(tickDate.getMonth() + i);
+                }
+
+                const tickEl = document.createElement('div');
+                tickEl.className = 'absolute top-0 bottom-0 border-r border-slate-200 dark:border-slate-700/60 flex flex-col justify-center px-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium select-none';
+                tickEl.style.left = `${i * unitWidth}px`;
+                tickEl.style.width = `${unitWidth}px`;
+
+                // Format Label
+                let mainLabel = '';
+                let subLabel = '';
+
+                if (AppState.scale === 'day') {
+                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    mainLabel = `${tickDate.getDate()} ${tickDate.toLocaleString('default', { month: 'short' })}`;
+                    subLabel = days[tickDate.getDay()];
+                    
+                    // Highlight today
+                    if (isSameDay(tickDate, new Date())) {
+                        tickEl.classList.add('bg-blue-50/80', 'dark:bg-blue-950/40', 'text-blue-600', 'font-bold');
+                    }
+                } else if (AppState.scale === 'hour') {
+                    mainLabel = `${tickDate.getHours()}:00`;
+                    subLabel = `${tickDate.getDate()} ${tickDate.toLocaleString('default', { month: 'short' })}`;
+                } else if (AppState.scale === 'week') {
+                    mainLabel = `W${getWeekNumber(tickDate)}`;
+                    subLabel = `${tickDate.getDate()} ${tickDate.toLocaleString('default', { month: 'short' })}`;
+                } else if (AppState.scale === 'month') {
+                    mainLabel = tickDate.toLocaleString('default', { month: 'short' });
+                    subLabel = tickDate.getFullYear();
+                }
+
+                tickEl.innerHTML = `<div>${mainLabel}</div><div class="text-[9px] opacity-75">${subLabel}</div>`;
+                container.appendChild(tickEl);
+            }
+        }
+
+        /**
+         * Render Background Grid (Highlights Sunday & Off-days) and Interactive Gantt Task Bars
+         */
+        function renderGanttBarsAndGrid() {
+            const visibleTasks = getVisibleTaskList();
+            const totalUnits = 60;
+            const unitWidth = AppState.pxPerUnit;
+            const totalWidth = totalUnits * unitWidth;
+
+            const gridBg = document.getElementById('gantt-grid-background');
+            const barsContainer = document.getElementById('gantt-bars-container');
+
+            gridBg.style.width = `${totalWidth}px`;
+            barsContainer.style.width = `${totalWidth}px`;
+
+            gridBg.innerHTML = '';
+            barsContainer.innerHTML = '';
+
+            // 1. Render Background Columns (Off-days and Sundays down the timeline)
+            if (AppState.scale === 'day') {
+                for (let i = 0; i < totalUnits; i++) {
+                    const colDate = new Date(AppState.startDate);
+                    colDate.setDate(colDate.getDate() + i);
+
+                    const isOff = isNonWorkingDay(colDate, AppState.filterResource);
+
+                    if (isOff) {
+                        const colHighlight = document.createElement('div');
+                        colHighlight.className = 'absolute top-0 bottom-0 bg-slate-200/40 dark:bg-slate-800/80 pointer-events-none border-r border-slate-200/50 dark:border-slate-700/30';
+                        colHighlight.style.left = `${i * unitWidth}px`;
+                        colHighlight.style.width = `${unitWidth}px`;
+                        gridBg.appendChild(colHighlight);
+                    }
+                }
+            }
+
+            // 2. Render Task Bars
+            visibleTasks.forEach((task, index) => {
+                const topPos = index * AppState.rowHeight + 6; // Center bar in row
+                const barHeight = AppState.rowHeight - 12;
+
+                const startPos = dateToPixel(task.startDate);
+                const endPos = dateToPixel(task.endDate, true);
+                const barWidth = Math.max(12, endPos - startPos);
+
+                const barEl = document.createElement('div');
+                barEl.className = `gantt-task-bar absolute flex items-center rounded-md text-white font-medium shadow-sm transition-all select-none cursor-grab gantt-bar-bevel`;
+                barEl.style.top = `${topPos}px`;
+                barEl.style.left = `${startPos}px`;
+                barEl.style.width = `${barWidth}px`;
+                barEl.style.height = `${barHeight}px`;
+                barEl.style.backgroundColor = task.color || '#0284c7';
+                barEl.dataset.taskId = task.id;
+
+                // Progress Bar Overlay inside task bar
+                if (AppState.showProgress && task.progress > 0) {
+                    const progressOverlay = document.createElement('div');
+                    progressOverlay.className = 'absolute left-0 top-0 bottom-0 bg-black/25 rounded-l pointer-events-none';
+                    progressOverlay.style.width = `${task.progress}%`;
+                    barEl.appendChild(progressOverlay);
+                }
+
+                // Inner Content Block (Task Name, Avatars, Progress text)
+                const contentEl = document.createElement('div');
+                contentEl.className = 'px-2 flex items-center justify-between w-full h-full text-[11px] z-10 pointer-events-none overflow-hidden';
+
+                let leftContent = '';
+                if (AppState.showTaskLabels) {
+                    leftContent += `<span class="truncate drop-shadow-sm">${task.title}</span>`;
+                }
+
+                let rightContent = '';
+                if (AppState.showProgress) {
+                    rightContent += `<span class="text-[10px] opacity-90 ml-1 font-mono">${task.progress}%</span>`;
+                }
+
+                // Bar Avatars
+                if (AppState.showBarAvatars && task.assignees && task.assignees.length > 0) {
+                    let avs = '<div class="flex -space-x-1 ml-1">';
+                    task.assignees.forEach(resId => {
+                        const r = AppState.resources.find(x => x.id === resId);
+                        if (r) {
+                            avs += `<img class="h-4 w-4 rounded-full border border-white/80 object-cover" src="${r.avatar}">`;
+                        }
+                    });
+                    avs += '</div>';
+                    rightContent += avs;
+                }
+
+                contentEl.innerHTML = `<div class="truncate flex items-center gap-1">${leftContent}</div><div class="flex items-center">${rightContent}</div>`;
+                barEl.appendChild(contentEl);
+
+                // Resize Handles on left and right edges
+                const leftHandle = document.createElement('div');
+                leftHandle.className = 'bar-resize-handle absolute left-0 top-0 bottom-0 w-2 cursor-w-resize hover:bg-white/40 rounded-l z-20';
+                leftHandle.dataset.handle = 'left';
+
+                const rightHandle = document.createElement('div');
+                rightHandle.className = 'bar-resize-handle absolute right-0 top-0 bottom-0 w-2 cursor-e-resize hover:bg-white/40 rounded-r z-20';
+                rightHandle.dataset.handle = 'right';
+
+                barEl.appendChild(leftHandle);
+                barEl.appendChild(rightHandle);
+
+                // Setup Dragging & Resizing Interactions
+                setupBarInteractions(barEl, task);
+
+                // Setup Rich Hover Tooltip
+                setupTaskTooltip(barEl, task);
+
+                barsContainer.appendChild(barEl);
+            });
+        }
+
+        /**
+         * Render SVG Connector Lines for Predecessor Task Dependencies
+         */
+        function renderDependencies() {
+            const svg = document.getElementById('gantt-svg-dependencies');
+            if (!AppState.showDependencies) {
+                svg.innerHTML = '<defs><marker id="arrowhead" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0284c7" /></marker></defs>';
+                return;
+            }
+
+            const visibleTasks = getVisibleTaskList();
+            let pathsHtml = '';
+
+            visibleTasks.forEach((task, targetIdx) => {
+                if (task.predecessor) {
+                    const predTask = AppState.tasks.find(t => t.id === task.predecessor);
+                    const predIdx = visibleTasks.findIndex(t => t.id === task.predecessor);
+
+                    if (predTask && predIdx !== -1) {
+                        // Source End Point
+                        const x1 = dateToPixel(predTask.endDate, true);
+                        const y1 = predIdx * AppState.rowHeight + AppState.rowHeight / 2;
+
+                        // Target Start Point
+                        const x2 = dateToPixel(task.startDate);
+                        const y2 = targetIdx * AppState.rowHeight + AppState.rowHeight / 2;
+
+                        // Orthogonal SVG Curve path (Finish-to-Start)
+                        const midX = x1 + 12;
+                        const path = `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
+
+                        pathsHtml += `<path d="${path}" stroke="#0284c7" stroke-width="2" fill="none" marker-end="url(#arrowhead)" stroke-dasharray="3,3" opacity="0.8" />`;
+                    }
+                }
+            });
+
+            svg.innerHTML = `
+                <defs>
+                    <marker id="arrowhead" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#0284c7" />
+                    </marker>
+                </defs>
+                ${pathsHtml}
+            `;
+        }
+
+        /**
+         * Drag and Resize Handlers for Gantt Task Bars
+         */
+        function setupBarInteractions(barEl, task) {
+            let isDragging = false;
+            let isResizingLeft = false;
+            let isResizingRight = false;
+            let startX = 0;
+            let initialLeft = 0;
+            let initialWidth = 0;
+
+            barEl.addEventListener('mousedown', (e) => {
+                if (e.target.dataset.handle === 'left') {
+                    isResizingLeft = true;
+                } else if (e.target.dataset.handle === 'right') {
+                    isResizingRight = true;
+                } else {
+                    isDragging = true;
+                }
+
+                startX = e.clientX;
+                initialLeft = parseFloat(barEl.style.left);
+                initialWidth = parseFloat(barEl.style.width);
+
+                document.body.classList.add('dragging');
+
+                const onMouseMove = (moveEvent) => {
+                    const deltaX = moveEvent.clientX - startX;
+
+                    if (isDragging) {
+                        const newLeft = Math.max(0, initialLeft + deltaX);
+                        barEl.style.left = `${newLeft}px`;
+                    } else if (isResizingLeft) {
+                        const newLeft = initialLeft + deltaX;
+                        const newWidth = initialWidth - deltaX;
+                        if (newWidth > 15) {
+                            barEl.style.left = `${newLeft}px`;
+                            barEl.style.width = `${newWidth}px`;
+                        }
+                    } else if (isResizingRight) {
+                        const newWidth = Math.max(15, initialWidth + deltaX);
+                        barEl.style.width = `${newWidth}px`;
+                    }
+                };
+
+                const onMouseUp = () => {
+                    document.body.classList.remove('dragging');
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+
+                    // Calculate updated dates from new pixel values
+                    const finalLeft = parseFloat(barEl.style.left);
+                    const finalWidth = parseFloat(barEl.style.width);
+
+                    const newStartDate = pixelToDate(finalLeft);
+                    const newEndDate = pixelToDate(finalLeft + finalWidth);
+
+                    task.startDate = newStartDate.toISOString().split('T')[0];
+                    task.endDate = newEndDate.toISOString().split('T')[0];
+
+                    // Trigger Auto-recalculation if enabled
+                    renderAll();
+                };
+
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+        }
+
+        /**
+         * Setup Hover Tooltip with Details, Notes, and Assignees
+         */
+        function setupTaskTooltip(barEl, task) {
+            const tooltip = document.getElementById('gantt-tooltip');
+            const tooltipContent = document.getElementById('tooltip-content');
+
+            barEl.addEventListener('mouseenter', (e) => {
+                const assigneesText = (task.assignees || []).map(id => {
+                    const r = AppState.resources.find(x => x.id === id);
+                    return r ? r.name : id;
+                }).join(', ') || 'Unassigned';
+
+                const cost = calculateTaskCost(task);
+
+                tooltipContent.innerHTML = `
+                    <div class="font-bold text-sm mb-1 text-blue-400 flex items-center justify-between">
+                        <span>${task.title}</span>
+                        ${task.flagged ? '<i class="fa-solid fa-flag text-amber-400 text-xs"></i>' : ''}
+                    </div>
+                    <div class="space-y-0.5 text-[11px] text-slate-300">
+                        <div><strong class="text-slate-400">Timeline:</strong> ${task.startDate} to ${task.endDate} (${getTaskDurationDays(task)} days)</div>
+                        <div><strong class="text-slate-400">Work Effort:</strong> ${task.estimatedHours || 0} hrs | Progress: ${task.progress}%</div>
+                        <div><strong class="text-slate-400">Team:</strong> ${assigneesText}</div>
+                        <div><strong class="text-slate-400">Estimated Cost:</strong> $${cost}</div>
+                        ${task.notes ? `<div class="mt-1 pt-1 border-t border-slate-700 italic text-slate-400">"${task.notes}"</div>` : ''}
+                    </div>
+                `;
+                tooltip.classList.remove('hidden');
+            });
+
+            barEl.addEventListener('mousemove', (e) => {
+                tooltip.style.left = `${e.clientX + 15}px`;
+                tooltip.style.top = `${e.clientY + 15}px`;
+            });
+
+            barEl.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+            });
+        }
+
+        function dateToPixel(dateStr, isEnd = false) {
+            const date = new Date(dateStr);
+            if (isNaN(date)) return 0;
+
+            const diffTime = date - AppState.startDate;
+            let diffUnits = 0;
+
+            if (AppState.scale === 'day') {
+                diffUnits = diffTime / (1000 * 60 * 60 * 24);
+                if (isEnd) diffUnits += 1; // Include full day
+            } else if (AppState.scale === 'hour') {
+                diffUnits = diffTime / (1000 * 60 * 60 * 2);
+            } else if (AppState.scale === 'week') {
+                diffUnits = diffTime / (1000 * 60 * 60 * 24 * 7);
+            } else if (AppState.scale === 'month') {
+                diffUnits = diffTime / (1000 * 60 * 60 * 24 * 30);
+            }
+
+            return diffUnits * AppState.pxPerUnit;
+        }
+
+        function pixelToDate(px) {
+            const units = px / AppState.pxPerUnit;
+            const result = new Date(AppState.startDate);
+
+            if (AppState.scale === 'day') {
+                result.setDate(result.getDate() + Math.round(units));
+            } else if (AppState.scale === 'hour') {
+                result.setHours(result.getHours() + Math.round(units * 2));
+            } else if (AppState.scale === 'week') {
+                result.setDate(result.getDate() + Math.round(units * 7));
+            } else if (AppState.scale === 'month') {
+                result.setMonth(result.getMonth() + Math.round(units));
+            }
+
+            return result;
+        }
+
+        function isSameDay(d1, d2) {
+            return d1.getFullYear() === d2.getFullYear() &&
+                   d1.getMonth() === d2.getMonth() &&
+                   d1.getDate() === d2.getDate();
+        }
+
+        function getWeekNumber(d) {
+            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            const dayNum = date.getUTCDay() || 7;
+            date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+            return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+        }
+
+        /**
+         * Open Task Edit Modal
+         */
+        function openTaskModal(taskId = null) {
+            const modal = document.getElementById('modal-task');
+            const form = document.getElementById('form-task');
+            
+            // Populate parent select dropdown
+            const parentSelect = document.getElementById('task-parent');
+            parentSelect.innerHTML = '<option value="">(None - Top Level)</option>';
+            AppState.tasks.filter(t => t.type === 'summary' && t.id !== taskId).forEach(st => {
+                parentSelect.innerHTML += `<option value="${st.id}">${st.title}</option>`;
+            });
+
+            // Populate dependency select dropdown
+            const depSelect = document.getElementById('task-dependency');
+            depSelect.innerHTML = '<option value="">(None)</option>';
+            AppState.tasks.filter(t => t.id !== taskId).forEach(t => {
+                depSelect.innerHTML += `<option value="${t.id}">${t.title}</option>`;
+            });
+
+            // Populate resource assignee checkboxes
+            const assigneesContainer = document.getElementById('task-assignees-container');
+            assigneesContainer.innerHTML = '';
+            
+            let selectedAssignees = [];
+            let currentTask = null;
+
+            if (taskId) {
+                currentTask = AppState.tasks.find(t => t.id === taskId);
+                selectedAssignees = currentTask.assignees || [];
+            }
+
+            AppState.resources.forEach(res => {
+                const checked = selectedAssignees.includes(res.id) ? 'checked' : '';
+                assigneesContainer.innerHTML += `
+                    <label class="inline-flex items-center space-x-1 bg-white dark:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-[11px] cursor-pointer">
+                        <input type="checkbox" name="assignees" value="${res.id}" ${checked} class="rounded text-blue-600">
+                        <span>${res.name}</span>
+                    </label>
+                `;
+            });
+
+            if (currentTask) {
+                document.getElementById('modal-task-title').textContent = 'Edit Task';
+                document.getElementById('task-id').value = currentTask.id;
+                document.getElementById('task-title').value = currentTask.title;
+                document.getElementById('task-type').value = currentTask.type;
+                document.getElementById('task-parent').value = currentTask.parentId || '';
+                document.getElementById('task-estimated-hours').value = currentTask.estimatedHours || 16;
+                document.getElementById('task-start-date').value = currentTask.startDate;
+                document.getElementById('task-end-date').value = currentTask.endDate;
+                document.getElementById('task-progress').value = currentTask.progress || 0;
+                document.getElementById('task-color').value = currentTask.color || '#0284c7';
+                document.getElementById('task-material-cost').value = currentTask.materialCost || 0;
+                document.getElementById('task-dependency').value = currentTask.predecessor || '';
+                document.getElementById('task-flagged').checked = !!currentTask.flagged;
+                document.getElementById('task-notes').value = currentTask.notes || '';
+                document.getElementById('btn-delete-task').style.display = 'block';
+            } else {
+                document.getElementById('modal-task-title').textContent = 'Add New Task';
+                form.reset();
+                document.getElementById('task-id').value = '';
+                document.getElementById('task-start-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('btn-delete-task').style.display = 'none';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        /**
+         * Open Resources Modal
+         */
+        function openResourcesModal() {
+            const tableBody = document.getElementById('resource-table-body');
+            tableBody.innerHTML = '';
+
+            AppState.resources.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-100 dark:border-slate-700/50';
+                tr.innerHTML = `
+                    <td class="py-2 flex items-center space-x-2">
+                        <img src="${res.avatar}" class="w-6 h-6 rounded-full object-cover">
+                        <span class="font-medium text-slate-800 dark:text-slate-200">${res.name}</span>
+                    </td>
+                    <td class="py-2">$${res.hourlyRate}/h</td>
+                    <td class="py-2">${res.shiftHours || 8} hrs</td>
+                    <td class="py-2 text-slate-500">${res.leaveDays.join(', ') || 'None'}</td>
+                    <td class="py-2 text-right">
+                        <button onclick="deleteResource('${res.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            document.getElementById('modal-resources').classList.remove('hidden');
+        }
+
+        function deleteResource(resId) {
+            AppState.resources = AppState.resources.filter(r => r.id !== resId);
+            openResourcesModal();
+            populateFilterResources();
+            renderAll();
+        }
+
+        /**
+         * Open Calendar & Holidays Modal
+         */
+        function openCalendarModal() {
+            const holidayList = document.getElementById('holiday-list');
+            holidayList.innerHTML = '';
+
+            AppState.holidays.forEach((h, idx) => {
+                const li = document.createElement('li');
+                li.className = 'py-2 flex justify-between items-center text-slate-700 dark:text-slate-300';
+                li.innerHTML = `
+                    <div>
+                        <strong class="text-blue-600 dark:text-blue-400">${h.name}</strong> - <span>${h.date}</span>
+                    </div>
+                    <button onclick="deleteHoliday(${idx})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                `;
+                holidayList.appendChild(li);
+            });
+
+            document.getElementById('modal-calendar').classList.remove('hidden');
+        }
+
+        function deleteHoliday(idx) {
+            AppState.holidays.splice(idx, 1);
+            openCalendarModal();
+            renderAll();
+        }
+
+        function populateFilterResources() {
+            const select = document.getElementById('filter-resource');
+            select.innerHTML = '<option value="all">All (Global Holidays & Sun)</option>';
+            AppState.resources.forEach(r => {
+                select.innerHTML += `<option value="${r.id}">${r.name}'s Off Days</option>`;
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Theme Toggle
+            document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+            });
+
+            // Synchronize Vertical Scroll between Tree view and Gantt Chart timeline
+            const treeBody = document.getElementById('tree-body');
+            const ganttScrollBody = document.getElementById('gantt-scroll-body');
+            const ganttHeader = document.getElementById('gantt-timeline-header');
+
+            treeBody.addEventListener('scroll', () => {
+                ganttScrollBody.scrollTop = treeBody.scrollTop;
+            });
+            ganttScrollBody.addEventListener('scroll', () => {
+                treeBody.scrollTop = ganttScrollBody.scrollTop;
+                ganttHeader.scrollLeft = ganttScrollBody.scrollLeft;
+            });
+
+            // Pane Splitter Dragging Handle
+            const splitter = document.getElementById('pane-splitter');
+            const leftPanel = document.getElementById('left-tree-panel');
+
+            let isSplitting = false;
+            splitter.addEventListener('mousedown', (e) => {
+                isSplitting = true;
+                splitter.classList.add('active');
+                document.body.classList.add('dragging');
+
+                const onMouseMove = (moveEvent) => {
+                    if (!isSplitting) return;
+                    const newWidth = Math.max(250, Math.min(800, moveEvent.clientX));
+                    leftPanel.style.width = `${newWidth}px`;
+                };
+
+                const onMouseUp = () => {
+                    isSplitting = false;
+                    splitter.classList.remove('active');
+                    document.body.classList.remove('dragging');
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+
+            // Tree Column Resizing Logic
+            document.querySelectorAll('.resizer-col').forEach(resizer => {
+                resizer.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    const colHeader = resizer.parentElement;
+                    const colType = colHeader.dataset.col;
+                    const startX = e.clientX;
+                    const startWidth = parseFloat(colHeader.style.width);
+
+                    resizer.classList.add('resizing');
+
+                    const onMouseMove = (moveEvent) => {
+                        const newWidth = Math.max(40, startWidth + (moveEvent.clientX - startX));
+                        colHeader.style.width = `${newWidth}px`;
+                        // Update matching body cells width
+                        document.querySelectorAll(`.col-cell[data-col="${colType}"]`).forEach(cell => {
+                            cell.style.width = `${newWidth}px`;
+                        });
+                    };
+
+                    const onMouseUp = () => {
+                        resizer.classList.remove('resizing');
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+            });
+
+            // Time Zoom Buttons
+            document.querySelectorAll('.zoom-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.zoom-btn').forEach(b => {
+                        b.classList.remove('active', 'bg-white', 'dark:bg-slate-600', 'text-blue-600', 'dark:text-blue-300', 'shadow-sm');
+                        b.classList.add('text-slate-600', 'dark:text-slate-300');
+                    });
+                    btn.classList.add('active', 'bg-white', 'dark:bg-slate-600', 'text-blue-600', 'dark:text-blue-300', 'shadow-sm');
+                    
+                    AppState.scale = btn.dataset.scale;
+                    if (AppState.scale === 'hour') AppState.pxPerUnit = 60;
+                    if (AppState.scale === 'day') AppState.pxPerUnit = 40;
+                    if (AppState.scale === 'week') AppState.pxPerUnit = 70;
+                    if (AppState.scale === 'month') AppState.pxPerUnit = 90;
+
+                    renderAll();
+                });
+            });
+
+            // Feature Toggles
+            document.getElementById('toggle-task-labels').addEventListener('change', (e) => { AppState.showTaskLabels = e.target.checked; renderGanttBarsAndGrid(); });
+            document.getElementById('toggle-bar-avatars').addEventListener('change', (e) => { AppState.showBarAvatars = e.target.checked; renderGanttBarsAndGrid(); });
+            document.getElementById('toggle-progress').addEventListener('change', (e) => { AppState.showProgress = e.target.checked; renderGanttBarsAndGrid(); });
+            document.getElementById('toggle-dependencies').addEventListener('change', (e) => { AppState.showDependencies = e.target.checked; renderDependencies(); });
+
+            // Resource Off-day Filter
+            document.getElementById('filter-resource').addEventListener('change', (e) => {
+                AppState.filterResource = e.target.value;
+                renderGanttBarsAndGrid();
+            });
+
+            // Modals Buttons
+            document.getElementById('btn-add-task').addEventListener('click', () => openTaskModal());
+            document.getElementById('btn-manage-resources').addEventListener('click', openResourcesModal);
+            document.getElementById('btn-manage-calendar').addEventListener('click', openCalendarModal);
+
+            document.querySelectorAll('.btn-close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#modal-task, #modal-resources, #modal-calendar').forEach(m => m.classList.add('hidden'));
+                });
+            });
+
+            // Task Form Submit
+            document.getElementById('form-task').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const taskId = document.getElementById('task-id').value;
+                const isAutoCalc = document.getElementById('task-auto-calc').checked;
+
+                // Checked Assignees
+                const assignees = Array.from(document.querySelectorAll('input[name="assignees"]:checked')).map(cb => cb.value);
+
+                let startDateStr = document.getElementById('task-start-date').value;
+                let endDateStr = document.getElementById('task-end-date').value;
+                const estimatedHours = Number(document.getElementById('task-estimated-hours').value) || 8;
+
+                if (isAutoCalc) {
+                    const autoRes = calculateTaskAutoSchedule(estimatedHours, startDateStr, assignees);
+                    endDateStr = autoRes.endDateStr;
+                }
+
+                const taskData = {
+                    id: taskId || `task_${Date.now()}`,
+                    title: document.getElementById('task-title').value,
+                    type: document.getElementById('task-type').value,
+                    parentId: document.getElementById('task-parent').value || null,
+                    estimatedHours: estimatedHours,
+                    startDate: startDateStr,
+                    endDate: endDateStr,
+                    progress: Number(document.getElementById('task-progress').value) || 0,
+                    color: document.getElementById('task-color').value,
+                    materialCost: Number(document.getElementById('task-material-cost').value) || 0,
+                    assignees: assignees,
+                    predecessor: document.getElementById('task-dependency').value || null,
+                    flagged: document.getElementById('task-flagged').checked,
+                    notes: document.getElementById('task-notes').value,
+                    expanded: true
+                };
+
+                if (taskId) {
+                    const idx = AppState.tasks.findIndex(t => t.id === taskId);
+                    if (idx !== -1) AppState.tasks[idx] = { ...AppState.tasks[idx], ...taskData };
+                } else {
+                    AppState.tasks.push(taskData);
+                }
+
+                document.getElementById('modal-task').classList.add('hidden');
+                renderAll();
+            });
+
+            // Delete Task
+            document.getElementById('btn-delete-task').addEventListener('click', () => {
+                const taskId = document.getElementById('task-id').value;
+                if (taskId) {
+                    AppState.tasks = AppState.tasks.filter(t => t.id !== taskId && t.parentId !== taskId);
+                    document.getElementById('modal-task').classList.add('hidden');
+                    renderAll();
+                }
+            });
+
+            // Add Resource Form Submit
+            document.getElementById('form-add-resource').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('res-name').value;
+                const rate = Number(document.getElementById('res-rate').value) || 30;
+                const shift = Number(document.getElementById('res-shift').value) || 8;
+
+                AppState.resources.push({
+                    id: `res_${Date.now()}`,
+                    name: name,
+                    avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80`,
+                    hourlyRate: rate,
+                    shiftHours: shift,
+                    leaveDays: []
+                });
+
+                e.target.reset();
+                openResourcesModal();
+                populateFilterResources();
+                renderAll();
+            });
+
+            // Add Holiday Form Submit
+            document.getElementById('form-add-holiday').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('holiday-name').value;
+                const date = document.getElementById('holiday-date').value;
+
+                AppState.holidays.push({ name, date });
+                e.target.reset();
+                openCalendarModal();
+                renderAll();
+            });
+
+            // Columns Menu Popover
+            const colBtn = document.getElementById('btn-columns-menu');
+            const colPopover = document.getElementById('popover-columns');
+
+            colBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const rect = colBtn.getBoundingClientRect();
+                colPopover.style.top = `${rect.bottom + 5}px`;
+                colPopover.style.right = `${window.innerWidth - rect.right}px`;
+                colPopover.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', () => colPopover.classList.add('hidden'));
+            colPopover.addEventListener('click', (e) => e.stopPropagation());
+
+            document.querySelectorAll('.col-toggle').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const col = e.target.dataset.col;
+                    const show = e.target.checked;
+                    document.querySelectorAll(`[data-col="${col}"]`).forEach(el => {
+                        el.style.display = show ? 'flex' : 'none';
+                    });
+                });
+            });
+
+            // Today Jump Button
+            document.getElementById('btn-today').addEventListener('click', () => {
+                AppState.startDate = new Date();
+                renderAll();
+            });
+
+            // Initialize App
+            populateFilterResources();
+            renderAll();
+        });
+    </script>
+</body>
+</html>

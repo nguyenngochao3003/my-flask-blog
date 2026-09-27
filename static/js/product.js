@@ -4,10 +4,10 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // ========================================================
 // 1. CÁC HÀM XỬ LÝ UI / SIDEBAR / MODAL / QR SCANNER
 // ========================================================
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('active');
-  document.getElementById('sidebarOverlay').classList.toggle('active');
-}
+// function toggleSidebar() {
+//   document.getElementById('sidebar').classList.toggle('active');
+//   document.getElementById('sidebarOverlay').classList.toggle('active');
+// }
 
 function openQRScanner(idGetQRCode) {
   // lưu mã id vào thẻ
@@ -60,7 +60,7 @@ function takePicture(id_image, id_url){
 // };
 
 // Gán các hàm vào window để có thể call trực tiếp từ HTML (onclick="openModal(...)")
-window.toggleSidebar = toggleSidebar;
+// window.toggleSidebar = toggleSidebar;
 window.openQRScanner = openQRScanner;
 window.openModal = openModal;
 window.closeModal = closeModal;
@@ -100,7 +100,7 @@ async function initSupabase() {
     refreshTokenValue = data.refresh_token;
 
     await get_product_data();
-    subscribeRealtime();
+    subcribeProductTableRealtime();
   } catch (err) {
     console.error("Lỗi khởi tạo Supabase:", err);
   }
@@ -153,6 +153,7 @@ async function get_product_data() {
 
     if (p_error) throw p_error;
 
+    // user name role  avartar
     document.getElementById('userName').innerHTML = `<p>${profile.user_name}</p>`;
     document.getElementById('role').innerHTML = `<p>${profile.role}</p>`;
 
@@ -488,7 +489,7 @@ async function submit_addProduct() {
 }
 
 
-function subscribeRealtime() {
+function subcribeProductTableRealtime() {
   const channel = userSupabase.channel("messages_channel")
     .on("postgres_changes", { event: "*", schema: "public", table: "products" }, payload => {
       console.log("Realtime update:", payload);
@@ -517,7 +518,7 @@ function subscribeRealtime() {
       global: { headers: { Authorization: `Bearer ${data.access_token}` } }
     });
 
-    subscribeRealtime();
+    subcribeProductTableRealtime();
   });
 }
 

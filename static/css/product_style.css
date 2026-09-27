@@ -183,7 +183,7 @@
     margin-bottom: 30px;
   }
 
-  .card {
+  /* .card {
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 20px;
@@ -217,7 +217,7 @@
     align-items: center;
     justify-content: center;
     font-size: 20px;
-  }
+  } */
 
   /* 4. Toolbar & Actions */
   .toolbar {

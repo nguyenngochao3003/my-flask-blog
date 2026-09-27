@@ -9,6 +9,7 @@
     <!-- Font Inter & FontAwesome Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/product_style.css">
     <script>
         tailwind.config = {
             theme: {
@@ -20,6 +21,7 @@
             }
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -58,8 +60,8 @@
                         AD
                     </div>
                     <div class="hidden sm:block text-left">
-                        <span class="block text-sm font-semibold">Admin Vận Hành</span>
-                        <span class="block text-xs text-indigo-300">Quản lý cấp cao</span>
+                        <div id="userName" class="block text-sm font-semibold">Admin Vận Hành</div>
+                        <div id="role" class="block text-xs text-indigo-300">Quản lý cấp cao</div>
                     </div>
                 </div>
             </div>
@@ -71,6 +73,18 @@
         <!-- Sidebar Navigation -->
         <aside class="w-64 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 z-20 hidden md:flex">
             <div class="p-4 space-y-1 flex-1 overflow-y-auto">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Danh mục sản phẩm</p>
+
+                <button onclick="switchTab('product')" id="nav-product" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Sản phẩm</span>
+                </button>
+
+                <button onclick="switchTab('bom')" id="nav-bom" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Định mức vật tư</span>
+                </button>
+
                 <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Vận Hành Kho</p>
                 
                 <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn bg-indigo-50 text-indigo-700">
@@ -86,6 +100,11 @@
                 <button onclick="switchTab('scanner')" id="nav-scanner" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn text-slate-600 hover:bg-slate-100 hover:text-slate-900">
                     <i class="fa-solid fa-qrcode w-5 text-center"></i>
                     <span>Quét QR Nhập / Xuất</span>
+                </button>
+
+                <button onclick="switchTab('importStock')" id="nav-importStock" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i class="fa-solid fa-qrcode w-5 text-center"></i>
+                    <span>Nhập kho</span>
                 </button>
 
                 <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mt-6 mb-2">Nhân Sự & Tải Công Việc</p>
@@ -114,6 +133,10 @@
                     <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
                     <span>Nhật ký & Ảnh Hiện Trạng</span>
                 </button>
+                <button onclick="switchTab('project')" id="nav-project" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                    <span>Hoạch định công việc</span>
+                </button>
             </div>
 
             <div class="p-4 border-t border-slate-200">
@@ -129,14 +152,26 @@
             
             <!-- Mobile Tab Navigation Bar -->
             <div class="flex md:hidden bg-white rounded-xl shadow-sm border border-slate-200 mb-6 p-1 overflow-x-auto space-x-1">
+                <button onclick="switchTab('product')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap bg-indigo-50 text-indigo-700" data-tab="dashboard"><i class="fa-solid fa-chart-pie mr-1"></i> Sản phẩm</button>
+                <button onclick="switchTab('bom')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap bg-indigo-50 text-indigo-700" data-tab="dashboard"><i class="fa-solid fa-chart-pie mr-1"></i> Định mức</button>
                 <button onclick="switchTab('dashboard')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap bg-indigo-50 text-indigo-700" data-tab="dashboard"><i class="fa-solid fa-chart-pie mr-1"></i> Tổng quan</button>
                 <button onclick="switchTab('shelves')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="shelves"><i class="fa-solid fa-cubes mr-1"></i> Kệ</button>
                 <button onclick="switchTab('scanner')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="scanner"><i class="fa-solid fa-qrcode mr-1"></i> Quét QR</button>
+                <button onclick="switchTab('importStock')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="scanner"><i class="fa-solid fa-qrcode mr-1"></i> Nhập kho</button>
                 <button onclick="switchTab('employees')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="employees"><i class="fa-solid fa-users mr-1"></i> Nhân sự</button>
                 <button onclick="switchTab('taskformulas')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="taskformulas"><i class="fa-solid fa-stopwatch mr-1"></i> Định mức</button>
                 <button onclick="switchTab('calendar')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="calendar"><i class="fa-solid fa-calendar mr-1"></i> Lịch</button>
                 <button onclick="switchTab('workload')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="workload"><i class="fa-solid fa-chart-line mr-1"></i> Gantt</button>
                 <button onclick="switchTab('audit')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="audit"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Nhật ký</button>
+                <button onclick="switchTab('project')" class="mobile-tab px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-slate-600" data-tab="audit"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Hoạch định công việc</button>
+            </div>
+
+            <div id="tab-product" class="tab-content space-y-6">
+                {% include 'includes/main-wrapper_product.html' %}
+            </div>
+
+            <div id="tab-bom" class="tab-content space-y-6">
+                bom
             </div>
 
             <div id="tab-dashboard" class="tab-content space-y-6">
@@ -278,7 +313,9 @@
                     </div>
                 </div>
             </div>
-
+            <div id="tab-importStock" class="tab-content hidden space-y-6">
+                {% include 'includes/warehouse_inbound_bin_location_form.html' %}
+            </div>
             <div id="tab-scanner" class="tab-content hidden space-y-6">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-900">Quét Mã QR & Xử Lý Nhập/Xuất Kho</h2>
@@ -530,6 +567,9 @@
                     </div>
                 </div>
             </div>
+            <div id="tab-project" class="tab-content hidden space-y-6">
+                {%include 'includes/modern_interactive_gantt_chart_application.html' %}
+            </div>
 
         </main>
     </div>
@@ -588,9 +628,7 @@
                     <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-full">KHO THÔNG MINH WMS</span>
                     <div class="my-5 flex justify-center">
                         <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 inline-block">
-                            <svg class="w-36 h-36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M2 2h6v6H2zM16 2h6v6h-6zM2 16h6v6H2zM12 12h2v2h-2zM12 2h2v6h-2zM2 12h6v2H2zM16 16h2v2h-2zM16 12h2v2h-2zM12 16h2v6h-2z"/>
-                            </svg>
+                            <div id="qr-modal-qrcode" class="w-36 h-36"></div>
                         </div>
                     </div>
                     <h4 class="text-xl font-extrabold text-slate-900 tracking-wide" id="qr-modal-shelf-id">A-01-01-01</h4>
@@ -1061,7 +1099,10 @@
         function openQrModal(id, desc) {
             document.getElementById('qr-modal-shelf-id').innerText = id;
             document.getElementById('qr-modal-shelf-desc').innerText = desc;
+                
             document.getElementById('qr-modal').classList.remove('hidden');
+            createQRCode(id, 'qr-modal-qrcode');
+
         }
         function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
         function openEmployeeModal() { document.getElementById('employee-modal').classList.remove('hidden'); }
@@ -1072,6 +1113,33 @@
         function closeScheduleModal() { document.getElementById('schedule-modal').classList.add('hidden'); }
         function openNotificationModal() { document.getElementById('notification-modal').classList.remove('hidden'); }
         function closeNotificationModal() { document.getElementById('notification-modal').classList.add('hidden'); }
+
+        // create qr code
+        function createQRCode(qrcode, idQRCodeContainer) {
+            // qrcode: mã code
+            // idQRCodeContainer: mã id chứa qr code
+            if (!qrcode) {
+                alert("chưa truyền mã qr vào function createQRCode");
+                return;
+            }
+
+            const qrContainer =
+                document.getElementById(idQRCodeContainer);
+
+            // Xóa QR cũ
+            qrContainer.innerHTML = "";
+
+            // QR chỉ chứa mã sản phẩm
+            new QRCode(
+                qrContainer,
+                {
+                text: qrcode,
+                width: 144,
+                height: 144
+                }
+            );
+        }
+
 
         // Save handlers
         function saveShelf(e) {
@@ -1180,5 +1248,7 @@
 
         window.onload = function() { renderAll(); }
     </script>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
 </body>
 </html>

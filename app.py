@@ -87,7 +87,7 @@ def api_login():
     return (
         jsonify({
             'message': 'Đăng nhập thành công',
-            'redirect_url': url_for("home"),
+            'redirect_url': url_for("warehouse"),
         }),
         200,
     )
@@ -109,7 +109,7 @@ def dashboard():
     )
     
     return jsonify({"message": f"Xin chào {session.get('email')}, bạn đã đăng nhập thành công!", 
-                    "redirect_url": url_for("home")}) 
+                    "redirect_url": url_for("warehouse")}) 
 
 # 5. Route Đăng xuất
 @app.route('/logout', methods=['GET', 'POST'])
@@ -119,8 +119,12 @@ def logout():
     session.clear()
     return jsonify({"status": "success", "message": "Logged out"})
 
+# test  lấy file vào warehouse
+@app.route('/warehouse')
+def warehouse():
+    return render_template('smart_warehouse_management_system_wms.html')
 
-# 3. ROUTE permission 
+# 3. qr
 @app.route('/QR')
 def QR():
     return render_template('QR.html')
