@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/product_style.css">
     <style>
 
         /* Custom scrollbar for table container */
@@ -105,17 +106,20 @@
     <div class="p-6 bg-indigo-50/50 border-b border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="w-full md:w-2/3">
             <label class="block text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1.5 flex items-center gap-1.5">
-                <i class="fa-solid fa-qrcode text-indigo-600"></i> Quét nhanh Barcode sản phẩm (F2 hoặc Nhập mã)
+                <i  class="fa-solid fa-qrcode text-indigo-600"></i> Quét nhanh Barcode sản phẩm (F2 hoặc Nhập mã)
             </label>
             <div class="flex gap-2">
                 <div class="relative flex-grow">
                     <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-indigo-400">
-                        <i class="fa-solid fa-barcode text-lg"></i>
+                        <i  class="fa-solid fa-barcode text-lg"></i>
                     </span>
                     <input type="text" id="quickBarcodeScan" placeholder="Quét hoặc chọn mã sản phẩm để thêm dòng..." class="w-full pl-11 pr-4 py-3 bg-white border border-indigo-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm">
                 </div>
                 <button onclick="simulateQuickScan()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-medium text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap active:scale-95">
                     <i class="fa-solid fa-plus"></i> Thêm nhanh
+                </button>
+                <button onclick="openQRScanner('quickBarcodeScan')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-medium text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-plus"></i> QR
                 </button>
             </div>
         </div>
@@ -624,6 +628,33 @@
                 window.location.reload();
             }
         }
+
+        let qrCodeID = '';
+        function openQRScanner(idGetQRCode) {
+            // lưu mã id vào thẻ
+            qrCodeID = idGetQRCode;
+            console.log('xxxxxxxxxxx');
+            window.open(
+                "http://127.0.0.1:5000/qrcode",
+                "_blank"
+            );
+
+            }
+
+            // Bắt sự kiện nhận dữ liệu QR Scanner
+            window.addEventListener("message", function(event) {
+            // tạm thời bỏ check link web bên dưới trong quá trình test sản phẩm
+            // if (event.origin !== "http://127.0.0.1:5000") return;
+            if (!event.data || event.data.type !== "QR_SCANNED") return;
+
+            const qrCode = event.data.code;
+            console.log("Đã nhận QR:", qrCode);
+
+            const idGetQRCode = qrCodeID;
+            const inputEl = document.getElementById(idGetQRCode);
+            if (inputEl) inputEl.value = qrCode;
+        });
     </script>
+    <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
 </body>
 </html>

@@ -9,28 +9,31 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 //   document.getElementById('sidebarOverlay').classList.toggle('active');
 // }
 
-function openQRScanner(idGetQRCode) {
-  // lưu mã id vào thẻ
-  document.getElementById('hidden_id_qr').value = idGetQRCode;
-  window.open(
-    "https://nguyenngochao3003.github.io/QR",
-    "_blank"
-  );
-}
+ let qrCodeID = '';
+  function openQRScanner(idGetQRCode) {
+    // lưu mã id vào thẻ
+    qrCodeID = idGetQRCode;
+    console.log('xxxxxxxxxxx');
+    window.open(
+        "http://127.0.0.1:5000/qrcode",
+        "_blank"
+    );
 
-// Bắt sự kiện nhận dữ liệu QR Scanner
-window.addEventListener("message", function(event) {
-  // tạm thời bỏ check link web bên dưới trong quá trình test sản phẩm
-  // if (event.origin !== "http://127.0.0.1:5000") return;
-  if (!event.data || event.data.type !== "QR_SCANNED") return;
+  }
 
-  const qrCode = event.data.code;
-  console.log("Đã nhận QR:", qrCode);
+  // Bắt sự kiện nhận dữ liệu QR Scanner
+  window.addEventListener("message", function(event) {
+    // tạm thời bỏ check link web bên dưới trong quá trình test sản phẩm
+    // if (event.origin !== "http://127.0.0.1:5000") return;
+    if (!event.data || event.data.type !== "QR_SCANNED") return;
 
-  const idGetQRCode = this.document.getElementById('hidden_id_qr').value;
-  const inputEl = document.getElementById(idGetQRCode);
-  if (inputEl) inputEl.value = qrCode;
-});
+    const qrCode = event.data.code;
+    console.log("Đã nhận QR:", qrCode);
+
+    const idGetQRCode = qrCodeID;
+    const inputEl = document.getElementById(idGetQRCode);
+    if (inputEl) inputEl.value = qrCode;
+  });
 
 function openModal(id) {
   const element = document.getElementById(id);

@@ -277,7 +277,7 @@ def update_user_role():
 
 @app.route('/qrcode')
 def qrcode_tracker():
-    return render_template('QR_tracker.html')
+    return render_template('QR.html')
 
 
 # -------- ĐỌC VÀ LƯU HÌNH ẢNH VÀO SUPABASE
