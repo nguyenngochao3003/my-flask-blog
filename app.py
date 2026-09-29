@@ -134,6 +134,34 @@ def QR():
 def permission():
     return render_template('permission.html')
 
+@app.route("/api/get-table-data", methods=["POST"])
+def get_table_data():
+    data = request.get_json()
+    table_name = data.get("table_name")
+  
+    user_access_token = session.get('access_token')
+    if not user_access_token:
+        return jsonify({
+            "success": False,
+            "message": "Chưa đăng nhập"
+        }), 401
+    
+    # Tạo User Supabase Client để check quyền Admin
+    user_supabase = create_client(
+        url, key, options=ClientOptions(headers={"Authorization": f"Bearer {user_access_token}"})
+    )
+    
+    try:
+        # Lấy thông tin profiles (danh sách user + role)
+        table_data = user_supabase.table(table_name).select('*').execute().data
+        return jsonify({"success": True, 'data': table_data})
+
+    except Exception as e:
+        flash(f"Lỗi truy cập:  bị từ chối RLS! ({e})")
+        return redirect('/login')
+    
+        
+
 @app.route("/api/add_product", methods=["POST"])
 def add_product():
     # 1. lấy token đăng nhập trừ session

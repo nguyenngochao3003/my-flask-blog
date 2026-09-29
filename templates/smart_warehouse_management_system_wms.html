@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/product_style.css">
-    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script> -->
     <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
     <script>
         tailwind.config = {
@@ -787,6 +787,7 @@
 
     <!-- JavaScript Application Logic -->
     <script>
+        
         // Data Stores
         let shelvesData = [
             { id: "A-01-01-01", area: "Khu A", row: "01", level: "1", box: "01", capacity: 1000, stock: 850, products: "Đinh vít, ốc, bản lề", status: "Đang dùng (85%)" },
@@ -852,7 +853,7 @@
         }
 
         function renderAll() {
-            renderDashboard();
+            renderDashboard();   
             renderShelvesTable();
             renderEmployeesTable();
             renderFormulasTable();
@@ -904,28 +905,40 @@
             `).join('');
         }
 
-        // Shelves Table
-        document.addEventListener("DOMContentLoaded", () => {
-            initSupabase();
-            print('userSupabase');
-        });
+        async function fetch_data_from_flask(tableName) {
+            try {
+                // Sử dụng fetch gửi tên bảng lên Flask
+                const response = await fetch('/api/get-table-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ table_name: tableName })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Lỗi kết nối server');
+                }
+
+                !result ? console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`): null;
+                return result;
+                
+            } catch (error) {
+                console.error("Error:", error);
+                return null; // Trả về null nếu lỗi để tránh crash code bên dưới
+            }
+        }
 
         async function renderShelvesTable(filteredList = shelvesData) {
-            // Kiểm tra nếu client chưa sẵn sàng
-            if (!window.userSupabase) {
-                console.error("userSupabase chưa được khởi tạo!");
-                return;
-            }
-            const { data: shelf, error: s_error } = await window.userSupabase
-            .from('shelves')
-            .select('*')
-            .single();
-            // console.log('supabase: ', window.userSupabase);
+            const v_box = await fetch_data_from_flask('v_box');
+            console.log('v_box data', v_box);
 
             // if (s_error) throw s_error;
 
             const tbody = document.getElementById('shelves-table-body');
-            tbody.innerHTML = filteredList.map((shelf, idx) => `
+            tbody.innerHTML = v_box.data.map((shelf, idx) => `
                 <tr class="hover:bg-slate-50 transition">
                     <td class="py-3 px-4 font-bold text-indigo-900">${shelf.id}</td>
                     <td class="py-3 px-4 font-medium text-slate-700">${shelf.area}</td>
