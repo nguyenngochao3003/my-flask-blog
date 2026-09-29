@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/product_style.css">
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -103,7 +105,7 @@
                 </button>
 
                 <button onclick="switchTab('importStock')" id="nav-importStock" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-                    <i class="fa-solid fa-qrcode w-5 text-center"></i>
+                    <i class="fa-solid fa-list w-5 text-center"></i>
                     <span>Nhập kho</span>
                 </button>
 
@@ -137,6 +139,11 @@
                     <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
                     <span>Hoạch định công việc</span>
                 </button>
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Profile</p>
+                <button onclick="window.handleSessionExpired()" id="nav-project" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition tab-btn text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>đăng xuất</span>
+                </button>
             </div>
 
             <div class="p-4 border-t border-slate-200">
@@ -145,6 +152,7 @@
                     <p class="text-indigo-700">Hiệu suất nhân sự: <span class="font-medium text-emerald-600">88% (Ổn định)</span></p>
                 </div>
             </div>
+
         </aside>
 
         <!-- Content Body Area -->
@@ -897,7 +905,25 @@
         }
 
         // Shelves Table
-        function renderShelvesTable(filteredList = shelvesData) {
+        document.addEventListener("DOMContentLoaded", () => {
+            initSupabase();
+            print('userSupabase');
+        });
+
+        async function renderShelvesTable(filteredList = shelvesData) {
+            // Kiểm tra nếu client chưa sẵn sàng
+            if (!window.userSupabase) {
+                console.error("userSupabase chưa được khởi tạo!");
+                return;
+            }
+            const { data: shelf, error: s_error } = await window.userSupabase
+            .from('shelves')
+            .select('*')
+            .single();
+            // console.log('supabase: ', window.userSupabase);
+
+            // if (s_error) throw s_error;
+
             const tbody = document.getElementById('shelves-table-body');
             tbody.innerHTML = filteredList.map((shelf, idx) => `
                 <tr class="hover:bg-slate-50 transition">
@@ -1249,7 +1275,6 @@
         window.onload = function() { renderAll(); }
         
     </script>
-    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
+
 </body>
 </html>

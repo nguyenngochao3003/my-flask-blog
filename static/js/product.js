@@ -108,7 +108,7 @@ async function initSupabase() {
     console.error("Lỗi khởi tạo Supabase:", err);
   }
 }
-
+window.handleSessionExpired = handleSessionExpired;
 async function handleSessionExpired() {
   
   localStorage.clear();
