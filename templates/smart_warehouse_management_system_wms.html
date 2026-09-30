@@ -295,9 +295,9 @@
                     </div>
                     <select id="shelf-filter-area" onchange="filterShelves()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto">
                         <option value="">Tất cả Khu vực</option>
-                        <option value="Khu A">Khu A</option>
-                        <option value="Khu B">Khu B</option>
-                        <option value="Khu C">Khu C</option>
+                        <option value="Kho A">Kho A</option>
+                        <option value="Kho B">Kho B</option>
+                        <option value="Kho C">Kho C</option>
                     </select>
                 </div>
 
@@ -583,7 +583,7 @@
     </div>
 
     <!-- MODALS SECTION -->
-    <!-- Add Shelf Modal -->
+    <!-- Add Shelf Modal danh sách kệ kho -->
     <div id="shelf-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div class="bg-indigo-900 text-white px-6 py-4 flex items-center justify-between">
@@ -592,15 +592,15 @@
             </div>
             <form id="shelf-form" onsubmit="saveShelf(event)" class="p-6 space-y-4">
                 <input type="hidden" id="shelf-edit-index" value="-1">
-                <div>
+                <!-- <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Mã Vị Trí (ID Kệ)</label>
                     <input type="text" id="modal-shelf-id" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
+                </div> -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Khu Vực</label>
                         <select id="modal-shelf-area" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none">
-                            <option value="Khu A">Khu A (Vật tư)</option>
+                            <option value="khu A">Khu A (Vật tư)</option>
                             <option value="Khu B">Khu B (Thành phẩm)</option>
                             <option value="Khu C">Khu C (Cồng kềnh)</option>
                         </select>
@@ -615,7 +615,7 @@
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Tầng</label><input type="text" id="modal-shelf-level" required value="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"></div>
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Ô số</label><input type="text" id="modal-shelf-box" required value="01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"></div>
                 </div>
-                <div><label class="block text-xs font-semibold text-slate-600 mb-1">Sản phẩm lưu trữ</label><input type="text" id="modal-shelf-products" required placeholder="Ví dụ: Cáp quang..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"></div>
+                <div><label class="block text-xs font-semibold text-slate-600 mb-1">Sản phẩm lưu trữ</label><input type="text" id="modal-shelf-products" placeholder="Ví dụ: Cáp quang..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"></div>
                 <div class="flex justify-end space-x-3 pt-3 border-t border-slate-100">
                     <button type="button" onclick="closeShelfModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100">Hủy</button>
                     <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-semibold shadow">Lưu Kệ</button>
@@ -789,13 +789,14 @@
     <script>
         
         // Data Stores
-        let shelvesData = [
-            { id: "A-01-01-01", area: "Khu A", row: "01", level: "1", box: "01", capacity: 1000, stock: 850, products: "Đinh vít, ốc, bản lề", status: "Đang dùng (85%)" },
-            { id: "A-01-01-02", area: "Khu A", row: "01", level: "1", box: "02", capacity: 1000, stock: 600, products: "Cáp quang & phụ kiện", status: "Đang dùng (60%)" },
-            { id: "B-02-01-01", area: "Khu B", row: "02", level: "1", box: "01", capacity: 500, stock: 450, products: "Mạch điện tử thông minh", status: "Đang dùng (90%)" },
-            { id: "C-03-02-01", area: "Khu C", row: "03", level: "2", box: "01", capacity: 1200, stock: 1090, products: "Thùng carton & xốp", status: "Đang dùng (91%)" }
-        ];
+        // let shelvesData = [
+        //     { id: "A-01-01-01", area: "Khu A", row: "01", level: "1", box: "01", capacity: 1000, stock: 850, products: "Đinh vít, ốc, bản lề", status: "Đang dùng (85%)" },
+        //     { id: "A-01-01-02", area: "Khu A", row: "01", level: "1", box: "02", capacity: 1000, stock: 600, products: "Cáp quang & phụ kiện", status: "Đang dùng (60%)" },
+        //     { id: "B-02-01-01", area: "Khu B", row: "02", level: "1", box: "01", capacity: 500, stock: 450, products: "Mạch điện tử thông minh", status: "Đang dùng (90%)" },
+        //     { id: "C-03-02-01", area: "Khu C", row: "03", level: "2", box: "01", capacity: 1200, stock: 1090, products: "Thùng carton & xốp", status: "Đang dùng (91%)" }
+        // ];
 
+        let shelvesData = null;
         let employeesData = [
             { id: "NV01", name: "Nguyễn Văn A", role: "Chuyên viên Kiểm Kho", hours: 8, salary: 9500000, allowance: 1500000, otRate: 70000 },
             { id: "NV02", name: "Trần Văn B", role: "Nhân viên Nhập/Xuất", hours: 8, salary: 8500000, allowance: 1200000, otRate: 60000 },
@@ -922,7 +923,33 @@
                     throw new Error(result.error || 'Lỗi kết nối server');
                 }
 
-                !result ? console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`): null;
+                if (result.length === 0) { console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`)}
+
+                return result;
+                
+            } catch (error) {
+                console.error("Error:", error);
+                return null; // Trả về null nếu lỗi để tránh crash code bên dưới
+            }
+        }
+        async function fetch_insert_data_from_flask(tableName, row) {
+            try {
+                // Sử dụng fetch gửi tên bảng lên Flask
+                const response = await fetch('/api/insert-table-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ table_name: tableName, row: row })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Lỗi kết nối server');
+                }
+
+                !result.message ? console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`): null;
                 return result;
                 
             } catch (error) {
@@ -931,20 +958,18 @@
             }
         }
 
-        async function renderShelvesTable(filteredList = shelvesData) {
-            const v_box = await fetch_data_from_flask('v_box');
-            console.log('v_box data', v_box);
-
-            // if (s_error) throw s_error;
+        async function renderShelvesTable() {
+            const shelvesData = await fetch_data_from_flask('shelves');
+            console.log('shelvesData: ', shelvesData);
 
             const tbody = document.getElementById('shelves-table-body');
-            tbody.innerHTML = v_box.data.map((shelf, idx) => `
+            tbody.innerHTML = shelvesData.map((shelf, idx) => `
                 <tr class="hover:bg-slate-50 transition">
-                    <td class="py-3 px-4 font-bold text-indigo-900">${shelf.id}</td>
+                    <td class="py-3 px-4 font-bold text-indigo-900">${shelf.code}</td>
                     <td class="py-3 px-4 font-medium text-slate-700">${shelf.area}</td>
                     <td class="py-3 px-4 text-slate-600">Dãy ${shelf.row} | Tầng ${shelf.level} | Ô ${shelf.box}</td>
                     <td class="py-3 px-4 text-slate-600">${shelf.capacity.toLocaleString()}</td>
-                    <td class="py-3 px-4 font-semibold text-slate-900">${shelf.stock.toLocaleString()}</td>
+                    <td class="py-3 px-4 font-semibold text-slate-900">${shelf.stock}</td>
                     <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">${shelf.status}</span></td>
                     <td class="py-3 px-4 text-center">
                         <button onclick="openQrModal('${shelf.id}', '${shelf.area} | Dãy ${shelf.row} | Tầng ${shelf.level}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 p-2 rounded-xl"><i class="fa-solid fa-qrcode"></i></button>
@@ -956,10 +981,13 @@
             `).join('');
         }
 
-        function filterShelves() {
+        async function filterShelves() {
             const query = document.getElementById('shelf-search-input').value.toLowerCase();
             const area = document.getElementById('shelf-filter-area').value;
-            const filtered = shelvesData.filter(s => (s.id.toLowerCase().includes(query) || s.products.toLowerCase().includes(query)) && (area === "" || s.area === area));
+            const shelvesData = await fetch_data_from_flask('shelves');
+            
+            const filtered = shelvesData.filter(s => (s.code.toLowerCase().includes(query) || s.area.toLowerCase().includes(query)) && (area === "" || s.area === area));
+            console.log('filtered', shelvesData);
             renderShelvesTable(filtered);
         }
 
@@ -1183,15 +1211,27 @@
         // Save handlers
         function saveShelf(e) {
             e.preventDefault();
-            shelvesData.push({
-                id: document.getElementById('modal-shelf-id').value,
-                area: document.getElementById('modal-shelf-area').value,
-                row: document.getElementById('modal-shelf-row').value,
-                level: document.getElementById('modal-shelf-level').value,
-                box: document.getElementById('modal-shelf-box').value,
-                capacity: parseInt(document.getElementById('modal-shelf-capacity').value),
-                stock: 0, products: document.getElementById('modal-shelf-products').value, status: "Trống (0%)"
-            });
+
+            // lưu dữ liệu vào bảng
+            let area = document.getElementById('modal-shelf-area').value;
+            let row = parseInt(document.getElementById('modal-shelf-row').value);
+            let level = parseInt(document.getElementById('modal-shelf-level').value);
+            let box = parseInt(document.getElementById('modal-shelf-box').value);
+            let capacity = parseFloat(document.getElementById('modal-shelf-capacity').value);
+
+            let row_table = {
+                area: area,
+                row: row,
+                level: level,
+                box: box,
+                capacity: capacity
+            };
+
+            let tableName = 'shelves';
+            fetch_insert_data_from_flask(tableName, row_table);
+            alert(`mã code: Dãy ${row} | Tầng ${level} | Ô ${box}`);
+
+            // đóng modal
             closeShelfModal();
             renderAll();
         }

@@ -134,6 +134,9 @@ def QR():
 def permission():
     return render_template('permission.html')
 
+
+
+# nhập tên bảng để lấy dữ liệu từ bảng
 @app.route("/api/get-table-data", methods=["POST"])
 def get_table_data():
     data = request.get_json()
@@ -154,13 +157,53 @@ def get_table_data():
     try:
         # Lấy thông tin profiles (danh sách user + role)
         table_data = user_supabase.table(table_name).select('*').execute().data
-        return jsonify({"success": True, 'data': table_data})
+        return table_data
+
 
     except Exception as e:
         flash(f"Lỗi truy cập:  bị từ chối RLS! ({e})")
         return redirect('/login')
     
-        
+# nhập tên bảng để lấy dữ liệu từ bảng
+@app.route("/api/insert-table-data", methods=["POST"])
+def insert_dynamic_data():
+  try:
+    req_data = request.get_json()
+
+    if not req_data:
+      return jsonify({"error": "Không có dữ liệu được gửi lên"}), 400
+
+    # Lấy tên bảng từ request (ví dụ: 'shelves')
+    table_name = req_data.get("table_name")
+
+    # Lấy dữ liệu của hàng (row) cần lưu.
+    # Bạn có thể đặt tên key trong JSON gửi lên là 'row' hoặc 'data'
+    row_data = req_data.get("row")
+    print('/api/insert-table-data row_data được chèn vào:', row_data)
+
+    if not table_name or not row_data:
+      return (
+          jsonify({
+              "error": (
+                  "Thiếu thông tin 'table_name' hoặc dữ liệu dòng ('row')"
+              )
+          }),
+          400,
+      )
+
+    # Sử dụng supabase.table(table_name) để trỏ động tới bảng tương ứng
+    response = supabase.table(table_name).insert(row_data).execute()
+
+    return (
+        jsonify({
+            "message": f"Lưu dữ liệu vào bảng '{table_name}' thành công!",
+            "data": response.data,
+        }),
+        201,
+    )
+
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
 
 @app.route("/api/add_product", methods=["POST"])
 def add_product():
