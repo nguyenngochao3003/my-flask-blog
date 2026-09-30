@@ -13,8 +13,11 @@
         </div>
 
         <div class="form-group">
-          <label>Mã Code</label>
-          <input type="text" class="form-control" id="editProductForm_code" placeholder="Nhập mã code sản phẩm...">
+          <label>Mã Code sản phẩm</label>
+          <div class="input-with-action">
+            <input type="text" class="form-control" id="editProductForm_code" placeholder="Nhập mã code sản phẩm...">
+            <button class="btn btn-secondary" onclick="openQRScanner('editProductForm_code')"><i class="fa-solid fa-qrcode"></i></button> 
+          </div>
         </div>
 
         <div class="form-row">
@@ -38,15 +41,16 @@
         </div>
 
 
-
         <div class="form-group">
-          <label>Tính năng chụp / quét</label>
-          <div class="media-buttons">
-            <button class="btn btn-secondary" onclick="openQRScanner()"><i class="fa-solid fa-qrcode"></i> Quét mã QR</button>
-            <button class="btn btn-secondary"><i class="fa-solid fa-camera"></i> Chụp ảnh sản phẩm</button>
+          <label>URL ảnh sản phẩm</label>
+          <div class="input-with-action">
+            <input disabled type="text" class="form-control" id="productEditForm_urlPicture" placeholder="url hình ảnh sản phẩm...">
+            <button class="btn btn-secondary" onclick="window.takePicture('productEditForm_picture', 'productEditForm_urlPicture')">
+              <i class="fa-solid fa-camera"></i>
+            </button>
           </div>
         </div>
-
+        <img id="productEditForm_picture" src="" alt="" width="200" height="200" style="display: none;">
         <div class="form-group">
           <label>Hình ảnh sản phẩm</label>
           <input id='editProductForm_image' type="file" class="form-control" accept="image/*">
