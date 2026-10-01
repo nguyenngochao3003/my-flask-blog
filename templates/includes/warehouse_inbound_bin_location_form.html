@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/product_style.css">
     <style>
 
         /* Custom scrollbar for table container */
@@ -42,13 +41,7 @@
         </div>
     </div>
 
-    <!-- Notification Toast / Alert Box -->
-    <div id="toastMessage" class="hidden mx-6 mt-4 p-4 rounded-xl text-sm flex items-center justify-between shadow-sm transition-all duration-300">
-        <div class="flex items-center gap-2.5" id="toastContent">
-            <!-- Dynamic content -->
-        </div>
-        <button onclick="hideToast()" class="text-current opacity-70 hover:opacity-100 font-bold">&times;</button>
-    </div>
+ 
 
     <!-- SECTION 1: General Info -->
     <div class="p-6 bg-slate-50/70 border-b border-slate-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -115,18 +108,12 @@
                     </span>
                     <input type="text" id="quickBarcodeScan" placeholder="Quét hoặc chọn mã sản phẩm để thêm dòng..." class="w-full pl-11 pr-4 py-3 bg-white border border-indigo-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm">
                 </div>
-                <button onclick="simulateQuickScan()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-medium text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap active:scale-95">
-                    <i class="fa-solid fa-plus"></i> Thêm nhanh
-                </button>
-                <button onclick="openQRScanner('quickBarcodeScan')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-medium text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap active:scale-95">
-                    <i class="fa-solid fa-plus"></i> QR
-                </button>
             </div>
         </div>
 
         <div class="w-full md:w-auto flex items-center justify-end gap-3 self-end">
             <button onclick="addNewRow()" class="bg-white hover:bg-slate-50 text-indigo-600 border border-indigo-200 px-4 py-3 rounded-xl font-semibold text-sm transition shadow-sm flex items-center gap-2">
-                <i class="fa-solid fa-circle-plus"></i> Thêm thủ công dòng trống
+                <i class="fa-solid fa-circle-plus"></i> Thêm Dòng
             </button>
             <button onclick="openBinScannerModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-3 rounded-xl font-semibold text-sm transition shadow-sm flex items-center gap-2">
                 <i class="fa-solid fa-map-location-dot text-emerald-400"></i> Sơ đồ vị trí kệ
@@ -164,8 +151,24 @@
                         <tr class="hover:bg-slate-50/80 transition" data-row-id="1">
                             <td class="py-3 px-4 text-center font-medium text-slate-500 row-stt">1</td>
                             <td class="py-3 px-4">
-                                <div class="font-semibold text-slate-900 product-sku">SKU-BL-01</div>
-                                <div class="text-xs text-slate-500 product-name">Bu lông lục giác chìm M10x50 inox 304</div>
+                                <div class="flex gap-1.5 items-center">
+                                    <div class="relative flex-grow">
+                                        <select class="row-bin w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                                            <option value="A-01-02-B">SKU-BL-01</option>
+                                            <option value="A-01-01-A">SKU-BL-01</option>
+                                            <option value="B-03-01-A">SKU-BL-01</option>
+                                        </select>
+                                        <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </span>
+                                    </div>
+                                    <button onclick="openQRScanner('quickBarcodeScan')" title="Quét Barcode sản phẩm" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 p-2 rounded-lg transition text-xs shadow-sm flex-shrink-0">
+                                        <i class="fa-solid fa-barcode"></i>
+                                    </button>
+                                </div>
+                                <div class="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check text-[10px]"></i> Bu lông lục giác chìm M10x50 inox 304
+                                </div>
                             </td>
                             <td class="py-3 px-4">
                                 <input type="number" min="1" value="500" class="row-qty w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-center shadow-sm" oninput="updateSummary()">
@@ -193,55 +196,6 @@
                                 </div>
                                 <div class="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
                                     <i class="fa-solid fa-circle-check text-[10px]"></i> Gợi ý: Kệ tiêu chuẩn phù hợp SKU
-                                </div>
-                            </td>
-                            <td class="py-3 px-4">
-                                <select class="row-qc w-full px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none">
-                                    <option value="Đạt KCS">Đạt KCS</option>
-                                    <option value="Chờ KCS">Chờ Kiểm Tra</option>
-                                    <option value="Lỗi / Trả">Lỗi / Trả NCC</option>
-                                </select>
-                            </td>
-                            <td class="py-3 px-4 text-center">
-                                <button onclick="deleteRow(this)" class="text-slate-400 hover:text-rose-600 transition p-1.5 rounded-lg hover:bg-rose-50" title="Xóa dòng">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </td>
-                        </tr>
-
-                        <!-- Initial row 2 -->
-                        <tr class="hover:bg-slate-50/80 transition" data-row-id="2">
-                            <td class="py-3 px-4 text-center font-medium text-slate-500 row-stt">2</td>
-                            <td class="py-3 px-4">
-                                <div class="font-semibold text-slate-900 product-sku">SKU-TH-05</div>
-                                <div class="text-xs text-slate-500 product-name">Thép hộp mạ kẽm 40x80 dày 1.4mm</div>
-                            </td>
-                            <td class="py-3 px-4">
-                                <input type="number" min="1" value="120" class="row-qty w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-center shadow-sm" oninput="updateSummary()">
-                            </td>
-                            <td class="py-3 px-4">
-                                <span class="inline-block px-2.5 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-700 unit-label">Thanh</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <div class="flex gap-1.5 items-center">
-                                    <div class="relative flex-grow">
-                                        <select class="row-bin w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
-                                            <option value="B-03-01-A" selected>B-03-01-A (Khu B, Kệ 03, Tầng 1, Ô A)</option>
-                                            <option value="A-01-02-B">A-01-02-B (Khu A, Kệ 01, Tầng 2, Ô B)</option>
-                                            <option value="A-01-01-A">A-01-01-A (Khu A, Kệ 01, Tầng 1, Ô A)</option>
-                                            <option value="C-02-04-C">C-02-04-C (Khu C, Kệ 02, Tầng 4, Ô C)</option>
-                                            <option value="Z-99-99-Z">Z-99-99-Z (Khu Lưu Kho Tạm)</option>
-                                        </select>
-                                        <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
-                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                        </span>
-                                    </div>
-                                    <button onclick="triggerBinScanner(this)" title="Quét Barcode Vị Trí Kệ" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 p-2 rounded-lg transition text-xs shadow-sm flex-shrink-0">
-                                        <i class="fa-solid fa-barcode"></i>
-                                    </button>
-                                </div>
-                                <div class="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-                                    <i class="fa-solid fa-circle-check text-[10px]"></i> Vị trí kho chứa vật tư dài
                                 </div>
                             </td>
                             <td class="py-3 px-4">
@@ -299,12 +253,17 @@
                 Hủy bỏ
             </button>
             <button onclick="saveAndPrint()" class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition shadow-md hover:shadow-indigo-500/25 flex items-center justify-center gap-2 active:scale-95">
-                <i class="fa-solid fa-print"></i> Lưu & In Barcode Vị Trí
+                <i class="fa-solid fa-print"></i> Lưu
             </button>
         </div>
     </div>
-
-
+   <!-- Notification Toast / Alert Box -->
+    <div id="toastMessage" class="hidden mx-6 mt-4 p-4 rounded-xl text-sm flex items-center justify-between shadow-sm transition-all duration-300">
+        <div class="flex items-center gap-2.5" id="toastContent">
+            <!-- Dynamic content -->
+        </div>
+        <button onclick="hideToast()" class="text-current opacity-70 hover:opacity-100 font-bold">&times;</button>
+    </div>
 
     <!-- Modal: Simulated Bin Barcode Scanner Popup -->
     <div id="binScannerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -452,33 +411,70 @@
         }
 
         // Add item row helper function
-        function addItemToTable(sku, name, qty, unit, defaultBin) {
+        async function addItemToTable(sku, name, qty, unit, defaultBin) {
             const tbody = document.getElementById('productTableBody');
             const rowCount = tbody.rows.length + 1;
-            
+
+            // Lấy dữ liệu từ API
+            const productData = await fetch_data_from_flask('products');
+            const shelvesData = await fetch_data_from_flask('shelves');
+            const unitData = await fetch_data_from_flask('view_product_type');
+
+            // Tạo danh sách các thẻ <option> cho Sản phẩm từ dữ liệu JS
+            const productOptionsHtml = productData.map(item => `
+                <option value="${item.id}">
+                    ${item.name}
+                </option>
+            `).join('');
+
+            // Nếu muốn render linh hoạt vị trí kệ từ shelvesData:
+            const shelfOptionsHtml = shelvesData.map(shelf => `
+                    <option value="${shelf.code}">
+                        ${shelf.code} (${shelf.area}, Kệ ${shelf.row}, Tầng ${shelf.level}, Ô ${shelf.box})
+                    </option>
+                `).join('');
+
+            const unitOptionsHtml = unitData.map(unit => `
+                    <option value="${unit.enumlabel}">
+                        ${unit.enumlabel}
+                    </option>
+                `).join('');
+
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50/80 transition';
             tr.innerHTML = `
                 <td class="py-3 px-4 text-center font-medium text-slate-500 row-stt">${rowCount}</td>
                 <td class="py-3 px-4">
-                    <div class="font-semibold text-slate-900 product-sku">${sku}</div>
-                    <div class="text-xs text-slate-500 product-name">${name}</div>
+                    <div class="flex gap-1.5 items-center">
+                        <div class="relative flex-grow">
+                            <select class="row-product w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                                ${productOptionsHtml}
+                            </select>
+                            <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </span>
+                        </div>
+                        <button onclick="openQRScanner('quickBarcodeScan')" title="Quét Barcode sản phẩm" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 p-2 rounded-lg transition text-xs shadow-sm flex-shrink-0">
+                            <i class="fa-solid fa-barcode"></i>
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-check text-[10px]"></i> ${name}
+                    </div>
                 </td>
                 <td class="py-3 px-4">
                     <input type="number" min="1" value="${qty}" class="row-qty w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-center shadow-sm" oninput="updateSummary()">
                 </td>
                 <td class="py-3 px-4">
-                    <span class="inline-block px-2.5 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-700 unit-label">${unit}</span>
+                    <select class="row-product w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                        ${unitOptionsHtml}
+                    </select>
                 </td>
                 <td class="py-3 px-4">
                     <div class="flex gap-1.5 items-center">
                         <div class="relative flex-grow">
                             <select class="row-bin w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
-                                <option value="A-01-01-A" ${defaultBin==='A-01-01-A'?'selected':''}>A-01-01-A (Khu A, Kệ 01, Tầng 1, Ô A)</option>
-                                <option value="A-01-02-B" ${defaultBin==='A-01-02-B'?'selected':''}>A-01-02-B (Khu A, Kệ 01, Tầng 2, Ô B)</option>
-                                <option value="B-03-01-A" ${defaultBin==='B-03-01-A'?'selected':''}>B-03-01-A (Khu B, Kệ 03, Tầng 1, Ô A)</option>
-                                <option value="C-02-04-C" ${defaultBin==='C-02-04-C'?'selected':''}>C-02-04-C (Khu C, Kệ 02, Tầng 4, Ô C)</option>
-                                <option value="Z-99-99-Z">Z-99-99-Z (Khu Lưu Kho Tạm)</option>
+                                ${shelfOptionsHtml}
                             </select>
                             <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
                                 <i class="fa-solid fa-chevron-down text-[10px]"></i>

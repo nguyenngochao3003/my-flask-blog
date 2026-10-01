@@ -30,11 +30,11 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        @media print {
+        /* @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
             #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-        }
+        } */
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-full flex flex-col">
@@ -925,7 +925,7 @@
                 }
 
                 if (result.length === 0) { console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`)}
-
+                console.log(`fetch_data_from_flask table-${tableName} data: `, result)
                 return result;
                 
             } catch (error) {
