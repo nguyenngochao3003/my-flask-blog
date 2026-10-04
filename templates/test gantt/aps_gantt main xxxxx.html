@@ -132,7 +132,7 @@
             const moList = ['MO-1001', 'MO-1002', 'MO-1003', 'MO-1004', 'MO-1005'];
             let rowIdx = 0;
 
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 15; i++) {
                 let wc = {
                     id: `WC-0${i}`,
                     name: `Xưởng Cơ Khí ${i}`,
@@ -209,7 +209,6 @@
             const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
             document.getElementById('ganttSpacer').style.height = totalHeight + 'px';
             document.getElementById('ganttSpacer').style.width = totalWidth + 'px';
-            console.log('gantt spacer height: ', totalHeight, 'gantt spacer width: ', totalWidth);
 
             setupCanvasSize();
             renderVirtualTree();
@@ -225,13 +224,14 @@
 
             const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
             const totalHeight = flattenedRows.length * ROW_HEIGHT;
+            // totalWidth = 600;
+            // totalHeight = 600;
 
-            ganttCanvas.width = totalWidth;
+            ganttCanvas.width = totalWidth; // chỗ này có vấn đề chỉ cần vẽ cho canvas khoảng nhìn vừa đủ thôi
             ganttCanvas.height = totalHeight;
             ganttCanvas.style.width = totalWidth + 'px';
             ganttCanvas.style.height = totalHeight + 'px';
 
-            console.log('gantt canvas height: ', totalHeight, 'gantt canvas width: ', totalWidth);
             headerCanvas.width = totalWidth;
             headerCanvas.height = 50;
             headerCanvas.style.width = totalWidth + 'px';
@@ -335,65 +335,80 @@
 
         function renderGanttCanvas() {
             const canvas = document.getElementById('ganttCanvas');
+            const container = document.getElementById('ganttContainer');
             const ctx = canvas.getContext('2d');
+
+            // xóa hết canvas cũ
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
+            const scrollTop = container.scrollTop;
+            const scrollLeft = container.scrollLeft;
+            const clientHeight = container.clientHeight;
+            const clientWidth = container.clientWidth;
 
+            // Xác định chỉ số dòng (row index) bắt đầu và kết thúc hiển thị trên màn hình (+ dư ra 2 dòng để chống giật khi cuộn nhanh)
+            const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
+            const endRow = Math.min(flattenedRows.length, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + 2);
+            console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
+
+            const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
+            const startCol = Math.max(0, Math.floor(scrollLeft/BLOCK_WIDTH)-2);
+            const endCol = startCol + 20;
+            console.log('start col', startCol, 'end col', endCol);
+
+            // 1. Chỉ vẽ lưới dọc trong tầm nhìn
             ctx.strokeStyle = '#f1f5f9';
             ctx.lineWidth = 1;
-            for (let i = 0; i < totalCols; i++) {
+            for (let i = startCol; i < endCol; i++) {
                 ctx.beginPath();
                 ctx.moveTo(i * BLOCK_WIDTH, 0);
                 ctx.lineTo(i * BLOCK_WIDTH, canvas.height);
                 ctx.stroke();
             }
 
+            // 2. Chỉ vẽ lưới ngang trong khoảng từ startRow đến endRow
             ctx.strokeStyle = '#e2e8f0';
-            for (let i = 0; i <= flattenedRows.length; i++) {
+            for (let i = startRow; i <= endRow; i++) {
                 ctx.beginPath();
                 ctx.moveTo(0, i * ROW_HEIGHT);
                 ctx.lineTo(canvas.width, i * ROW_HEIGHT);
                 ctx.stroke();
             }
 
-            flattenedRows.forEach((row, index) => {
-                let y = index * ROW_HEIGHT + 8; 
+            // 3. Chỉ lặp và vẽ các task thuộc các dòng nằm trong khung nhìn (Viewport)
+            for (let index = startRow; index < endRow; index++) {
+                let ws = flattenedRows[index];
+                if (!ws || !ws.tasks) continue; // kiểm tra nếu là workstation và có task 
+                let y = index * ROW_HEIGHT + 8;
 
-                if (row.type === 'work_center') {
-                    ctx.fillStyle = '#cbd5e1';
-                    ctx.fillRect(0, index * ROW_HEIGHT, canvas.width, ROW_HEIGHT);
-                } else if (row.tasks) {
-                    row.tasks.forEach(task => {
-                        let x = task.startBlock * BLOCK_WIDTH;
-                        let w = task.duration * BLOCK_WIDTH - 2; 
-                        let h = 24;
+                ws.tasks.forEach(task => {
+                    let x = task.startBlock * BLOCK_WIDTH;
+                    let w = task.duration * BLOCK_WIDTH - 2; 
+                    let h = 24;
 
-                        if (task.status === 'warning' || task.status === 'locked') {
-                            ctx.fillStyle = task.color;
-                            ctx.strokeStyle = '#ef4444';
-                            ctx.lineWidth = 2;
-                        } else {
-                            ctx.fillStyle = task.color;
-                            ctx.strokeStyle = '#64748b';
-                            ctx.lineWidth = 1;
-                        }
+                    // Kiểm tra xem task có nằm ngang trong tầm nhìn chiều ngang không (tùy chọn tối ưu thêm)
+                    if (x + w < container.scrollLeft || x > container.scrollLeft + container.clientWidth) {
+                        return; // Bỏ qua task nằm ngoài màn hình theo chiều ngang
+                    }
 
-                        ctx.beginPath();
-                        ctx.roundRect(x, y, w, h, 4);
-                        ctx.fill();
-                        ctx.stroke();
+                    ctx.fillStyle = task.color;
+                    ctx.strokeStyle = (task.status === 'warning' || task.status === 'locked') ? '#ef4444' : '#64748b';
+                    ctx.lineWidth = (task.status === 'warning' || task.status === 'locked') ? 2 : 1;
 
-                        ctx.fillStyle = '#1e293b';
-                        ctx.font = 'bold 11px Segoe UI';
-                        ctx.fillText(`${task.id} (${task.op})`, x + 6, y + 16);
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, w, h, 4);
+                    ctx.fill();
+                    ctx.stroke();
 
-                        if (task.status === 'warning' || task.status === 'locked') {
-                            canvas_warning(ctx, x + w - 14, y + 12);
-                        }
-                    });
-                }
-            });
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 11px Segoe UI';
+                    ctx.fillText(`${task.id} (${task.op})`, x + 6, y + 16);
+
+                    if (task.status === 'warning' || task.status === 'locked') {
+                        canvas_warning(ctx, x + w - 14, y + 12);
+                    }
+                });
+            }
 
             // Gọi hàm vẽ đường liên kết tiến trình nếu tính năng được bật
             drawPrecedenceLinks(ctx);
@@ -485,6 +500,8 @@
             const ganttContainer = document.getElementById('ganttContainer');
             ganttContainer.scrollTop = element.scrollTop;
             renderVirtualTree();
+            renderGanttCanvas();
+   
             isSyncing = false;
         }
 
@@ -495,6 +512,7 @@
             const treeContainer = document.getElementById('treeContainer');
             treeContainer.scrollTop = element.scrollTop;
             renderVirtualTree();
+            renderGanttCanvas();
 
             const headerCanvas = document.getElementById('headerCanvas');
             headerCanvas.style.transform = `translateX(-${element.scrollLeft}px)`;

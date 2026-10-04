@@ -132,49 +132,34 @@ const taskRows = document.getElementById("taskRows");
 
 const taskSpacer = document.getElementById("taskSpacer");
 
-const chartSpacer =
-    document.getElementById(
-        "chartSpacer"
-    );
+const chartSpacer = document.getElementById("chartSpacer");
 
-const canvas =
-    document.getElementById(
-        "ganttCanvas"
-    );
+const canvas =document.getElementById("ganttCanvas");
 
-const ctx =
-    canvas.getContext("2d");
+const ctx = canvas.getContext("2d");
 
 
-// timeline
+// timeline ok
 
-const timeline =
-    document.getElementById(
-        "timeline"
-    );
+const timeline = document.getElementById("timeline");
 
 for (let d = 1; d <= 31; d++) {
 
-    const div =
-        document.createElement("div");
+    const div = document.createElement("div");
 
     div.className = "day";
     div.innerText = d;
 
     timeline.appendChild(div);
-
 }
 
 // fake total height
 
-const totalHeight =
-    tasks.length * ROW_HEIGHT;
+const totalHeight = tasks.length * ROW_HEIGHT;
 
-taskSpacer.style.height =
-    totalHeight + "px";
+taskSpacer.style.height = totalHeight + "px";
 
-chartSpacer.style.height =
-    totalHeight + "px";
+chartSpacer.style.height = totalHeight + "px";
 
 canvas.width = 31 * DAY_WIDTH;
 canvas.height = totalHeight;
