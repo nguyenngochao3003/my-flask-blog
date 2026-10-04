@@ -391,8 +391,12 @@
                     if (x + w < container.scrollLeft || x > container.scrollLeft + container.clientWidth) {
                         return; // Bỏ qua task nằm ngoài màn hình theo chiều ngang
                     }
-
-                    ctx.fillStyle = task.color;
+                    if (selectedTaskId !== task.id) {
+                        ctx.fillStyle = task.color;
+                    } else {
+                        ctx.fillStyle = '#ef4444';
+                    }
+                   
                     // ctx.strokeStyle = (task.status === 'warning' || task.status === 'locked') ? '#ef4444' : '#64748b';
                     ctx.lineWidth = (task.status === 'warning' || task.status === 'locked') ? 2 : 1;
 
