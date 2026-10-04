@@ -567,6 +567,82 @@
             // Vẽ lại canvas để cập nhật hiệu ứng highlight
             renderGanttCanvas();
         }
+
+        // Các biến toàn cục quản lý trạng thái kéo thả
+        let isDragging = false;
+        let draggedTask = null;
+        let dragStartX = 0;
+        let originalStartBlock = 0;
+
+        // 1. Gắn các sự kiện chuột vào thẻ canvas (hoặc gắn qua JS)
+        const canvas = document.getElementById('ganttCanvas');
+
+        canvas.addEventListener('mousedown', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            // Duyệt tìm xem click có trúng task nào không
+            flattenedRows.forEach((ws, rIndex) => {
+                let rowY = rIndex * ROW_HEIGHT;
+                if (clickY >= rowY + 8 && clickY <= rowY + 8 + 24) {
+                    ws.tasks.forEach(task => {
+                        let taskX = task.startBlock * BLOCK_WIDTH;
+                        let taskW = task.duration * BLOCK_WIDTH - 2;
+
+                        if (clickX >= taskX && clickX <= taskX + taskW) {
+                            isDragging = true;
+                            draggedTask = task;
+                            dragStartX = event.clientX;
+                            originalStartBlock = task.startBlock;
+                            selectedTaskId = task.id; // Tự động chọn task khi bắt đầu kéo
+                        }
+                    });
+                }
+            });
+            renderGanttCanvas();
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (!isDragging || !draggedTask) return;
+
+            // Tính số pixel dịch chuyển kể từ lúc bấm chuột
+            const deltaX = event.clientX - dragStartX;
+            // Quy đổi số pixel dịch chuyển sang số block (BLOCK_WIDTH)
+            const blockShift = Math.round(deltaX / BLOCK_WIDTH);
+
+            // Cập nhật tạm thời startBlock mới (đảm bảo không bị nhỏ hơn 0)
+            let newStart = originalStartBlock + blockShift;
+            if (newStart < 0) newStart = 0;
+
+            draggedTask.startBlock = newStart;
+
+            // Vẽ lại canvas liên tục theo thời gian thực khi kéo
+            renderGanttCanvas();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                // Tại đây bạn có thể gọi thêm hàm lưu dữ liệu hoặc kiểm tra xung đột lịch trình (scheduling conflict)
+                if (draggedTask) {
+                    console.log(`Đã di chuyển task ${draggedTask.id} đến block mới: ${draggedTask.startBlock}`);
+                }
+                draggedTask = null;
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            // Nếu đang kéo mà chuột trượt ra khỏi vùng canvas thì dừng lại để tránh kẹt trạng thái
+            if (isDragging) {
+                isDragging = false;
+                if (draggedTask) {
+                    draggedTask.startBlock = originalStartBlock; // Hoặc giữ nguyên vị trí mới tùy ý bạn
+                }
+                draggedTask = null;
+                renderGanttCanvas();
+            }
+        });
     </script>
 </body>
 </html>
