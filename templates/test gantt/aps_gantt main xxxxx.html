@@ -84,7 +84,7 @@
             </div>
             <div class="gantt-container" id="ganttContainer" onscroll="syncGanttScroll(this)">
                 <div id="ganttSpacer" style="position: relative;">
-                    <canvas id="ganttCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
+                    <canvas ondblclick="handleTaskDoubleClick(event)" id="ganttCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
                 </div>
             </div>
         </div>
@@ -100,6 +100,7 @@
         let BLOCK_WIDTH = 80; 
         const TOTAL_DAYS = 7; 
         let BLOCKS_PER_DAY = 8; 
+        let selectedTaskId = null; // Lưu ID của task đang được double-click
         
         let factoryData = [];
         let flattenedRows = []; 
@@ -392,7 +393,7 @@
                     }
 
                     ctx.fillStyle = task.color;
-                    ctx.strokeStyle = (task.status === 'warning' || task.status === 'locked') ? '#ef4444' : '#64748b';
+                    // ctx.strokeStyle = (task.status === 'warning' || task.status === 'locked') ? '#ef4444' : '#64748b';
                     ctx.lineWidth = (task.status === 'warning' || task.status === 'locked') ? 2 : 1;
 
                     ctx.beginPath();
@@ -523,6 +524,45 @@
         window.onload = function() {
             initData();
         };
+        function handleTaskDoubleClick(event) {
+            const canvas = document.getElementById('ganttCanvas');
+            const rect = canvas.getBoundingClientRect();
+            
+            // Tính tọa độ click thực tế trên Canvas (tính cả việc đang scroll)
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            let foundTaskId = null;
+
+            // Duyệt qua các workstations và tasks để tìm xem click trúng task nào
+            flattenedRows.forEach((ws, rIndex) => {
+                let rowY = rIndex * ROW_HEIGHT;
+                // Kiểm tra xem click có nằm trong chiều dọc của dòng này không (chừa padding 8px)
+                if (clickY >= rowY + 8 && clickY <= rowY + 8 + 24) {
+                    ws.tasks.forEach(task => {
+                        let taskX = task.startBlock * BLOCK_WIDTH;
+                        let taskW = task.duration * BLOCK_WIDTH - 2;
+
+                        // Kiểm tra xem click có nằm trong khoảng chiều rộng của task không
+                        if (clickX >= taskX && clickX <= taskX + taskW) {
+                            foundTaskId = task.id;
+                        }
+                    });
+                }
+            });
+
+            // Cập nhật task được chọn (nếu double click ra ngoài thì bỏ chọn thành null)
+            selectedTaskId = foundTaskId;
+
+            if (selectedTaskId) {
+                document.getElementById('statusMessage').innerText = `Đã chọn Task: ${selectedTaskId}. Đang hiển thị highlight.`;
+            } else {
+                document.getElementById('statusMessage').innerText = `Đã bỏ chọn task.`;
+            }
+
+            // Vẽ lại canvas để cập nhật hiệu ứng highlight
+            renderGanttCanvas();
+        }
     </script>
 </body>
 </html>
