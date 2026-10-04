@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APS Enterprise Gantt - Precedence Links & Routing</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -94,7 +95,7 @@
         <span id="statusMessage">Sẵn sàng. Nhấn nút "Bật Precedence Links" để xem luồng công đoạn sản phẩm.</span>
         <span>Hiệu năng: 60 FPS</span>
     </div>
-
+    <script src="{{ url_for('static', filename='js/fetch.js') }}"></script>
     <script>
         const ROW_HEIGHT = 40;
         let BLOCK_WIDTH = 80; 
@@ -427,6 +428,7 @@
             const hoursPerBlock = parseInt(document.getElementById('timeScale').value);
             const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
 
+            // đường kẻ ngày
             ctx.strokeStyle = '#cbd5e1';
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -434,10 +436,11 @@
             ctx.lineTo(canvas.width, 25);
             ctx.stroke();
 
+            // đường kẻ giờ
             for (let i = 0; i < totalCols; i++) {
                 let x = i * BLOCK_WIDTH;
                 ctx.beginPath();
-                ctx.moveTo(x, 25);
+                ctx.moveTo(x, 41);
                 ctx.lineTo(x, 50);
                 ctx.stroke();
             }
@@ -454,6 +457,14 @@
                 let dateDisplay = `${dayStr}-${monthStr}`;
 
                 let startXForDay = (d * BLOCKS_PER_DAY) * BLOCK_WIDTH;
+
+                // kẻ bắt đầu của ngày
+                ctx.beginPath();
+                ctx.moveTo(startXForDay, 0);
+                ctx.lineTo(startXForDay, 50);
+                ctx.stroke();
+
+                // điền ngày
                 ctx.fillText(dateDisplay, startXForDay + 6, 17);
 
                 for (let b = 0; b < BLOCKS_PER_DAY; b++) {
@@ -463,7 +474,7 @@
 
                     ctx.fillStyle = '#475569';
                     ctx.font = '10px Segoe UI';
-                    ctx.fillText(hourStr, x + 6, 41);
+                    ctx.fillText(hourStr, x-5, 40);
                 }
             }
         }
@@ -568,13 +579,14 @@
             renderGanttCanvas();
         }
 
-        // Các biến toàn cục quản lý trạng thái kéo thả
+       // Các biến trạng thái kéo thả mở rộng
         let isDragging = false;
         let draggedTask = null;
         let dragStartX = 0;
+        let dragStartY = 0;
         let originalStartBlock = 0;
+        let originalRowIndex = -1; // Lưu vị trí dòng (workcenter) ban đầu của task
 
-        // 1. Gắn các sự kiện chuột vào thẻ canvas (hoặc gắn qua JS)
         const canvas = document.getElementById('ganttCanvas');
 
         canvas.addEventListener('mousedown', (event) => {
@@ -582,11 +594,11 @@
             const clickX = event.clientX - rect.left;
             const clickY = event.clientY - rect.top;
 
-            // Duyệt tìm xem click có trúng task nào không
+            // Duyệt tìm xem click trúng task nào và ở hàng (workstation) nào
             flattenedRows.forEach((ws, rIndex) => {
                 let rowY = rIndex * ROW_HEIGHT;
                 if (clickY >= rowY + 8 && clickY <= rowY + 8 + 24) {
-                    ws.tasks.forEach(task => {
+                    ws.tasks.forEach((task, tIndex) => {
                         let taskX = task.startBlock * BLOCK_WIDTH;
                         let taskW = task.duration * BLOCK_WIDTH - 2;
 
@@ -594,8 +606,10 @@
                             isDragging = true;
                             draggedTask = task;
                             dragStartX = event.clientX;
+                            dragStartY = event.clientY;
                             originalStartBlock = task.startBlock;
-                            selectedTaskId = task.id; // Tự động chọn task khi bắt đầu kéo
+                            originalRowIndex = rIndex; // Ghi nhận trạm làm việc gốc
+                            selectedTaskId = task.id;
                         }
                     });
                 }
@@ -606,43 +620,77 @@
         canvas.addEventListener('mousemove', (event) => {
             if (!isDragging || !draggedTask) return;
 
-            // Tính số pixel dịch chuyển kể từ lúc bấm chuột
+            // 1. Tính toán dịch chuyển theo chiều ngang (thời gian / startBlock)
             const deltaX = event.clientX - dragStartX;
-            // Quy đổi số pixel dịch chuyển sang số block (BLOCK_WIDTH)
             const blockShift = Math.round(deltaX / BLOCK_WIDTH);
-
-            // Cập nhật tạm thời startBlock mới (đảm bảo không bị nhỏ hơn 0)
             let newStart = originalStartBlock + blockShift;
             if (newStart < 0) newStart = 0;
-
             draggedTask.startBlock = newStart;
 
-            // Vẽ lại canvas liên tục theo thời gian thực khi kéo
+            // 2. Tính toán dịch chuyển theo chiều dọc (chuyển workstation)
+            const deltaY = event.clientY - dragStartY;
+            const rowShift = Math.round(deltaY / ROW_HEIGHT);
+            let targetRowIndex = originalRowIndex + rowShift;
+
+            // GIỚI HẠN: Chỉ cho phép di chuyển trong các hàng hợp lệ (ví dụ: chỉ được dịch chuyển lên/xuống tối đa 1 hoặc 2 hàng lân cận, hoặc nằm trong tổng số workstations)
+            // Giả sử chỉ cho phép kéo trong phạm vi từ hàng (originalRowIndex - 1) đến (originalRowIndex + 1) tức là sang các WC sát cạnh:
+            let minAllowedRow = Math.max(0, originalRowIndex - 1);
+            let maxAllowedRow = Math.min(workstations.length - 1, originalRowIndex + 1);
+
+            if (targetRowIndex < minAllowedRow) targetRowIndex = minAllowedRow;
+            if (targetRowIndex > maxAllowedRow) targetRowIndex = maxAllowedRow;
+
+            // Nếu người dùng kéo trỏ chuột sang hàng khác trong phạm vi cho phép
+            if (targetRowIndex !== originalRowIndex) {
+                // Xóa task khỏi workstation cũ
+                const oldWs = flattenedRows[originalRowIndex];
+                const taskIdx = oldWs.tasks.findIndex(t => t.id === draggedTask.id);
+                if (taskIdx > -1) {
+                    oldWs.tasks.splice(taskIdx, 1);
+                }
+
+                // Thêm task vào workstation mới
+                const newWs = workstations[targetRowIndex];
+                if (!newWs.tasks) newWs.tasks = [];
+                newWs.tasks.push(draggedTask);
+
+                // Cập nhật lại mốc hàng hiện tại cho lần tính toán tiếp theo trong phiên kéo này
+                originalRowIndex = targetRowIndex;
+                dragStartY = event.clientY; // Reset điểm mốc Y để tính mượt hơn
+            }
+
             renderGanttCanvas();
         });
 
         canvas.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
-                // Tại đây bạn có thể gọi thêm hàm lưu dữ liệu hoặc kiểm tra xung đột lịch trình (scheduling conflict)
                 if (draggedTask) {
-                    console.log(`Đã di chuyển task ${draggedTask.id} đến block mới: ${draggedTask.startBlock}`);
+                    console.log(`Đã đổi task ${draggedTask.id} sang Workstation mới tại dòng ${originalRowIndex}, startBlock: ${draggedTask.startBlock}`);
                 }
                 draggedTask = null;
             }
         });
 
         canvas.addEventListener('mouseleave', () => {
-            // Nếu đang kéo mà chuột trượt ra khỏi vùng canvas thì dừng lại để tránh kẹt trạng thái
             if (isDragging) {
                 isDragging = false;
-                if (draggedTask) {
-                    draggedTask.startBlock = originalStartBlock; // Hoặc giữ nguyên vị trí mới tùy ý bạn
-                }
                 draggedTask = null;
                 renderGanttCanvas();
             }
         });
+
+    
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Lúc này đảm bảo fetch_data_from_flask đã sẵn sàng
+                const apsData = await fetch_data_from_flask('test_routine', 'test');
+                console.log('aps Dataxxxxxxx: ', apsData);
+            } catch (err) {
+                console.error('Lỗi tải dữ liệu:', err);
+            }
+        });
     </script>
+    
 </body>
 </html>

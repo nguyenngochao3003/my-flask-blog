@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/product_style.css">
     <!-- <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script> -->
-    <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -787,6 +787,8 @@
     
 
     <!-- JavaScript Application Logic -->
+    <script type="module" src="{{ url_for('static', filename='js/product.js') }}" defer></script>
+    <script type="module" src="{{ url_for('static', filename='js/fetch.js') }}" defer></script>
     <script>
         
         // Data Stores
@@ -907,57 +909,6 @@
             `).join('');
         }
 
-        async function fetch_data_from_flask(tableName) {
-            try {
-                // Sử dụng fetch gửi tên bảng lên Flask
-                const response = await fetch('/api/get-table-data', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ table_name: tableName })
-                });
-                
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.error || 'Lỗi kết nối server');
-                }
-
-                if (result.length === 0) { console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`)}
-                console.log(`fetch_data_from_flask table-${tableName} data: `, result)
-                return result;
-                
-            } catch (error) {
-                console.error("Error:", error);
-                return null; // Trả về null nếu lỗi để tránh crash code bên dưới
-            }
-        }
-        async function fetch_insert_data_from_flask(tableName, row) {
-            try {
-                // Sử dụng fetch gửi tên bảng lên Flask
-                const response = await fetch('/api/insert-table-data', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ table_name: tableName, row: row })
-                });
-                
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.error || 'Lỗi kết nối server');
-                }
-
-                !result.message ? console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`): null;
-                return result;
-                
-            } catch (error) {
-                console.error("Error:", error);
-                return null; // Trả về null nếu lỗi để tránh crash code bên dưới
-            }
-        }
 
         async function renderShelvesTable() {
             const shelvesData = await fetch_data_from_flask('shelves');
@@ -1327,6 +1278,8 @@
         function exportAuditLog() { alert("Đã xuất file báo cáo nhật ký kho và lương nhân sự thành công!"); }
 
         window.onload = function() { renderAll(); }
+
+
         
     </script>
 

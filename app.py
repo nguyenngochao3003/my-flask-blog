@@ -33,6 +33,11 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 def home():
     return render_template('main.html')
 
+@app.route('/aps')
+def test_aps():
+    return render_template('test gantt/aps_gantt main xxxxx.html')
+
+
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/login')
 def login():
@@ -137,33 +142,44 @@ def permission():
 
 
 # nhập tên bảng để lấy dữ liệu từ bảng
+
 @app.route("/api/get-table-data", methods=["POST"])
 def get_table_data():
-    data = request.get_json()
+    data = request.get_json() or {}
+    schema = data.get("schema", "public")
     table_name = data.get("table_name")
+    print('schema:', schema)
   
     user_access_token = session.get('access_token')
     if not user_access_token:
         return jsonify({
-            "success": False,
-            "message": "Chưa đăng nhập"
+            "error": "Chưa đăng nhập hoặc phiên làm việc đã hết hạn"
         }), 401
     
-    # Tạo User Supabase Client để check quyền Admin
-    user_supabase = create_client(
-        url, key, options=ClientOptions(headers={"Authorization": f"Bearer {user_access_token}"})
-    )
-    
     try:
-        # Lấy thông tin profiles (danh sách user + role)
-        table_data = user_supabase.table(table_name).select('*').execute().data
-        return table_data
-
+        # Tạo User Supabase Client
+        user_supabase = create_client(
+            url, 
+            key, 
+            options=ClientOptions(
+                headers={"Authorization": f"Bearer {user_access_token}"},
+                schema=schema
+            )
+        )
+        
+        # Lấy dữ liệu
+        res = user_supabase.table(table_name).select('*').execute()
+        table_data = res.data
+        
+        # Bắt buộc bọc jsonify() khi trả về
+        return jsonify(table_data), 200
 
     except Exception as e:
-        flash(f"Lỗi truy cập:  bị từ chối RLS! ({e})")
-        return redirect('/login')
-    
+        print(f"Lỗi Supabase/RLS: {e}")
+        # Trả về JSON lỗi kèm mã status 400 hoặc 403 thay vì redirect
+        return jsonify({
+            "error": f"Lỗi truy cập dữ liệu (RLS): {str(e)}"
+        }), 400
 # nhập tên bảng để lấy dữ liệu từ bảng
 @app.route("/api/insert-table-data", methods=["POST"])
 def insert_dynamic_data():
@@ -179,7 +195,6 @@ def insert_dynamic_data():
     # Lấy dữ liệu của hàng (row) cần lưu.
     # Bạn có thể đặt tên key trong JSON gửi lên là 'row' hoặc 'data'
     row_data = req_data.get("row")
-    print('/api/insert-table-data row_data được chèn vào:', row_data)
 
     if not table_name or not row_data:
       return (
@@ -248,7 +263,6 @@ def add_product():
         # Truy vấn employee theo user_id
         employee_res = user_supabase.table("employees").select("id").eq("user_id", user_id).execute()
         id_employee = employee_res.data[0]["id"] if employee_res.data else None
-        print('các mã id trước khi chèn vào bảng products', 'id_employee', id_employee, 'id_group', id_group, 'id_supplier', id_supplier)
     
         # 5.. Insert dữ liệu - RLS sẽ tự kiểm tra quyền Staff ở bước này
         res = user_supabase.table("products").insert({
@@ -407,6 +421,10 @@ def get_products():
     response = supabase.table("products").select("*").execute()
     return jsonify(response.data)
 # ĐỌC VÀ LƯU HÌNH ẢNH VÀO SUPABASE-------------
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
