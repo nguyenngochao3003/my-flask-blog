@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APS Enterprise Gantt - Precedence Links & Routing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        header { background-color: #003366; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #002244; }
+        .header-title { font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        
+        .btn-group { display: flex; gap: 10px; }
+        .btn { background: #0055a5; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .btn:hover { background: #004080; }
+        .btn.active { background: #10b981; } /* Màu xanh lá khi bật tính năng precedence */
+
+        .toolbar { background: #e9ecef; padding: 8px 20px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid #ccc; font-size: 13px; }
+        .toolbar select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 3px; }
+
+        .workspace { display: flex; flex: 1; overflow: hidden; position: relative; }
+        
+        /* Trái: Danh sách Workstation */
+        .tree-sidebar { width: 380px; background: white; border-right: 1px solid #ccc; display: flex; flex-direction: column; z-index: 2; flex-shrink: 0; }
+        .sidebar-header { background: #f8f9fa; padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #ddd; font-size: 13px; display: flex; justify-content: space-between; height: 50px;}
+        .tree-container { flex: 1; overflow-y: auto; position: relative; overflow-x: hidden; }
+        .tree-spacer { position: absolute; top: 0; left: 0; width: 100%; }
+        
+        .tree-row { height: 40px; display: flex; align-items: center; padding: 0 10px; border-bottom: 1px solid #eee; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tree-row.wc { background: #e2e8f0; font-weight: bold; color: #1e293b; }
+        .tree-row.ws { background: #f1f5f9; padding-left: 20px; font-weight: 600; color: #334155; }
+        .tree-row:hover { background-color: #f8fafc; }
+
+        /* Phải: Biểu đồ Gantt Canvas */
+        .gantt-area { flex: 1; display: flex; flex-direction: column; background: #fff; overflow: hidden; position: relative; }
+        .gantt-timeline-header { height: 50px; background: #f8f9fa; border-bottom: 1px solid #ddd; position: relative; overflow: hidden; flex-shrink: 0; }
+        .gantt-container { flex: 1; overflow: auto; position: relative; }
+        
+        canvas { display: block; }
+
+        .status-bar { background: #f8f9fa; padding: 5px 20px; border-top: 1px solid #ccc; font-size: 12px; display: flex; justify-content: space-between; color: #555; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <i class="fa-solid fa-industry"></i> APS Gantt - Precedence Routing & Canvas Links
+        </div>
+        <div class="btn-group">
+            <button id="btnPrecedence" class="btn" onclick="togglePrecedence()"><i class="fa-solid fa-route"></i> Bật Precedence Links</button>
+            <button class="btn" onclick="initData()"><i class="fa-solid fa-rotate"></i> Tải lại dữ liệu</button>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <div><label>Khung thời gian:</label> 
+            <select id="timeScale" onchange="changeTimeScale()">
+                <option value="3">Mỗi 3 tiếng / Block</option>
+                <option value="2">Mỗi 2 tiếng / Block</option>
+            </select>
+        </div>
+        <div id="statsInfo" style="font-weight: bold; color: #0055a5; margin-left: auto;">Đang khởi tạo...</div>
+    </div>
+
+    <div class="workspace">
+        <div class="tree-sidebar">
+            <div class="sidebar-header">
+                <span>Cấu trúc Trạm làm việc (Workstation)</span>
+                <span>Mã trạm</span>
+            </div>
+            <div class="tree-container" id="treeContainer" onscroll="syncTreeScroll(this)">
+                <div class="tree-spacer" id="treeSpacer">
+                    <div id="treeListInner"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="gantt-area">
+            <div class="gantt-timeline-header" id="headerContainer">
+                <canvas id="headerCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
+            </div>
+            <div class="gantt-container" id="ganttContainer" onscroll="syncGanttScroll(this)">
+                <div id="ganttSpacer" style="position: relative;">
+                    <canvas id="ganttCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="statusMessage">Sẵn sàng. Nhấn nút "Bật Precedence Links" để xem luồng công đoạn sản phẩm.</span>
+        <span>Hiệu năng: 60 FPS</span>
+    </div>
+
+    <script>
+        const ROW_HEIGHT = 40;
+        let BLOCK_WIDTH = 80; 
+        const TOTAL_DAYS = 7; 
+        let BLOCKS_PER_DAY = 8; 
+        
+        let factoryData = [];
+        let flattenedRows = []; 
+        let allTasksRegistry = []; // Lưu toàn bộ task để dễ tra cứu quan hệ Precedence
+        let isSyncing = false;
+        let showPrecedence = false; // Trạng thái bật/tắt đường liên kết
+
+        function getRandomPastelColor(seedStr) {
+            let hash = 0;
+            for (let i = 0; i < seedStr.length; i++) {
+                // Thuật toán băm chuỗi mạnh hơn để phân tán giá trị tốt hơn
+                hash = seedStr.charCodeAt(i) + ((hash << 5) - hash);
+                hash = hash & hash; // Chuyển thành số nguyên 32-bit
+            }
+            
+            // Kết hợp Math.sin để nhiễu loạn thêm, đảm bảo các MO khác nhau chắc chắn ra các màu khác nhau rõ rệt
+            let randomMultiplier = Math.abs(Math.sin(hash) * 10000);
+            let hue = Math.floor((Math.abs(hash) + randomMultiplier) % 360);
+            
+            // Độ bão hòa (Saturation) 65-75% và độ sáng (Lightness) 75-80% để giữ màu tươi sáng, dễ nhìn và không bị chói
+            return `hsl(${hue}, 70%, 78%)`;
+        }
+
+        function initData() {
+            factoryData = [];
+            flattenedRows = [];
+            allTasksRegistry = [];
+            
+            // Tạo sẵn một số Mã Đơn hàng (MO) để có chuỗi công đoạn liên kết
+            const moList = ['MO-1001', 'MO-1002', 'MO-1003', 'MO-1004', 'MO-1005'];
+            let rowIdx = 0;
+
+            for (let i = 1; i <= 5; i++) {
+                let wc = {
+                    id: `WC-0${i}`,
+                    name: `Xưởng Cơ Khí ${i}`,
+                    type: 'work_center',
+                    children: []
+                };
+                flattenedRows.push({ ...wc, level: 0, rowIndex: rowIdx++ });
+
+                for (let j = 1; j <= 5; j++) {
+                    let wsId = `WS-0${i}-${j}`;
+                    let wsName = `Máy Phay CNC 0${j}`;
+                    let tasks = [];
+                    
+                    let totalBlocks = TOTAL_DAYS * BLOCKS_PER_DAY;
+                    let currentBlock = Math.floor(Math.random() * 2);
+                    
+                    while (currentBlock < totalBlocks - 4) {
+                        let duration = 1 + Math.floor(Math.random() * 3);
+                        let statuses = ['normal', 'normal', 'warning', 'locked'];
+                        let status = statuses[Math.floor(Math.random() * statuses.length)];
+                        
+                        // Phân bổ ngẫu nhiên chuỗi công đoạn (preOp -> op -> nextOp)
+                        let moId = moList[Math.floor(Math.random() * moList.length)];
+                        let opSeq = ['Op-10 (Cắt gọt)', 'Op-20 (Gia công tinh)', 'Op-30 (Khoan lỗ)', 'Op-40 (Kiểm tra KCS)'];
+                        let opIndex = Math.floor(Math.random() * opSeq.length);
+                        
+                        let taskId = `${moId}-OP${(opIndex+1)*10}`;
+                        let taskObj = {
+                            id: taskId,
+                            moId: moId,
+                            name: `Task ${taskId}`,
+                            preOp: opIndex > 0 ? `${moId}-OP${opIndex*10}` : null,
+                            op: opSeq[opIndex],
+                            nextOp: opIndex < opSeq.length - 1 ? `${moId}-OP${(opIndex+2)*10}` : null,
+                            startBlock: currentBlock,
+                            duration: duration,
+                            progress: Math.floor(Math.random() * 100),
+                            status: status,
+                            color: getRandomPastelColor(moId),
+                            rowIndex: rowIdx // Gắn sẵn chỉ số dòng để vẽ đường nối
+                        };
+
+                        tasks.push(taskObj);
+                        allTasksRegistry.push(taskObj);
+
+                        currentBlock += duration + Math.floor(Math.random() * 2) + 1;
+                    }
+
+                    let ws = {
+                        id: wsId,
+                        name: wsName,
+                        type: 'workstation',
+                        parentId: wc.id,
+                        tasks: tasks,
+                        level: 1,
+                        rowIndex: rowIdx
+                    };
+                    wc.children.push(ws);
+                    flattenedRows.push(ws);
+                    rowIdx++;
+                }
+                factoryData.push(wc);
+                
+            }
+            console.log('factoryData: ', factoryData);
+            console.log('flattenedRows: ', flattenedRows);
+            updateLayout();
+        }
+
+        function updateLayout() {
+            // Cập nhật kích thước spacer
+            const totalHeight = flattenedRows.length * ROW_HEIGHT;
+            document.getElementById('treeSpacer').style.height = totalHeight + 'px';
+            const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
+            document.getElementById('ganttSpacer').style.height = totalHeight + 'px';
+            document.getElementById('ganttSpacer').style.width = totalWidth + 'px';
+            console.log('gantt spacer height: ', totalHeight, 'gantt spacer width: ', totalWidth);
+
+            setupCanvasSize();
+            renderVirtualTree();
+            renderGanttCanvas();
+            renderHeaderCanvas();
+
+            document.getElementById('statsInfo').innerText = `Tổng số Workstation: ${flattenedRows.filter(r=>r.type==='workstation').length}`;
+        }
+
+        function setupCanvasSize() {
+            const ganttCanvas = document.getElementById('ganttCanvas');
+            const headerCanvas = document.getElementById('headerCanvas');
+
+            const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
+            const totalHeight = flattenedRows.length * ROW_HEIGHT;
+
+            ganttCanvas.width = totalWidth;
+            ganttCanvas.height = totalHeight;
+            ganttCanvas.style.width = totalWidth + 'px';
+            ganttCanvas.style.height = totalHeight + 'px';
+
+            console.log('gantt canvas height: ', totalHeight, 'gantt canvas width: ', totalWidth);
+            headerCanvas.width = totalWidth;
+            headerCanvas.height = 50;
+            headerCanvas.style.width = totalWidth + 'px';
+            headerCanvas.style.height = '50px';
+        }
+
+        function renderVirtualTree() {
+            const treeContainer = document.getElementById('treeContainer');
+            const scrollTop = treeContainer.scrollTop;
+            const containerHeight = treeContainer.clientHeight;
+
+            const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
+            const endIndex = Math.min(flattenedRows.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + 5);
+
+            let html = '';
+            for (let i = startIndex; i < endIndex; i++) {
+                let item = flattenedRows[i];
+                let top = i * ROW_HEIGHT;
+
+                if (item.type === 'work_center') {
+                    html += `<div class="tree-row wc" style="position: absolute; top: ${top}px; width: 100%;">
+                        <i class="fa-solid fa-industry" style="width: 16px;"></i> &nbsp;<b>${item.id}</b>: ${item.name}
+                    </div>`;
+                } else {
+                    html += `<div class="tree-row ws" style="position: absolute; top: ${top}px; width: 100%;">
+                        <i class="fa-solid fa-gears" style="width: 16px; color: #0055a5;"></i> &nbsp;<b>${item.id}</b>: ${item.name}
+                    </div>`;
+                }
+            }
+            document.getElementById('treeListInner').innerHTML = html;
+        }
+
+        function canvas_warning(ctx, x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.fillStyle = '#f59e0b';
+            ctx.strokeStyle = '#b45309';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(8, 6);
+            ctx.lineTo(-8, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-1, -4, 2, 5);
+            ctx.fillRect(-1, 2, 2, 2);
+            ctx.restore();
+        }
+
+        // Vẽ mũi tên liên kết giữa các task có quan hệ preOp -> nextOp
+        function drawPrecedenceLinks(ctx) {
+            if (!showPrecedence) return;
+
+            ctx.save();
+            ctx.strokeStyle = '#2563eb'; // Màu xanh dương đậm cho đường liên kết
+            ctx.fillStyle = '#2563eb';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]); // Nét đứt tinh tế
+
+            // Tạo map tra cứu nhanh task theo id
+            let taskMap = {};
+            allTasksRegistry.forEach(t => taskMap[t.id] = t);
+
+            allTasksRegistry.forEach(task => {
+                if (task.nextOp && taskMap[task.nextOp]) {
+                    let targetTask = taskMap[task.nextOp];
+
+                    // Tọa độ điểm bắt đầu (Cạnh phải của task hiện tại)
+                    let startX = (task.startBlock + task.duration) * BLOCK_WIDTH;
+                    let startY = task.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+
+                    // Tọa độ điểm kết thúc (Cạnh trái của task tiếp theo)
+                    let endX = targetTask.startBlock * BLOCK_WIDTH;
+                    let endY = targetTask.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+
+                    // Vẽ đường cong Bezier nối 2 task
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    let controlX1 = startX + (endX - startX) / 2;
+                    let controlX2 = startX + (endX - startX) / 2;
+                    ctx.bezierCurveTo(controlX1, startY, controlX2, endY, endX - 4, endY);
+                    ctx.stroke();
+
+                    // Vẽ đầu mũi tên chỉ hướng
+                    ctx.setLineDash([]); // Bỏ nét đứt khi vẽ đầu mũi tên
+                    ctx.beginPath();
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - 6, endY - 4);
+                    ctx.lineTo(endX - 6, endY + 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.setLineDash([3, 3]); // Khôi phục nét đứt
+                }
+            });
+
+            ctx.restore();
+        }
+
+        function renderGanttCanvas() {
+            const canvas = document.getElementById('ganttCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
+
+            ctx.strokeStyle = '#f1f5f9';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < totalCols; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * BLOCK_WIDTH, 0);
+                ctx.lineTo(i * BLOCK_WIDTH, canvas.height);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#e2e8f0';
+            for (let i = 0; i <= flattenedRows.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * ROW_HEIGHT);
+                ctx.lineTo(canvas.width, i * ROW_HEIGHT);
+                ctx.stroke();
+            }
+
+            flattenedRows.forEach((row, index) => {
+                let y = index * ROW_HEIGHT + 8; 
+
+                if (row.type === 'work_center') {
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.fillRect(0, index * ROW_HEIGHT, canvas.width, ROW_HEIGHT);
+                } else if (row.tasks) {
+                    row.tasks.forEach(task => {
+                        let x = task.startBlock * BLOCK_WIDTH;
+                        let w = task.duration * BLOCK_WIDTH - 2; 
+                        let h = 24;
+
+                        if (task.status === 'warning' || task.status === 'locked') {
+                            ctx.fillStyle = task.color;
+                            ctx.strokeStyle = '#ef4444';
+                            ctx.lineWidth = 2;
+                        } else {
+                            ctx.fillStyle = task.color;
+                            ctx.strokeStyle = '#64748b';
+                            ctx.lineWidth = 1;
+                        }
+
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, w, h, 4);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = '#1e293b';
+                        ctx.font = 'bold 11px Segoe UI';
+                        ctx.fillText(`${task.id} (${task.op})`, x + 6, y + 16);
+
+                        if (task.status === 'warning' || task.status === 'locked') {
+                            canvas_warning(ctx, x + w - 14, y + 12);
+                        }
+                    });
+                }
+            });
+
+            // Gọi hàm vẽ đường liên kết tiến trình nếu tính năng được bật
+            drawPrecedenceLinks(ctx);
+        }
+
+        function renderHeaderCanvas() {
+            const canvas = document.getElementById('headerCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const hoursPerBlock = parseInt(document.getElementById('timeScale').value);
+            const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
+
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, 25);
+            ctx.lineTo(canvas.width, 25);
+            ctx.stroke();
+
+            for (let i = 0; i < totalCols; i++) {
+                let x = i * BLOCK_WIDTH;
+                ctx.beginPath();
+                ctx.moveTo(x, 25);
+                ctx.lineTo(x, 50);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 11px Segoe UI';
+            let baseDate = new Date();
+
+            for (let d = 0; d < TOTAL_DAYS; d++) {
+                let currDate = new Date(baseDate);
+                currDate.setDate(baseDate.getDate() + d);
+                let dayStr = String(currDate.getDate()).padStart(2, '0');
+                let monthStr = String(currDate.getMonth() + 1).padStart(2, '0');
+                let dateDisplay = `${dayStr}-${monthStr}`;
+
+                let startXForDay = (d * BLOCKS_PER_DAY) * BLOCK_WIDTH;
+                ctx.fillText(dateDisplay, startXForDay + 6, 17);
+
+                for (let b = 0; b < BLOCKS_PER_DAY; b++) {
+                    let x = (d * BLOCKS_PER_DAY + b) * BLOCK_WIDTH;
+                    let currentHour = (b * hoursPerBlock) % 24;
+                    let hourStr = `${String(currentHour).padStart(2, '0')}:00`;
+
+                    ctx.fillStyle = '#475569';
+                    ctx.font = '10px Segoe UI';
+                    ctx.fillText(hourStr, x + 6, 41);
+                }
+            }
+        }
+
+        // Bật / Tắt hiển thị đường liên kết Precedence
+        function togglePrecedence() {
+            showPrecedence = !showPrecedence;
+            const btn = document.getElementById('btnPrecedence');
+            const statusMsg = document.getElementById('statusMessage');
+
+            if (showPrecedence) {
+                btn.classList.add('active');
+                btn.innerHTML = `<i class="fa-solid fa-route"></i> Tắt Precedence Links`;
+                statusMsg.innerText = `Đã BẬT hiển thị đường liên kết chuỗi công đoạn giữa các task của từng Đơn hàng (MO).`;
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `<i class="fa-solid fa-route"></i> Bật Precedence Links`;
+                statusMsg.innerText = `Đã TẮT tính năng đường liên kết Precedence.`;
+            }
+
+            renderGanttCanvas(); // Vẽ lại canvas để cập nhật đường nối
+        }
+
+        function changeTimeScale() {
+            let val = parseInt(document.getElementById('timeScale').value);
+            if (val === 3) {
+                BLOCKS_PER_DAY = 8; 
+                BLOCK_WIDTH = 80;
+            } else {
+                BLOCKS_PER_DAY = 12; 
+                BLOCK_WIDTH = 60;
+            }
+            updateLayout();
+        }
+
+        function syncTreeScroll(element) {
+            if (isSyncing) return;
+            isSyncing = true;
+            const ganttContainer = document.getElementById('ganttContainer');
+            ganttContainer.scrollTop = element.scrollTop;
+            renderVirtualTree();
+            isSyncing = false;
+        }
+
+        function syncGanttScroll(element) {
+            if (isSyncing) return;
+            isSyncing = true;
+            
+            const treeContainer = document.getElementById('treeContainer');
+            treeContainer.scrollTop = element.scrollTop;
+            renderVirtualTree();
+
+            const headerCanvas = document.getElementById('headerCanvas');
+            headerCanvas.style.transform = `translateX(-${element.scrollLeft}px)`;
+
+            isSyncing = false;
+        }
+
+        window.onload = function() {
+            initData();
+        };
+    </script>
+</body>
+</html>

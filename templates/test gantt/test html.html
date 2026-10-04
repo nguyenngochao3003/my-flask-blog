@@ -1,0 +1,283 @@
+<style>
+    body {
+    margin: 0;
+    font-family: Arial;
+}
+
+#gantt {
+    display: flex;
+    height: 500px;
+}
+
+#left-panel {
+    width: 250px;
+    border-right: 1px solid #ccc;
+}
+
+#right-panel {
+    flex: 1;
+    overflow: hidden;
+}
+
+.header {
+    height: 40px;
+    line-height: 40px;
+    background: #f5f5f5;
+    padding-left: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+#timeline {
+    height: 40px;
+    display: flex;
+    overflow: hidden;
+    border-bottom: 1px solid #ccc;
+    background: white;
+}
+
+.day {
+    width: 40px;
+    flex-shrink: 0;
+    text-align: center;
+    line-height: 40px;
+    border-right: 1px solid #eee;
+}
+
+#taskViewport,
+#chartViewport {
+    height: calc(100% - 40px);
+    overflow: auto;
+    position: relative;
+}
+
+#taskRows {
+    position: absolute;
+    left: 0;
+    width: 100%;
+}
+
+.task-row {
+    height: 30px;
+    line-height: 30px;
+    padding-left: 10px;
+    border-bottom: 1px solid #eee;
+    box-sizing: border-box;
+}
+
+#chartSpacer,
+#taskSpacer {
+    width: 100%;
+}
+
+#ganttCanvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+</style>
+
+<div id="gantt">
+
+    <div id="left-panel">
+        <div class="header">
+            Task
+        </div>
+
+        <div id="taskViewport">
+            <div id="taskSpacer"></div>
+            <div id="taskRows"></div>
+        </div>
+    </div>
+
+    <div id="right-panel">
+
+        <div id="timeline"></div>
+
+        <div id="chartViewport">
+            <div id="chartSpacer"></div>
+            <canvas
+                id="ganttCanvas">
+            </canvas>
+        </div>
+
+    </div>
+
+</div>
+<script>
+
+const ROW_HEIGHT = 30;
+const DAY_WIDTH = 40;
+const VISIBLE_ROWS = 20;
+
+// fake data
+
+const tasks = [];
+
+for (let i = 0; i < 1000; i++) {
+
+    tasks.push({
+        id: i,
+        name: `Task ${i}`,
+        start: Math.floor(Math.random() * 20),
+        duration: 3 + Math.floor(Math.random() * 8)
+    });
+
+}
+
+const taskViewport = document.getElementById("taskViewport");
+
+const chartViewport = document.getElementById("chartViewport");
+
+const taskRows = document.getElementById("taskRows");
+
+const taskSpacer = document.getElementById("taskSpacer");
+
+const chartSpacer =
+    document.getElementById(
+        "chartSpacer"
+    );
+
+const canvas =
+    document.getElementById(
+        "ganttCanvas"
+    );
+
+const ctx =
+    canvas.getContext("2d");
+
+
+// timeline
+
+const timeline =
+    document.getElementById(
+        "timeline"
+    );
+
+for (let d = 1; d <= 31; d++) {
+
+    const div =
+        document.createElement("div");
+
+    div.className = "day";
+    div.innerText = d;
+
+    timeline.appendChild(div);
+
+}
+
+// fake total height
+
+const totalHeight =
+    tasks.length * ROW_HEIGHT;
+
+taskSpacer.style.height =
+    totalHeight + "px";
+
+chartSpacer.style.height =
+    totalHeight + "px";
+
+canvas.width = 31 * DAY_WIDTH;
+canvas.height = totalHeight;
+
+
+// render
+
+function render() {
+
+    const scrollTop =
+        chartViewport.scrollTop;
+
+    const startIndex =
+        Math.floor(
+            scrollTop / ROW_HEIGHT
+        );
+
+    const visibleTasks =
+        tasks.slice(
+            startIndex,
+            startIndex + VISIBLE_ROWS
+        );
+
+    // render task list
+
+    taskRows.innerHTML =
+        visibleTasks
+            .map(
+                task =>
+                    `<div class="task-row">
+                      ${task.name}
+                    </div>`
+            )
+            .join("");
+
+    taskRows.style.transform =
+        `translateY(
+          ${startIndex * ROW_HEIGHT}px
+        )`;
+
+    // draw gantt
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    visibleTasks.forEach(
+        (task, index) => {
+
+            const y =
+                startIndex *
+                    ROW_HEIGHT +
+                index *
+                    ROW_HEIGHT +
+                3;
+
+            const x =
+                task.start *
+                DAY_WIDTH;
+
+            const width =
+                task.duration *
+                DAY_WIDTH;
+
+            ctx.fillStyle =
+                "#2196f3";
+
+            ctx.fillRect(
+                x,
+                y,
+                width,
+                24
+            );
+
+        }
+    );
+}
+chartViewport.addEventListener(
+    "scroll",
+    () => {
+
+        taskViewport.scrollTop =
+            chartViewport.scrollTop;
+
+        render();
+
+    }
+);
+
+taskViewport.addEventListener(
+    "scroll",
+    () => {
+
+        chartViewport.scrollTop =
+            taskViewport.scrollTop;
+
+        render();
+
+    }
+);
+
+render();
+</script>
