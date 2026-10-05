@@ -68,7 +68,7 @@
         <div id="statsInfo" style="font-weight: bold; color: #0055a5; margin-left: auto;">Đang khởi tạo...</div>
     </div>
 
-    <div class="workspace">
+     <div class="workspace">
         <div class="tree-sidebar">
             <div class="sidebar-header">
                 <span>Cấu trúc Trạm làm việc (Workstation)</span>
@@ -100,7 +100,7 @@
     <script src="{{ url_for('static', filename='js/fetch.js') }}"></script>
     <script>
         const ROW_HEIGHT = 40;
-        let BLOCK_WIDTH = 80; 
+        let BLOCK_WIDTH = 5; 
         const TOTAL_DAYS = 7; 
         let BLOCKS_PER_DAY = 8; 
         let selectedTaskId = null; // Lưu ID của task đang được double-click
@@ -111,7 +111,10 @@
         let isSyncing = false;
         let showPrecedence = false; // Trạng thái bật/tắt đường liên kết
         let rsGantt = []; 
-        
+        let timelineData = [];
+        let startCol = 0;
+        let endCol = 0;
+
         // lấy dữ liệu bằng fetch 
         async function fetchData() {
 
@@ -120,6 +123,8 @@
                 // const apsData = await fetch_data_from_flask('test_working_time', 'test');
                 // Lúc này đảm bảo fetch_data_from_flask đã sẵn sàng
                 rsGantt = await fetch_data_from_flask('v_rs_gantt', 'test');
+                timelineData = await fetch_data_from_flask('v_timeline', 'test');
+
                 // const test_routine = await fetch_data_from_flask('test_routine', 'test');
                 // rsGantt = rsGantt.filter(g=>(g.type_of === 'workcenter' || g.type_of === 'workstation') );
                 console.log('rsGantt', rsGantt);
@@ -225,13 +230,12 @@
             console.log('flattenedRows: ', flattenedRows);
             updateLayout();
         }
-
         function updateLayout() {
             // Cập nhật kích thước spacer
             
             const totalHeight = rsGantt.length * ROW_HEIGHT;
             document.getElementById('treeSpacer').style.height = totalHeight + 'px';
-            const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
+            const totalWidth = timelineData.length * BLOCKS_PER_DAY * BLOCK_WIDTH;
             document.getElementById('ganttSpacer').style.height = totalHeight + 'px';
             document.getElementById('ganttSpacer').style.width = totalWidth + 'px';
 
@@ -243,11 +247,12 @@
             document.getElementById('statsInfo').innerText = `Tổng số Workstation: ${rsGantt.filter(r=>r.type_of==='workstation').length}`;
         }
 
+
         function setupCanvasSize() {
             const ganttCanvas = document.getElementById('ganttCanvas');
             const headerCanvas = document.getElementById('headerCanvas');
 
-            const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
+            const totalWidth = timelineData.length * BLOCKS_PER_DAY * BLOCK_WIDTH;
             const totalHeight = rsGantt.length * ROW_HEIGHT;
         
             // totalWidth = 600;
@@ -386,12 +391,17 @@
             // Xác định chỉ số dòng (row index) bắt đầu và kết thúc hiển thị trên màn hình (+ dư ra 2 dòng để chống giật khi cuộn nhanh)
             const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
             const endRow = Math.min(rsGantt.length, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + 2);
-            // console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
 
-            const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
-            const startCol = Math.max(0, Math.floor(scrollLeft/BLOCK_WIDTH)-2);
-            const endCol = startCol + 20;
-            // console.log('start col', startCol, 'end col', endCol);
+            
+            const totalCols = timelineData.length * BLOCKS_PER_DAY;
+            startCol = Math.max(0, Math.floor(scrollLeft/BLOCK_WIDTH)-2);
+            endCol =  Math.min(
+                Math.ceil((scrollLeft + container.clientWidth) / BLOCK_WIDTH) + 2,
+                timelineData.length * BLOCKS_PER_DAY
+            );
+            console.log('func renderGanttCanvas--- scrollLeft', scrollLeft);
+            console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
+            console.log('start col', startCol, 'end col', endCol);
 
             // 1. Chỉ vẽ lưới dọc trong tầm nhìn
             ctx.strokeStyle = '#f1f5f9';
@@ -415,20 +425,21 @@
             // 3. Chỉ lặp và vẽ các task thuộc các dòng nằm trong khung nhìn (Viewport)
             for (let index = startRow; index < endRow; index++) {
                 let ws = rsGantt[index];
-                if (!ws || !ws.tasks) continue; // kiểm tra nếu là workstation và có task 
+                if (!ws || !ws.tasks || ws.tasks.length ===0) continue; // kiểm tra nếu là workstation và có task 
                 let y = index * ROW_HEIGHT + 8;
 
                 ws.tasks.forEach(task => {
-                    let x = task.startBlock * BLOCK_WIDTH;
-                    let w = task.duration * BLOCK_WIDTH - 2; 
+                    let x1 = calculateXFromDateTime(task.start_setup, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY)
+                    let x2 = calculateXFromDateTime(task.end_moving, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY)
                     let h = 24;
+                    let color = getRandomPastelColor(task.workcenter_name)
 
                     // Kiểm tra xem task có nằm ngang trong tầm nhìn chiều ngang không (tùy chọn tối ưu thêm)
-                    if (x + w < container.scrollLeft || x > container.scrollLeft + container.clientWidth) {
+                    if (x2 < container.scrollLeft || x1 > container.scrollLeft + container.clientWidth) {
                         return; // Bỏ qua task nằm ngoài màn hình theo chiều ngang
                     }
                     if (selectedTaskId !== task.id) {
-                        ctx.fillStyle = task.color;
+                        ctx.fillStyle = color;
                     } else {
                         ctx.fillStyle = '#ef4444';
                     }
@@ -437,16 +448,16 @@
                     ctx.lineWidth = (task.status === 'warning' || task.status === 'locked') ? 2 : 1;
 
                     ctx.beginPath();
-                    ctx.roundRect(x, y, w, h, 4);
+                    ctx.roundRect(x1, y, x2-x1, h, 4);
                     ctx.fill();
                     ctx.stroke();
 
                     ctx.fillStyle = '#1e293b';
                     ctx.font = 'bold 11px Segoe UI';
-                    ctx.fillText(`${task.id} (${task.op})`, x + 6, y + 16);
+                    ctx.fillText(`${task.id} (${task.code_op}) ${task.start_setup}`, x1 + 6, y + 16);
 
                     if (task.status === 'warning' || task.status === 'locked') {
-                        canvas_warning(ctx, x + w - 14, y + 12);
+                        canvas_warning(ctx, x2 - 14, y + 12);
                     }
                 });
             }
@@ -456,64 +467,96 @@
         }
 
         function renderHeaderCanvas() {
-            const canvas = document.getElementById('headerCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const container = document.getElementById('ganttContainer');
+            const headerCanvas = document.getElementById('headerCanvas');
+            const ctx = headerCanvas.getContext('2d');
 
+            const scrollLeft = container.scrollLeft;
+
+            // Đảm bảo chiều rộng Canvas luôn cập nhật nếu resize màn hình
+            // if (headerCanvas.width !== container.clientWidth) {
+            //     headerCanvas.width = container.clientWidth;
+            //     headerCanvas.style.width = container.clientWidth + 'px';
+            // }
+
+            // Xóa bộ đệm Canvas
+            ctx.clearRect(0, 0, headerCanvas.width, headerCanvas.height);
+
+            ctx.save();
+
+            // Tính toán vùng cột/ngày đang hiển thị trong khung nhìn (Viewport)
+            const startCol = Math.floor(scrollLeft / BLOCK_WIDTH);
+            const endCol = Math.min(
+                Math.ceil((scrollLeft + container.clientWidth) / BLOCK_WIDTH) + 2,
+                timelineData.length * BLOCKS_PER_DAY
+            );
+            
+            const startDay = Math.floor(startCol / BLOCKS_PER_DAY);
+            let n_day = Math.round(document.getElementById('ganttContainer').clientWidth/BLOCK_WIDTH/BLOCKS_PER_DAY+1);
+            const endDay = startDay + n_day;
+            console.log('tính số ngày', n_day);
+
+            console.log('func renderHeaderCanvas --- scrollLeft', scrollLeft);
+            console.log('start col', startCol, 'end col', endCol);
+            console.log('startDay', startDay, 'endDay', endDay);
+            
             const hoursPerBlock = parseInt(document.getElementById('timeScale').value);
             const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
 
-            // đường kẻ ngày
+            // đường kẻ phan chia ngày va gio
             ctx.strokeStyle = '#cbd5e1';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(0, 25);
-            ctx.lineTo(canvas.width, 25);
+            ctx.lineTo(headerCanvas.width, 25);
             ctx.stroke();
 
             // đường kẻ giờ
-            for (let i = 0; i < totalCols; i++) {
-                let x = i * BLOCK_WIDTH;
-                ctx.beginPath();
-                ctx.moveTo(x, 41);
-                ctx.lineTo(x, 50);
-                ctx.stroke();
+            if (BLOCK_WIDTH > 30 ) {
+                for (let i = 0; i < totalCols; i++) {
+                    let x = i * BLOCK_WIDTH;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 41);
+                    ctx.lineTo(x, 50);
+                    ctx.stroke();
+                }
             }
 
-            ctx.fillStyle = '#1e293b';
-            ctx.font = 'bold 11px Segoe UI';
-            let baseDate = new Date();
-
-            for (let d = 0; d < TOTAL_DAYS; d++) {
-                let currDate = new Date(baseDate);
-                currDate.setDate(baseDate.getDate() + d);
-                let dayStr = String(currDate.getDate()).padStart(2, '0');
-                let monthStr = String(currDate.getMonth() + 1).padStart(2, '0');
-                let dateDisplay = `${dayStr}-${monthStr}`;
+            // --- VẼ ĐƯỜNG KẺ & CHỮ TẠI ĐÂY ---
+            // (Tọa độ X được tính theo khoảng cách thực từ gốc 0, ví dụ: d * BLOCKS_PER_DAY * BLOCK_WIDTH)
+            for (let d = startDay; d < endDay; d++) {
+                if (!timelineData[d]) continue;
 
                 let startXForDay = (d * BLOCKS_PER_DAY) * BLOCK_WIDTH;
-
-                // kẻ bắt đầu của ngày
+                
+                // Đường kẻ tách ngày
+                ctx.strokeStyle = '#cbd5e1';
                 ctx.beginPath();
                 ctx.moveTo(startXForDay, 0);
                 ctx.lineTo(startXForDay, 50);
                 ctx.stroke();
 
-                // điền ngày
-                ctx.fillText(dateDisplay, startXForDay + 6, 17);
-
-                for (let b = 0; b < BLOCKS_PER_DAY; b++) {
-                    let x = (d * BLOCKS_PER_DAY + b) * BLOCK_WIDTH;
-                    let currentHour = (b * hoursPerBlock) % 24;
-                    let hourStr = `${String(currentHour).padStart(2, '0')}:00`;
-
-                    ctx.fillStyle = '#475569';
-                    ctx.font = '10px Segoe UI';
-                    ctx.fillText(hourStr, x-5, 40);
+                // Tên ngày THÁNG
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 11px Segoe UI';
+                ctx.fillText(timelineData[d].timeline_date, startXForDay + 6, 17);
+                
+                // điền giờ
+                if (BLOCK_WIDTH > 30 ) {
+                    for (let b = 0; b < BLOCKS_PER_DAY; b++) {
+                        let x = (d * BLOCKS_PER_DAY + b) * BLOCK_WIDTH;
+                        let currentHour = (b * hoursPerBlock) % 24;
+                        let hourStr = `${String(currentHour).padStart(2, '0')}:00`;
+    
+                        ctx.fillStyle = '#475569';
+                        ctx.font = '10px Segoe UI';
+                        ctx.fillText(hourStr, x-5, 40);
+                    }
                 }
             }
-        }
 
+            ctx.restore();
+        }
         // Bật / Tắt hiển thị đường liên kết Precedence
         function togglePrecedence() {
             showPrecedence = !showPrecedence;
@@ -550,8 +593,7 @@
             isSyncing = true;
             const ganttContainer = document.getElementById('ganttContainer');
             ganttContainer.scrollTop = element.scrollTop;
-            renderVirtualTree();
-            renderGanttCanvas();
+            updateLayout();
    
             isSyncing = false;
         }
@@ -562,8 +604,7 @@
             
             const treeContainer = document.getElementById('treeContainer');
             treeContainer.scrollTop = element.scrollTop;
-            renderVirtualTree();
-            renderGanttCanvas();
+            updateLayout();
 
             const headerCanvas = document.getElementById('headerCanvas');
             headerCanvas.style.transform = `translateX(-${element.scrollLeft}px)`;
@@ -574,8 +615,8 @@
         window.onload = function() {
             initData();
         };
-        function handleTaskDoubleClick(event) {
-            const canvas = document.getElementById('ganttCanvas');
+        function handleTaskDubleClick(event) {
+            const canvas = doocument.getElementById('ganttCanvas');
             const rect = canvas.getBoundingClientRect();
             
             // Tính tọa độ click thực tế trên Canvas (tính cả việc đang scroll)
@@ -715,7 +756,59 @@
             }
         });
 
+/**
+ * Tính tọa độ X (pixel) dựa trên thời gian bắt đầu và mảng timeline
+ * @param {string|Date} startDateTimeStr - ISO Date string, ví dụ: "2025-06-13T04:25:00+00:00"
+ * @param {Array} timelineData - Mảng chứa các đối tượng { timeline_date: 'YYYY-MM-DD' }
+ * @param {number} blockWidth - Độ rộng của 1 block (pixel), mặc định lấy biến toàn cục BLOCK_WIDTH
+ * @param {number} blocksPerDay - Số block trong 1 ngày, mặc định lấy biến toàn cục BLOCKS_PER_DAY
+ * @returns {number} Tọa độ X1 (pixel) tương ứng trên Canvas Gantt
+ */
+function calculateXFromDateTime(startDateTimeStr, timelineData, blockWidth = BLOCK_WIDTH, blocksPerDay = BLOCKS_PER_DAY) {
+    if (!startDateTimeStr || !timelineData || timelineData.length === 0) {
+        return 0;
+    }
 
+    // 1. Chuyển chuỗi ISO sang đối tượng Date (JavaScript tự động convert về timezone địa phương)
+    const targetDate = new Date(startDateTimeStr);
+
+    // 2. Lấy chuỗi YYYY-MM-DD địa phương để tìm index trong timelineData
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    // 3. Tìm chỉ số (index) của ngày trong mảng timelineData
+    const dayIndex = timelineData.findIndex(item => item && item.timeline_date === dateStr);
+
+    // Nếu ngày nằm ngoài phạm vi timeline, trả về 0 hoặc vị trí ước tính
+    if (dayIndex === -1) {
+        // Nếu nhỏ hơn ngày đầu tiên trong mảng
+        if (dateStr < timelineData[0].timeline_date) return 0;
+        
+        // Nếu lớn hơn ngày cuối cùng trong mảng
+        const firstDate = new Date(timelineData[0].timeline_date);
+        const diffDays = (targetDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+        return diffDays * blocksPerDay * blockWidth;
+    }
+
+    // 4. Tính tỉ lệ thời gian đã trôi qua trong ngày (tính theo Giờ, Phút, Giây)
+    const hours = targetDate.getHours();
+    const minutes = targetDate.getMinutes();
+    const seconds = targetDate.getSeconds();
+    
+    // Tổng số giờ dưới dạng thập phân (ví dụ: 04:30:00 -> 4.5 giờ)
+    const totalHours = hours + (minutes / 60) + (seconds / 3600);
+
+    // 5. Tính tổng độ rộng (pixel) của 1 ngày đầy đủ
+    const pixelsPerDay = blocksPerDay * blockWidth;
+
+    // 6. Tọa độ X = (Vị trí gốc của Ngày) + (Đoạn lẻ thời gian trong ngày)
+    const xBase = dayIndex * pixelsPerDay;
+    const xOffsetWithinDay = (totalHours / 24) * pixelsPerDay;
+
+    return Math.round(xBase + xOffsetWithinDay);
+}
     </script>
     
 </body>

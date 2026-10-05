@@ -180,6 +180,7 @@ def get_table_data():
         return jsonify({
             "error": f"Lỗi truy cập dữ liệu (RLS): {str(e)}"
         }), 400
+        
 # nhập tên bảng để lấy dữ liệu từ bảng
 @app.route("/api/insert-table-data", methods=["POST"])
 def insert_dynamic_data():
