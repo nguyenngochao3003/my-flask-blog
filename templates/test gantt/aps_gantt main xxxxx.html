@@ -30,8 +30,10 @@
         .tree-spacer { position: absolute; top: 0; left: 0; width: 100%; }
         
         .tree-row { height: 40px; display: flex; align-items: center; padding: 0 10px; border-bottom: 1px solid #eee; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .tree-row.wc { background: #e2e8f0; font-weight: bold; color: #1e293b; }
-        .tree-row.ws { background: #f1f5f9; padding-left: 20px; font-weight: 600; color: #334155; }
+        .tree-row.pt { background: #e2e8f0; font-weight: bold; color: #1e293b; }
+        .tree-row.wsh { background: #e2e8f0; padding-left: 20px; font-weight: bold; color: #1e293b; }
+        .tree-row.wc { background: #e2e8f0; padding-left: 30px; font-weight: bold; color: #1e293b; }
+        .tree-row.ws { background: #f1f5f9; padding-left: 40px; font-weight: 600; color: #334155; }
         .tree-row:hover { background-color: #f8fafc; }
 
         /* Phải: Biểu đồ Gantt Canvas */
@@ -108,6 +110,25 @@
         let allTasksRegistry = []; // Lưu toàn bộ task để dễ tra cứu quan hệ Precedence
         let isSyncing = false;
         let showPrecedence = false; // Trạng thái bật/tắt đường liên kết
+        let rsGantt = []; 
+        
+        // lấy dữ liệu bằng fetch 
+        async function fetchData() {
+
+            try {
+                // Lúc này đảm bảo fetch_data_from_flask đã sẵn sàng
+                // const apsData = await fetch_data_from_flask('test_working_time', 'test');
+                // Lúc này đảm bảo fetch_data_from_flask đã sẵn sàng
+                rsGantt = await fetch_data_from_flask('v_rs_gantt', 'test');
+                // const test_routine = await fetch_data_from_flask('test_routine', 'test');
+                // rsGantt = rsGantt.filter(g=>(g.type_of === 'workcenter' || g.type_of === 'workstation') );
+                console.log('rsGantt', rsGantt);
+            } catch (err) {
+                console.error('Lỗi tải dữ liệu:', err);
+            }
+            // document.addEventListener('DOMContentLoaded', async () => {
+            // });
+        }
 
         function getRandomPastelColor(seedStr) {
             let hash = 0;
@@ -125,10 +146,11 @@
             return `hsl(${hue}, 70%, 78%)`;
         }
 
-        function initData() {
+        async function initData() {
             factoryData = [];
             flattenedRows = [];
             allTasksRegistry = [];
+            await fetchData();
             
             // Tạo sẵn một số Mã Đơn hàng (MO) để có chuỗi công đoạn liên kết
             const moList = ['MO-1001', 'MO-1002', 'MO-1003', 'MO-1004', 'MO-1005'];
@@ -206,7 +228,8 @@
 
         function updateLayout() {
             // Cập nhật kích thước spacer
-            const totalHeight = flattenedRows.length * ROW_HEIGHT;
+            
+            const totalHeight = rsGantt.length * ROW_HEIGHT;
             document.getElementById('treeSpacer').style.height = totalHeight + 'px';
             const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
             document.getElementById('ganttSpacer').style.height = totalHeight + 'px';
@@ -217,7 +240,7 @@
             renderGanttCanvas();
             renderHeaderCanvas();
 
-            document.getElementById('statsInfo').innerText = `Tổng số Workstation: ${flattenedRows.filter(r=>r.type==='workstation').length}`;
+            document.getElementById('statsInfo').innerText = `Tổng số Workstation: ${rsGantt.filter(r=>r.type_of==='workstation').length}`;
         }
 
         function setupCanvasSize() {
@@ -225,7 +248,8 @@
             const headerCanvas = document.getElementById('headerCanvas');
 
             const totalWidth = TOTAL_DAYS * BLOCKS_PER_DAY * BLOCK_WIDTH;
-            const totalHeight = flattenedRows.length * ROW_HEIGHT;
+            const totalHeight = rsGantt.length * ROW_HEIGHT;
+        
             // totalWidth = 600;
             // totalHeight = 600;
 
@@ -246,20 +270,29 @@
             const containerHeight = treeContainer.clientHeight;
 
             const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
-            const endIndex = Math.min(flattenedRows.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + 5);
+            const endIndex = Math.min(rsGantt.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + 5);
 
             let html = '';
             for (let i = startIndex; i < endIndex; i++) {
-                let item = flattenedRows[i];
+                let item = rsGantt[i];
                 let top = i * ROW_HEIGHT;
-
-                if (item.type === 'work_center') {
-                    html += `<div class="tree-row wc" style="position: absolute; top: ${top}px; width: 100%;">
-                        <i class="fa-solid fa-industry" style="width: 16px;"></i> &nbsp;<b>${item.id}</b>: ${item.name}
+                if (item.type_of === 'plant') {
+                    html += `<div class="tree-row pt" style="position: absolute; top: ${top}px; width: 100%;">
+                        <i class="fa-solid fa-industry" style="width: 16px;"></i> &nbsp;<b>${item.workcenter_id}</b>: ${item.workcenter}
                     </div>`;
-                } else {
+                }
+                else if (item.type_of === 'workshop') {
+                    html += `<div class="tree-row wsh" style="position: absolute; top: ${top}px; width: 100%;">
+                        <i class="fa-solid fa-industry" style="width: 16px;"></i> &nbsp;<b>${item.workcenter_id}</b>: ${item.workcenter}
+                    </div>`;
+                }
+                else if (item.type_of === 'workcenter') {
+                    html += `<div class="tree-row wc" style="position: absolute; top: ${top}px; width: 100%;">
+                        <i class="fa-solid fa-industry" style="width: 16px;"></i> &nbsp;<b>${item.workcenter_id}</b>: ${item.workcenter}
+                    </div>`;
+                } else if (item.type_of === 'workstation') {
                     html += `<div class="tree-row ws" style="position: absolute; top: ${top}px; width: 100%;">
-                        <i class="fa-solid fa-gears" style="width: 16px; color: #0055a5;"></i> &nbsp;<b>${item.id}</b>: ${item.name}
+                        <i class="fa-solid fa-gears" style="width: 16px; color: #0055a5;"></i> &nbsp;<b>${item.workcenter_id}</b>: ${item.workcenter}
                     </div>`;
                 }
             }
@@ -267,6 +300,7 @@
         }
 
         function canvas_warning(ctx, x, y) {
+            // vẽ canvas cảnh báo hình tam giác i
             ctx.save();
             ctx.translate(x, y);
             ctx.fillStyle = '#f59e0b';
@@ -288,6 +322,7 @@
 
         // Vẽ mũi tên liên kết giữa các task có quan hệ preOp -> nextOp
         function drawPrecedenceLinks(ctx) {
+            // liên kết các task của một sản phẩm
             if (!showPrecedence) return;
 
             ctx.save();
@@ -350,13 +385,13 @@
 
             // Xác định chỉ số dòng (row index) bắt đầu và kết thúc hiển thị trên màn hình (+ dư ra 2 dòng để chống giật khi cuộn nhanh)
             const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
-            const endRow = Math.min(flattenedRows.length, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + 2);
-            console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
+            const endRow = Math.min(rsGantt.length, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + 2);
+            // console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
 
             const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
             const startCol = Math.max(0, Math.floor(scrollLeft/BLOCK_WIDTH)-2);
             const endCol = startCol + 20;
-            console.log('start col', startCol, 'end col', endCol);
+            // console.log('start col', startCol, 'end col', endCol);
 
             // 1. Chỉ vẽ lưới dọc trong tầm nhìn
             ctx.strokeStyle = '#f1f5f9';
@@ -379,7 +414,7 @@
 
             // 3. Chỉ lặp và vẽ các task thuộc các dòng nằm trong khung nhìn (Viewport)
             for (let index = startRow; index < endRow; index++) {
-                let ws = flattenedRows[index];
+                let ws = rsGantt[index];
                 if (!ws || !ws.tasks) continue; // kiểm tra nếu là workstation và có task 
                 let y = index * ROW_HEIGHT + 8;
 
@@ -680,16 +715,7 @@
             }
         });
 
-    
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                // Lúc này đảm bảo fetch_data_from_flask đã sẵn sàng
-                const apsData = await fetch_data_from_flask('test_routine', 'test');
-                console.log('aps Dataxxxxxxx: ', apsData);
-            } catch (err) {
-                console.error('Lỗi tải dữ liệu:', err);
-            }
-        });
+
     </script>
     
 </body>
