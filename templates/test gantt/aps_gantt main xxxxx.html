@@ -103,8 +103,9 @@
     <script src="{{ url_for('static', filename='js/fetch.js') }}"></script>
     <script>
         const ROW_HEIGHT = 40;
-        let BLOCK_WIDTH = 15; 
+        let BLOCK_WIDTH = 20;   //  độ rộng của mỗi khung giờ dùng để setting cho hiển thị timeline
         const TOTAL_DAYS = 7;   // 1 tuần 7 này
+        let STATUS_TIMELINE = 'date';
 
         let BLOCKS_PER_DAY = 8; 
         let selectedTaskId = null; // Lưu ID của task đang được double-click
@@ -118,6 +119,8 @@
         let timelineData = [];
         let startCol = 0;
         let endCol = 0;
+        week(); // mặc định là week 
+
 
         // lấy dữ liệu bằng fetch 
         async function fetchData() {
@@ -519,26 +522,6 @@
             const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
 
 
-
-            // đường kẻ giờ
-            if (BLOCK_WIDTH > 30 ) {
-                // đường kẻ phan chia ngày va gio
-                ctx.strokeStyle = '#cbd5e1';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(0, 25);
-                ctx.lineTo(headerCanvas.width, 25);
-                ctx.stroke();
-                
-                for (let i = 0; i < totalCols; i++) {
-                    let x = i * BLOCK_WIDTH;
-                    ctx.beginPath();
-                    ctx.moveTo(x, 41);
-                    ctx.lineTo(x, 50);
-                    ctx.stroke();
-                }
-            }
-
             // --- VẼ ĐƯỜNG KẺ & CHỮ TẠI ĐÂY ---
             // (Tọa độ X được tính theo khoảng cách thực từ gốc 0, ví dụ: d * BLOCKS_PER_DAY * BLOCK_WIDTH)
             for (let d = startDay; d < endDay; d++) {
@@ -550,20 +533,31 @@
 
                 let startXForDay = (d * BLOCKS_PER_DAY) * BLOCK_WIDTH;
                 
-                // Đường kẻ tách ngày
+  
+                // đường kẻ phan chia ngày va gio HOẶC THÁNG VÀ NGÀY
                 ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(startXForDay, 0);
-                ctx.lineTo(startXForDay, 50);
+                ctx.moveTo(0, 25);
+                ctx.lineTo(headerCanvas.width, 25);
                 ctx.stroke();
 
                 // Tên ngày THÁNG
-                ctx.fillStyle = '#1e293b';
-                ctx.font = 'bold 11px Segoe UI';
-                ctx.fillText(` ${month}-${date}`, startXForDay + 6, 17);
-                
-                // điền giờ
-                if (BLOCK_WIDTH > 30 ) {
+
+                if (STATUS_TIMELINE == 'date' ) {
+                    // điền ngày tháng
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 11px Segoe UI';
+                    ctx.fillText(` ${month}-${date}`, startXForDay + 6, 17);
+
+                    // Đường kẻ DỌC CHO TỪNG NGÀY
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.beginPath();
+                    ctx.moveTo(startXForDay, 0);
+                    ctx.lineTo(startXForDay, 50);
+                    ctx.stroke();
+
+                    // điền Giờ
                     for (let b = 0; b < BLOCKS_PER_DAY; b++) {
                         let x = (d * BLOCKS_PER_DAY + b) * BLOCK_WIDTH;
                         let currentHour = (b * hoursPerBlock) % 24;
@@ -572,8 +566,64 @@
                         ctx.fillStyle = '#475569';
                         ctx.font = '10px Segoe UI';
                         ctx.fillText(hourStr, x-5, 40);
+                        // chia giờ
+                        ctx.beginPath();
+                        ctx.moveTo(x, 41);
+                        ctx.lineTo(x, 50);
+                        ctx.stroke();
+
                     }
+
+                } else if (STATUS_TIMELINE == 'week'){
+                    // điền ngày tháng
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 11px Segoe UI';
+                    ctx.fillText(` ${month}-${date}`, startXForDay + 6, 17);
+
+                    // Đường kẻ DỌC CHO TỪNG NGÀY
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.beginPath();
+                    ctx.moveTo(startXForDay, 0);
+                    ctx.lineTo(startXForDay, 50);
+                    ctx.stroke();
+
+                    // điền Giờ
+                    for (let b = 0; b < BLOCKS_PER_DAY; b+=2) {
+                        let x = (d * BLOCKS_PER_DAY + b) * BLOCK_WIDTH;
+                        let currentHour = (b * hoursPerBlock) % 24;
+                        let hourStr = `${String(currentHour).padStart(2, '0')}:00`;
+    
+                        ctx.fillStyle = '#475569';
+                        ctx.font = '10px Segoe UI';
+                        ctx.fillText(hourStr, x-5, 40);
+                        // chia giờ
+                        ctx.beginPath();
+                        ctx.moveTo(x, 41);
+                        ctx.lineTo(x, 50);
+                        ctx.stroke();
+                    }
+
+                } else if (STATUS_TIMELINE == 'month'){
+                    // điền ngày tháng
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 11px Segoe UI';
+                    if (d==startDay || date == '01') {
+                        ctx.fillText(`${month}`, startXForDay + 6, 17);
+                    }
+                    ctx.fillText(`${date}`, startXForDay + 6, 40);
+
+                    // Đường kẻ DỌC CHO TỪNG NGÀY nếu ngày là 01 thì là tháng
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.beginPath();
+                    if (d==startDay || date == '01') {
+                        ctx.moveTo(startXForDay, 0);;
+                    } else {
+                        ctx.moveTo(startXForDay, 25);
+                    }
+                    ctx.lineTo(startXForDay, 50);
+                    ctx.stroke();
                 }
+                
             }
 
             ctx.restore();
@@ -638,16 +688,19 @@
         };
 
         function date(){
+            STATUS_TIMELINE = 'date';
             BLOCK_WIDTH = 40;
             renderHeaderCanvas();
             renderGanttCanvas();
         }
         function week(){
+            STATUS_TIMELINE = 'week';
             BLOCK_WIDTH = 20;
             renderHeaderCanvas();
             renderGanttCanvas();
         }
         function month(){
+            STATUS_TIMELINE = 'month';
             BLOCK_WIDTH = 5;
             renderHeaderCanvas();
             renderGanttCanvas();
