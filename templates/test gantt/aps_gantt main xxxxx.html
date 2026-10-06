@@ -55,17 +55,18 @@
         <div class="btn-group">
             <button id="btnPrecedence" class="btn" onclick="togglePrecedence()"><i class="fa-solid fa-route"></i> Bật Precedence Links</button>
             <button class="btn" onclick="initData()"><i class="fa-solid fa-rotate"></i> Tải lại dữ liệu</button>
-            <button class="btn" onclick="date()"><i class="fa-solid fa-rotate"></i> Date</button>
-            <button class="btn" onclick="week()"><i class="fa-solid fa-rotate"></i> Week</button>
-            <button class="btn" onclick="month()"><i class="fa-solid fa-rotate"></i> Month</button>
+
+            <!-- Thêm nút Open dạng Toggle vào Toolbar hoặc Header -->
+            <button id="btnOpenMode" class="btn" onclick="toggleOpenMode()"><i class="fa-solid fa-pen-to-square"></i> Open: TẮT</button>
         </div>
     </header>
 
     <div class="toolbar">
         <div><label>Khung thời gian:</label> 
             <select id="timeScale" onchange="changeTimeScale()">
-                <option value="3">Mỗi 3 tiếng / Block</option>
-                <option value="2">Mỗi 2 tiếng / Block</option>
+                <option value="timeLineDate">Date</option>
+                <option value="timeLineWeek">Week</option>
+                <option value="timeLineMonth">Month</option>
             </select>
         </div>
         <div id="statsInfo" style="font-weight: bold; color: #0055a5; margin-left: auto;">Đang khởi tạo...</div>
@@ -100,6 +101,28 @@
         <span id="statusMessage">Sẵn sàng. Nhấn nút "Bật Precedence Links" để xem luồng công đoạn sản phẩm.</span>
         <span>Hiệu năng: 60 FPS</span>
     </div>
+    <!-- Modal Nhập Thông Tin Task Mới -->
+    <div id="taskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:350px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            <h3 style="margin-bottom: 15px; font-size: 16px; color: #003366;"><i class="fa-solid fa-plus-circle"></i> Thêm Task Mới</h3>
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: bold;">Nguồn lực (Workstation):</label>
+                <select id="modalWsSelect" style="width:100%; padding:6px; margin-top:4px; border:1px solid #ccc; border-radius:4px;"></select>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: bold;">Block Bắt đầu:</label>
+                <input type="number" id="modalStartBlock" style="width:100%; padding:6px; margin-top:4px; border:1px solid #ccc; border-radius:4px;" readonly>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 12px; font-weight: bold;">Số Block (Thời lượng):</label>
+                <input type="number" id="modalDuration" style="width:100%; padding:6px; margin-top:4px; border:1px solid #ccc; border-radius:4px;" min="1">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn" style="background: #64748b;" onclick="closeTaskModal()">Hủy</button>
+                <button class="btn" style="background: #10b981;" onclick="saveNewTaskFromModal()">Save</button>
+            </div>
+        </div>
+    </div>
     <script src="{{ url_for('static', filename='js/fetch.js') }}"></script>
     <script>
         const ROW_HEIGHT = 40;
@@ -119,7 +142,7 @@
         let timelineData = [];
         let startCol = 0;
         let endCol = 0;
-        week(); // mặc định là week 
+        timeline_week(); // mặc định là timeline week  
 
 
         // lấy dữ liệu bằng fetch 
@@ -518,7 +541,7 @@
             console.log('start col', startCol, 'end col', endCol);
             console.log('startDay', startDay, 'endDay', endDay);
             
-            const hoursPerBlock = parseInt(document.getElementById('timeScale').value);
+            const hoursPerBlock = 3;
             const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
 
 
@@ -648,15 +671,33 @@
         }
 
         function changeTimeScale() {
-            let val = parseInt(document.getElementById('timeScale').value);
-            if (val === 3) {
-                BLOCKS_PER_DAY = 8; 
-                BLOCK_WIDTH = 80;
-            } else {
-                BLOCKS_PER_DAY = 12; 
-                BLOCK_WIDTH = 60;
+            // thay đổi timeline khi người dùng click vào 
+            let val = document.getElementById('timeScale').value;
+            if (val === 'timeLineDate') {
+                timeLine_date();
+            } else if (val ==='timeLineWeek'){
+                timeline_week();
+            }else if (val ==='timeLineMonth'){
+                timeline_month();
             }
-            updateLayout();
+        }
+        function timeLine_date(){
+            STATUS_TIMELINE = 'date';
+            BLOCK_WIDTH = 40;
+            renderHeaderCanvas();
+            renderGanttCanvas();
+        }
+        function timeline_week(){
+            STATUS_TIMELINE = 'week';
+            BLOCK_WIDTH = 20;
+            renderHeaderCanvas();
+            renderGanttCanvas();
+        }
+        function timeline_month(){
+            STATUS_TIMELINE = 'month';
+            BLOCK_WIDTH = 5;
+            renderHeaderCanvas();
+            renderGanttCanvas();
         }
 
         function syncTreeScroll(element) {
@@ -687,24 +728,7 @@
             initData();
         };
 
-        function date(){
-            STATUS_TIMELINE = 'date';
-            BLOCK_WIDTH = 40;
-            renderHeaderCanvas();
-            renderGanttCanvas();
-        }
-        function week(){
-            STATUS_TIMELINE = 'week';
-            BLOCK_WIDTH = 20;
-            renderHeaderCanvas();
-            renderGanttCanvas();
-        }
-        function month(){
-            STATUS_TIMELINE = 'month';
-            BLOCK_WIDTH = 5;
-            renderHeaderCanvas();
-            renderGanttCanvas();
-        }
+        
         function handleTaskDubleClick(event) {
             const canvas = doocument.getElementById('ganttCanvas');
             const rect = canvas.getBoundingClientRect();
@@ -846,59 +870,60 @@
             }
         });
 
-/**
- * Tính tọa độ X (pixel) dựa trên thời gian bắt đầu và mảng timeline
- * @param {string|Date} startDateTimeStr - ISO Date string, ví dụ: "2025-06-13T04:25:00+00:00"
- * @param {Array} timelineData - Mảng chứa các đối tượng { timeline_date: 'YYYY-MM-DD' }
- * @param {number} blockWidth - Độ rộng của 1 block (pixel), mặc định lấy biến toàn cục BLOCK_WIDTH
- * @param {number} blocksPerDay - Số block trong 1 ngày, mặc định lấy biến toàn cục BLOCKS_PER_DAY
- * @returns {number} Tọa độ X1 (pixel) tương ứng trên Canvas Gantt
- */
-function calculateXFromDateTime(startDateTimeStr, timelineData, blockWidth = BLOCK_WIDTH, blocksPerDay = BLOCKS_PER_DAY) {
-    if (!startDateTimeStr || !timelineData || timelineData.length === 0) {
-        return 0;
-    }
+    /**
+     * Tính tọa độ X (pixel) dựa trên thời gian bắt đầu và mảng timeline
+     * @param {string|Date} startDateTimeStr - ISO Date string, ví dụ: "2025-06-13T04:25:00+00:00"
+     * @param {Array} timelineData - Mảng chứa các đối tượng { timeline_date: 'YYYY-MM-DD' }
+     * @param {number} blockWidth - Độ rộng của 1 block (pixel), mặc định lấy biến toàn cục BLOCK_WIDTH
+     * @param {number} blocksPerDay - Số block trong 1 ngày, mặc định lấy biến toàn cục BLOCKS_PER_DAY
+     * @returns {number} Tọa độ X1 (pixel) tương ứng trên Canvas Gantt
+     */
+    function calculateXFromDateTime(startDateTimeStr, timelineData, blockWidth = BLOCK_WIDTH, blocksPerDay = BLOCKS_PER_DAY) {
+        if (!startDateTimeStr || !timelineData || timelineData.length === 0) {
+            return 0;
+        }
 
-    // 1. Chuyển chuỗi ISO sang đối tượng Date (JavaScript tự động convert về timezone địa phương)
-    const targetDate = new Date(startDateTimeStr);
+        // 1. Chuyển chuỗi ISO sang đối tượng Date (JavaScript tự động convert về timezone địa phương)
+        const targetDate = new Date(startDateTimeStr);
 
-    // 2. Lấy chuỗi YYYY-MM-DD địa phương để tìm index trong timelineData
-    const year = targetDate.getFullYear();
-    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-    const day = String(targetDate.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
+        // 2. Lấy chuỗi YYYY-MM-DD địa phương để tìm index trong timelineData
+        const year = targetDate.getFullYear();
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
 
-    // 3. Tìm chỉ số (index) của ngày trong mảng timelineData
-    const dayIndex = timelineData.findIndex(item => item && item.timeline_date === dateStr);
+        // 3. Tìm chỉ số (index) của ngày trong mảng timelineData
+        const dayIndex = timelineData.findIndex(item => item && item.timeline_date === dateStr);
 
-    // Nếu ngày nằm ngoài phạm vi timeline, trả về 0 hoặc vị trí ước tính
-    if (dayIndex === -1) {
-        // Nếu nhỏ hơn ngày đầu tiên trong mảng
-        if (dateStr < timelineData[0].timeline_date) return 0;
+        // Nếu ngày nằm ngoài phạm vi timeline, trả về 0 hoặc vị trí ước tính
+        if (dayIndex === -1) {
+            // Nếu nhỏ hơn ngày đầu tiên trong mảng
+            if (dateStr < timelineData[0].timeline_date) return 0;
+            
+            // Nếu lớn hơn ngày cuối cùng trong mảng
+            const firstDate = new Date(timelineData[0].timeline_date);
+            const diffDays = (targetDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+            return diffDays * blocksPerDay * blockWidth;
+        }
+
+        // 4. Tính tỉ lệ thời gian đã trôi qua trong ngày (tính theo Giờ, Phút, Giây)
+        const hours = targetDate.getHours();
+        const minutes = targetDate.getMinutes();
+        const seconds = targetDate.getSeconds();
         
-        // Nếu lớn hơn ngày cuối cùng trong mảng
-        const firstDate = new Date(timelineData[0].timeline_date);
-        const diffDays = (targetDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
-        return diffDays * blocksPerDay * blockWidth;
+        // Tổng số giờ dưới dạng thập phân (ví dụ: 04:30:00 -> 4.5 giờ)
+        const totalHours = hours + (minutes / 60) + (seconds / 3600);
+
+        // 5. Tính tổng độ rộng (pixel) của 1 ngày đầy đủ
+        const pixelsPerDay = blocksPerDay * blockWidth;
+
+        // 6. Tọa độ X = (Vị trí gốc của Ngày) + (Đoạn lẻ thời gian trong ngày)
+        const xBase = dayIndex * pixelsPerDay;
+        const xOffsetWithinDay = (totalHours / 24) * pixelsPerDay;
+
+        return Math.round(xBase + xOffsetWithinDay);
     }
-
-    // 4. Tính tỉ lệ thời gian đã trôi qua trong ngày (tính theo Giờ, Phút, Giây)
-    const hours = targetDate.getHours();
-    const minutes = targetDate.getMinutes();
-    const seconds = targetDate.getSeconds();
     
-    // Tổng số giờ dưới dạng thập phân (ví dụ: 04:30:00 -> 4.5 giờ)
-    const totalHours = hours + (minutes / 60) + (seconds / 3600);
-
-    // 5. Tính tổng độ rộng (pixel) của 1 ngày đầy đủ
-    const pixelsPerDay = blocksPerDay * blockWidth;
-
-    // 6. Tọa độ X = (Vị trí gốc của Ngày) + (Đoạn lẻ thời gian trong ngày)
-    const xBase = dayIndex * pixelsPerDay;
-    const xOffsetWithinDay = (totalHours / 24) * pixelsPerDay;
-
-    return Math.round(xBase + xOffsetWithinDay);
-}
     </script>
     
 </body>
