@@ -56,8 +56,11 @@
             <button id="btnPrecedence" class="btn" onclick="togglePrecedence()"><i class="fa-solid fa-route"></i> Bật Precedence Links</button>
             <button class="btn" onclick="initData()"><i class="fa-solid fa-rotate"></i> Tải lại dữ liệu</button>
 
-            <!-- Thêm nút Open dạng Toggle vào Toolbar hoặc Header -->
-            <button id="btnOpenMode" class="btn" onclick="toggleOpenMode()"><i class="fa-solid fa-pen-to-square"></i> Open: TẮT</button>
+            <!-- Nút kích hoạt chế độ Move Task -->
+            <button id="moveToolBtn" class="btn" onclick="toggleMoveMode()" style="background: #475569; color: white; margin-left: 5px;">
+                <i class="fa-solid fa-arrows-up-down-left-right"></i> Move Task: Tắt
+            </button>
+
         </div>
     </header>
 
@@ -91,7 +94,7 @@
             </div>
             <div class="gantt-container" id="ganttContainer" onscroll="syncGanttScroll(this)">
                 <div id="ganttSpacer" style="position: relative;">
-                    <canvas ondblclick="handleTaskDoubleClick(event)" id="ganttCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
+                    <canvas id="ganttCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
                 </div>
             </div>
         </div>
@@ -429,9 +432,9 @@
                 Math.ceil((scrollLeft + container.clientWidth) / BLOCK_WIDTH) + 2,
                 timelineData.length * BLOCKS_PER_DAY
             );
-            console.log('func renderGanttCanvas--- scrollLeft', scrollLeft);
-            console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
-            console.log('start col', startCol, 'end col', endCol);
+            // console.log('func renderGanttCanvas--- scrollLeft', scrollLeft);
+            // console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
+            // console.log('start col', startCol, 'end col', endCol);
 
             // 1. Chỉ vẽ lưới dọc cho các khung giờ
             ctx.strokeStyle = '#f1f5f9';
@@ -535,11 +538,11 @@
             // số ngày đang hiển thị 
             let n_day = Math.round(document.getElementById('ganttContainer').clientWidth/BLOCK_WIDTH/BLOCKS_PER_DAY+1);
             const endDay = startDay + n_day;
-            console.log('tính số ngày', n_day);
+            // console.log('tính số ngày', n_day);
 
-            console.log('func renderHeaderCanvas --- scrollLeft', scrollLeft);
-            console.log('start col', startCol, 'end col', endCol);
-            console.log('startDay', startDay, 'endDay', endDay);
+            // console.log('func renderHeaderCanvas --- scrollLeft', scrollLeft);
+            // console.log('start col', startCol, 'end col', endCol);
+            // console.log('startDay', startDay, 'endDay', endDay);
             
             const hoursPerBlock = 3;
             const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
@@ -727,10 +730,12 @@
         window.onload = function() {
             initData();
         };
-
+        let isSelectModeActive = false;
         
         function handleTaskDubleClick(event) {
-            const canvas = doocument.getElementById('ganttCanvas');
+            isSelectModeActive = !isSelectModeActive;
+      
+            const canvas = document.getElementById('ganttCanvas');
             const rect = canvas.getBoundingClientRect();
             
             // Tính tọa độ click thực tế trên Canvas (tính cả việc đang scroll)
@@ -740,13 +745,13 @@
             let foundTaskId = null;
 
             // Duyệt qua các workstations và tasks để tìm xem click trúng task nào
-            flattenedRows.forEach((ws, rIndex) => {
+            rsGantt.forEach((ws, rIndex) => {
                 let rowY = rIndex * ROW_HEIGHT;
                 // Kiểm tra xem click có nằm trong chiều dọc của dòng này không (chừa padding 8px)
                 if (clickY >= rowY + 8 && clickY <= rowY + 8 + 24) {
                     ws.tasks.forEach(task => {
-                        let taskX = task.startBlock * BLOCK_WIDTH;
-                        let taskW = task.duration * BLOCK_WIDTH - 2;
+                        let taskX = task.start_setup * BLOCK_WIDTH;
+                        let taskW = task.end_moving - task.start_setup * BLOCK_WIDTH - 2;
 
                         // Kiểm tra xem click có nằm trong khoảng chiều rộng của task không
                         if (clickX >= taskX && clickX <= taskX + taskW) {
@@ -769,107 +774,7 @@
             renderGanttCanvas();
         }
 
-       // Các biến trạng thái kéo thả mở rộng
-        let isDragging = false;
-        let draggedTask = null;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let originalStartBlock = 0;
-        let originalRowIndex = -1; // Lưu vị trí dòng (workcenter) ban đầu của task
-
-        const canvas = document.getElementById('ganttCanvas');
-
-        canvas.addEventListener('mousedown', (event) => {
-            const rect = canvas.getBoundingClientRect();
-            const clickX = event.clientX - rect.left;
-            const clickY = event.clientY - rect.top;
-
-            // Duyệt tìm xem click trúng task nào và ở hàng (workstation) nào
-            flattenedRows.forEach((ws, rIndex) => {
-                let rowY = rIndex * ROW_HEIGHT;
-                if (clickY >= rowY + 8 && clickY <= rowY + 8 + 24) {
-                    ws.tasks.forEach((task, tIndex) => {
-                        let taskX = task.startBlock * BLOCK_WIDTH;
-                        let taskW = task.duration * BLOCK_WIDTH - 2;
-
-                        if (clickX >= taskX && clickX <= taskX + taskW) {
-                            isDragging = true;
-                            draggedTask = task;
-                            dragStartX = event.clientX;
-                            dragStartY = event.clientY;
-                            originalStartBlock = task.startBlock;
-                            originalRowIndex = rIndex; // Ghi nhận trạm làm việc gốc
-                            selectedTaskId = task.id;
-                        }
-                    });
-                }
-            });
-            renderGanttCanvas();
-        });
-
-        canvas.addEventListener('mousemove', (event) => {
-            if (!isDragging || !draggedTask) return;
-
-            // 1. Tính toán dịch chuyển theo chiều ngang (thời gian / startBlock)
-            const deltaX = event.clientX - dragStartX;
-            const blockShift = Math.round(deltaX / BLOCK_WIDTH);
-            let newStart = originalStartBlock + blockShift;
-            if (newStart < 0) newStart = 0;
-            draggedTask.startBlock = newStart;
-
-            // 2. Tính toán dịch chuyển theo chiều dọc (chuyển workstation)
-            const deltaY = event.clientY - dragStartY;
-            const rowShift = Math.round(deltaY / ROW_HEIGHT);
-            let targetRowIndex = originalRowIndex + rowShift;
-
-            // GIỚI HẠN: Chỉ cho phép di chuyển trong các hàng hợp lệ (ví dụ: chỉ được dịch chuyển lên/xuống tối đa 1 hoặc 2 hàng lân cận, hoặc nằm trong tổng số workstations)
-            // Giả sử chỉ cho phép kéo trong phạm vi từ hàng (originalRowIndex - 1) đến (originalRowIndex + 1) tức là sang các WC sát cạnh:
-            let minAllowedRow = Math.max(0, originalRowIndex - 1);
-            let maxAllowedRow = Math.min(workstations.length - 1, originalRowIndex + 1);
-
-            if (targetRowIndex < minAllowedRow) targetRowIndex = minAllowedRow;
-            if (targetRowIndex > maxAllowedRow) targetRowIndex = maxAllowedRow;
-
-            // Nếu người dùng kéo trỏ chuột sang hàng khác trong phạm vi cho phép
-            if (targetRowIndex !== originalRowIndex) {
-                // Xóa task khỏi workstation cũ
-                const oldWs = flattenedRows[originalRowIndex];
-                const taskIdx = oldWs.tasks.findIndex(t => t.id === draggedTask.id);
-                if (taskIdx > -1) {
-                    oldWs.tasks.splice(taskIdx, 1);
-                }
-
-                // Thêm task vào workstation mới
-                const newWs = workstations[targetRowIndex];
-                if (!newWs.tasks) newWs.tasks = [];
-                newWs.tasks.push(draggedTask);
-
-                // Cập nhật lại mốc hàng hiện tại cho lần tính toán tiếp theo trong phiên kéo này
-                originalRowIndex = targetRowIndex;
-                dragStartY = event.clientY; // Reset điểm mốc Y để tính mượt hơn
-            }
-
-            renderGanttCanvas();
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                if (draggedTask) {
-                    console.log(`Đã đổi task ${draggedTask.id} sang Workstation mới tại dòng ${originalRowIndex}, startBlock: ${draggedTask.startBlock}`);
-                }
-                draggedTask = null;
-            }
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            if (isDragging) {
-                isDragging = false;
-                draggedTask = null;
-                renderGanttCanvas();
-            }
-        });
-
+  
     /**
      * Tính tọa độ X (pixel) dựa trên thời gian bắt đầu và mảng timeline
      * @param {string|Date} startDateTimeStr - ISO Date string, ví dụ: "2025-06-13T04:25:00+00:00"
@@ -923,7 +828,174 @@
 
         return Math.round(xBase + xOffsetWithinDay);
     }
+
     
+    
+    </script>
+    <script>
+        // Các biến trạng thái bổ sung cho việc kéo thả 2 chiều
+        let isMoveMode = false;
+        let selectedTaskForMove = null; 
+        let isDraggingTask = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let originalRowIndex = -1;
+
+        // Hàm bật/tắt chế độ Move
+        function toggleMoveMode() {
+            isMoveMode = !isMoveMode;
+            const btn = document.getElementById('moveToolBtn');
+            
+            if (isMoveMode) {
+                // BẬT: Thêm sự kiện vào canvas
+                btn.style.background = '#16a34a'; // Xanh lá
+                btn.innerHTML = `<i class="fa-solid fa-arrows-up-down-left-right"></i> Move Task: Đang bật (Click chọn task)`;
+
+                ganttCanvas.addEventListener('mousedown', handleGanttMouseDown);
+                ganttCanvas.addEventListener('mousemove', handleGanttMouseMove);
+                window.addEventListener('mouseup', handleGanttMouseUp); // Dùng window cho mouseup giúp kéo thả mượt hơn khi chuột ra ngoài canvas
+            } else {
+                // TẮT: Xóa sạch toàn bộ sự kiện đã add để nhường chỗ cho các tính năng khác
+                btn.style.background = '#475569'; // Xám
+                btn.innerHTML = `<i class="fa-solid fa-arrows-up-down-left-right"></i> Move Task: Tắt`;
+
+                ganttCanvas.removeEventListener('mousedown', handleGanttMouseDown);
+                ganttCanvas.removeEventListener('mousemove', handleGanttMouseMove);
+                window.removeEventListener('mouseup', handleGanttMouseUp);
+
+                // Reset trạng thái
+                selectedTaskForMove = null;
+                isDraggingTask = false;
+                originalRowIndex = -1;
+            }
+        }
+       
+        /**
+         * Chuyển đổi tọa độ pixel X thành thông tin Ngày và Giờ dựa trên timelineData và BLOCKS_PER_DAY
+         * @param {number} x - Tọa độ X trên canvas
+         * @param {number} scrollLeft - Độ cuộn ngang của container (`ganttContainer.scrollLeft`)
+         */
+        function convertXToDateTime(x, scrollLeft = 0) {
+            const absoluteX = x + scrollLeft;
+            const totalBlockIndex = Math.floor(absoluteX / BLOCK_WIDTH);
+            
+            // Xác định ngày thứ mấy trong timelineData
+            const dayIndex = Math.floor(totalBlockIndex / BLOCKS_PER_DAY);
+            const blockInDay = totalBlockIndex % BLOCKS_PER_DAY;
+
+            if (!timelineData || dayIndex < 0 || dayIndex >= timelineData.length) {
+                return null;
+            }
+
+            const dateStr = timelineData[dayIndex].timeline_date;
+            const hoursPerBlock = 3; // Khớp với cấu trúc trong renderHeaderCanvas của bạn
+            const hour = (blockInDay * hoursPerBlock) % 24;
+
+            return {
+                date: dateStr,
+                dayIndex: dayIndex,
+                hour: hour,
+                formattedDateTime: `${dateStr} ${String(hour).padStart(2, '0')}:00`
+            };
+        }
+
+        const ganttCanvas = document.getElementById('ganttCanvas');
+        const ganttContainer = document.getElementById('ganttContainer');
+
+        // Hàm xử lý Mousedown
+        function handleGanttMouseDown(e) {
+            const rect = ganttCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const rowIndex = Math.floor(mouseY / ROW_HEIGHT);
+
+            if (rowIndex >= 0 && rowIndex < rsGantt.length) {
+                const currentRow = rsGantt[rowIndex];
+                if (currentRow.tasks && currentRow.tasks.length > 0) {
+                    currentRow.tasks.forEach(task => {
+                        let x1 = calculateXFromDateTime(task.start_setup, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY);
+                        let x2 = calculateXFromDateTime(task.end_moving, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY);;
+
+                        if (mouseX >= x1 && mouseX <= x2) {
+                            selectedTaskForMove = task;
+                            isDraggingTask = true;
+                            dragStartX = mouseX;
+                            dragStartY = mouseY;
+                            originalRowIndex = rowIndex;
+                        }
+                    });
+                }
+            }
+        }
+
+        // Hàm xử lý Mousemove
+        function handleGanttMouseMove(e) {
+            if (!isDraggingTask || !selectedTaskForMove) return;
+
+            const rect = ganttCanvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            // --- Kéo ngang (thời gian) ---
+            const deltaX = currentX - dragStartX;
+            const blockShift = Math.round(deltaX / BLOCK_WIDTH);
+            
+            if (blockShift !== 0) {
+                let newStart = (selectedTaskForMove.startBlock || 0) + blockShift;
+                if (newStart < 0) newStart = 0;
+                selectedTaskForMove.startBlock = newStart;
+                dragStartX = currentX;
+            }
+
+            // --- Kéo dọc (đổi Workstation) ---
+            const targetRowIndex = Math.floor(currentY / ROW_HEIGHT);
+
+            if (targetRowIndex !== originalRowIndex && targetRowIndex >= 0 && targetRowIndex < rsGantt.length) {
+                const oldRow = rsGantt[originalRowIndex];
+                const targetRow = rsGantt[targetRowIndex];
+
+                const taskIndex = oldRow.tasks.findIndex(t => t.id === selectedTaskForMove.id);
+                if (taskIndex > -1) {
+                    oldRow.tasks.splice(taskIndex, 1);
+                }
+
+                if (!targetRow.tasks) targetRow.tasks = [];
+                targetRow.tasks.push(selectedTaskForMove);
+
+                selectedTaskForMove.workstation = targetRow.workstation;
+                originalRowIndex = targetRowIndex;
+                dragStartY = currentY;
+            }
+
+            if (typeof renderGanttCanvas === 'function') {
+                renderGanttCanvas();
+            }
+        }
+
+        // Hàm xử lý Mouseup
+        function handleGanttMouseUp(e) {
+            if (!isDraggingTask || !selectedTaskForMove) return;
+
+            const rect = ganttCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const targetDateTime = convertXToDateTime(mouseX, ganttContainer.scrollLeft);
+
+            if (targetDateTime) {
+                selectedTaskForMove.start_date = targetDateTime.formattedDateTime;
+            }
+
+            isDraggingTask = false;
+            selectedTaskForMove = null;
+            originalRowIndex = -1;
+
+            if (typeof renderGanttCanvas === 'function') {
+                renderGanttCanvas();
+            }
+        }
+
+
+        
     </script>
     
 </body>
