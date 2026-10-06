@@ -47,7 +47,7 @@
     </style>
 </head>
 <body>
-
+    
     <header>
         <div class="header-title">
             <i class="fa-solid fa-industry"></i> APS Gantt - Precedence Routing & Canvas Links
@@ -55,6 +55,9 @@
         <div class="btn-group">
             <button id="btnPrecedence" class="btn" onclick="togglePrecedence()"><i class="fa-solid fa-route"></i> Bật Precedence Links</button>
             <button class="btn" onclick="initData()"><i class="fa-solid fa-rotate"></i> Tải lại dữ liệu</button>
+            <button class="btn" onclick="date()"><i class="fa-solid fa-rotate"></i> Date</button>
+            <button class="btn" onclick="week()"><i class="fa-solid fa-rotate"></i> Week</button>
+            <button class="btn" onclick="month()"><i class="fa-solid fa-rotate"></i> Month</button>
         </div>
     </header>
 
@@ -100,8 +103,9 @@
     <script src="{{ url_for('static', filename='js/fetch.js') }}"></script>
     <script>
         const ROW_HEIGHT = 40;
-        let BLOCK_WIDTH = 5; 
-        const TOTAL_DAYS = 7; 
+        let BLOCK_WIDTH = 15; 
+        const TOTAL_DAYS = 7;   // 1 tuần 7 này
+
         let BLOCKS_PER_DAY = 8; 
         let selectedTaskId = null; // Lưu ID của task đang được double-click
         
@@ -403,7 +407,7 @@
             console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
             console.log('start col', startCol, 'end col', endCol);
 
-            // 1. Chỉ vẽ lưới dọc trong tầm nhìn
+            // 1. Chỉ vẽ lưới dọc cho các khung giờ
             ctx.strokeStyle = '#f1f5f9';
             ctx.lineWidth = 1;
             for (let i = startCol; i < endCol; i++) {
@@ -413,7 +417,22 @@
                 ctx.stroke();
             }
 
-            // 2. Chỉ vẽ lưới ngang trong khoảng từ startRow đến endRow
+            // 2. vẽ đường lưới dọc cho ngày
+            ctx.strokeStyle = '#E2E8F0'; // Màu xanh dương đậm cho đường liên kết
+            ctx.fillStyle = '#2563eb';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]); // Nét đứt tinh tế
+
+            const startDateNum = Math.round(startCol/BLOCKS_PER_DAY);
+            const endDateNum = Math.round(endCol/BLOCKS_PER_DAY);
+            for (let i = startDateNum; i < endDateNum; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * BLOCK_WIDTH * BLOCKS_PER_DAY, 0);
+                ctx.lineTo(i * BLOCK_WIDTH * BLOCKS_PER_DAY, canvas.height);
+                ctx.stroke();
+            }
+
+            // 3. Chỉ vẽ lưới ngang trong khoảng từ startRow đến endRow
             ctx.strokeStyle = '#e2e8f0';
             for (let i = startRow; i <= endRow; i++) {
                 ctx.beginPath();
@@ -473,12 +492,6 @@
 
             const scrollLeft = container.scrollLeft;
 
-            // Đảm bảo chiều rộng Canvas luôn cập nhật nếu resize màn hình
-            // if (headerCanvas.width !== container.clientWidth) {
-            //     headerCanvas.width = container.clientWidth;
-            //     headerCanvas.style.width = container.clientWidth + 'px';
-            // }
-
             // Xóa bộ đệm Canvas
             ctx.clearRect(0, 0, headerCanvas.width, headerCanvas.height);
 
@@ -491,7 +504,9 @@
                 timelineData.length * BLOCKS_PER_DAY
             );
             
+            // ngày vị trí ngày bắt đầu khi move chuột
             const startDay = Math.floor(startCol / BLOCKS_PER_DAY);
+            // số ngày đang hiển thị 
             let n_day = Math.round(document.getElementById('ganttContainer').clientWidth/BLOCK_WIDTH/BLOCKS_PER_DAY+1);
             const endDay = startDay + n_day;
             console.log('tính số ngày', n_day);
@@ -503,16 +518,18 @@
             const hoursPerBlock = parseInt(document.getElementById('timeScale').value);
             const totalCols = TOTAL_DAYS * BLOCKS_PER_DAY;
 
-            // đường kẻ phan chia ngày va gio
-            ctx.strokeStyle = '#cbd5e1';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, 25);
-            ctx.lineTo(headerCanvas.width, 25);
-            ctx.stroke();
+
 
             // đường kẻ giờ
             if (BLOCK_WIDTH > 30 ) {
+                // đường kẻ phan chia ngày va gio
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, 25);
+                ctx.lineTo(headerCanvas.width, 25);
+                ctx.stroke();
+                
                 for (let i = 0; i < totalCols; i++) {
                     let x = i * BLOCK_WIDTH;
                     ctx.beginPath();
@@ -526,6 +543,10 @@
             // (Tọa độ X được tính theo khoảng cách thực từ gốc 0, ví dụ: d * BLOCKS_PER_DAY * BLOCK_WIDTH)
             for (let d = startDay; d < endDay; d++) {
                 if (!timelineData[d]) continue;
+                // format dateStr
+                const dateStr = timelineData[d].timeline_date;
+                // Tách chuỗi thành mảng [ "2026", "10", "06" ]
+                const [fullYear, month, date] = dateStr.split("-");
 
                 let startXForDay = (d * BLOCKS_PER_DAY) * BLOCK_WIDTH;
                 
@@ -539,7 +560,7 @@
                 // Tên ngày THÁNG
                 ctx.fillStyle = '#1e293b';
                 ctx.font = 'bold 11px Segoe UI';
-                ctx.fillText(timelineData[d].timeline_date, startXForDay + 6, 17);
+                ctx.fillText(` ${month}-${date}`, startXForDay + 6, 17);
                 
                 // điền giờ
                 if (BLOCK_WIDTH > 30 ) {
@@ -615,6 +636,22 @@
         window.onload = function() {
             initData();
         };
+
+        function date(){
+            BLOCK_WIDTH = 40;
+            renderHeaderCanvas();
+            renderGanttCanvas();
+        }
+        function week(){
+            BLOCK_WIDTH = 20;
+            renderHeaderCanvas();
+            renderGanttCanvas();
+        }
+        function month(){
+            BLOCK_WIDTH = 5;
+            renderHeaderCanvas();
+            renderGanttCanvas();
+        }
         function handleTaskDubleClick(event) {
             const canvas = doocument.getElementById('ganttCanvas');
             const rect = canvas.getBoundingClientRect();
