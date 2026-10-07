@@ -10,12 +10,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        header { background-color: #003366; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #002244; }
+        header { background-color: #312E81; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #002244; }
         .header-title { font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
         
         .btn-group { display: flex; gap: 10px; }
-        .btn { background: #0055a5; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; }
-        .btn:hover { background: #004080; }
+        .btn { background: #312E81; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .btn:hover { background: #08038a; }
         .btn.active { background: #10b981; } /* Màu xanh lá khi bật tính năng precedence */
 
         .toolbar { background: #e9ecef; padding: 8px 20px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid #ccc; font-size: 13px; }
@@ -50,24 +50,22 @@
     
     <header>
         <div class="header-title">
-            <i class="fa-solid fa-industry"></i> APS Gantt - Precedence Routing & Canvas Links
+            <button class="btn" onclick="window.location.href='http://127.0.0.1:5000/warehouse'"><i class="fa-solid fa-chevron-left"></i></button>
+            <i class="fa-solid fa-industry"></i> APS Gantt
         </div>
         <div class="btn-group">
-            <button id="btnPrecedence" class="btn" onclick="togglePrecedence()"><i class="fa-solid fa-route"></i> Bật Precedence Links</button>
-            <button class="btn" onclick="initData()"><i class="fa-solid fa-rotate"></i> Tải lại dữ liệu</button>
+            <button id="btnPrecedence" class="btn" onclick="togglePrecedence()"><i class="fa-solid fa-route"></i>Links</button>
+            <button class="btn" onclick="initData()"><i class="fa-solid fa-rotate"></i> Reload</button>
 
             <!-- Nút kích hoạt chế độ Move Task -->
-            <button id="moveToolBtn" title="di chuyển gantt để điều độ" class="btn" onclick="toggleMoveMode()" style="background: #475569; color: white; margin-left: 5px;">
+            <button id="moveToolBtn" title="di chuyển gantt để điều độ" class="btn" onclick="toggleMoveMode()">
                 <i class="fa-solid fa-arrows-up-down-left-right"></i> Move
             </button>
 
             <!-- Nút kích hoạt chế độ vẽ máy hư -->
-            <button id="btnToggleBreakdown" title="đóng trạm làm việc" onclick="toggleBreakdownMode()">🛠️ Close</button>
+            <button id="btnToggleBreakdown" class="btn" title="đóng trạm làm việc" onclick="toggleBreakdownMode()">🛠️ Close</button>
             <!-- Nút kích hoạt chế độ vẽ tăng ca (màu xanh lá) -->
-            <button title="🟢 Tạo lịch tăng ca" id="btnToggleOvertime" onclick="toggleOvertimeMode()" 
-                style="margin-left: 10px; 
-                    padding: 6px 12px; 
-                    border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer;">
+            <button title="🟢 Tạo lịch tăng ca" id="btnToggleOvertime" class="btn" onclick="toggleOvertimeMode()" >
                 🟢 Open
             </button>
 
@@ -381,6 +379,24 @@
             const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
             const endRow = Math.min(rsGantt.length, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + 2);
 
+            // KIỂM TRA VÙNG THỜI GIAN NHÌN THẤY KHI SCROLL NGANG-----------
+            // --- LẤY THỜI GIAN VÙNG NHÌN THẤY ---
+                // Nhận trực tiếp đối tượng (có thể chứa null) và không truy xuất .formattedDateTime ngay
+                const viewStartObj = convertXToDateTime(scrollLeft, scrollLeft);
+                const viewEndObj = convertXToDateTime(scrollLeft + clientWidth, scrollLeft);
+
+                // Nếu cuộn ra ngoài biên gây ra null thì return luôn lập tức
+                if (!viewStartObj || !viewStartObj.formattedDateTime || !viewEndObj || !viewEndObj.formattedDateTime) {
+                    return; 
+                }
+
+                const viewStartTime = viewStartObj.formattedDateTime;
+                const viewEndTime = viewEndObj.formattedDateTime;
+
+            // Chuyển sang giá trị timestamp (số mili-giây) để so sánh cực nhanh
+            const viewStartMs = new Date(viewStartTime.replace('T', ' ')).getTime();
+            const viewEndMs = new Date(viewEndTime.replace('T', ' ')).getTime();
+            //----------------------------------------------
             
             const totalCols = timelineData.length * BLOCKS_PER_DAY;
             startCol = Math.max(0, Math.floor(scrollLeft/BLOCK_WIDTH)-2);
@@ -388,9 +404,7 @@
                 Math.ceil((scrollLeft + container.clientWidth) / BLOCK_WIDTH) + 2,
                 timelineData.length * BLOCKS_PER_DAY
             );
-            // console.log('func renderGanttCanvas--- scrollLeft', scrollLeft);
-            // console.log('scrollTop', scrollTop, 'startRow', startRow, 'endRow', endRow);
-            // console.log('start col', startCol, 'end col', endCol);
+ 
 
             // 1. Chỉ vẽ lưới dọc cho các khung giờ
             ctx.strokeStyle = '#f1f5f9';
@@ -433,16 +447,32 @@
                 let y = index * ROW_HEIGHT + 8;
 
                 ws.tasks.forEach(task => {
+                    // Chuẩn hóa chuỗi thời gian của task sang timestamp để so sánh ==========================
+                    const taskStartMs = new Date(task.start_setup.replace('T', ' ')).getTime();
+                    const taskEndMs = new Date(task.end_moving.replace('T', ' ')).getTime();
+
+                    // ⚡ BỎ QUA LUÔN: Nếu task kết thúc trước khung nhìn HOẶC bắt đầu sau khung nhìn
+                    if (taskEndMs < viewStartMs || taskStartMs > viewEndMs) {
+                        return; // Nhẹ máy tuyệt đối, không gọi tính toán X nữa!
+                    }
+                    // =================================================================
+
+                    // --- CHỈ KHI NÀO TASK NẰM TRONG TẦM NHÌN MỚI TÍNH TỌA ĐỘ PIXEL ĐỂ VẼ ---
                     let x1 = calculateXFromDateTime(task.start_setup, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY)
                     let x2 = calculateXFromDateTime(task.end_moving, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY)
                     let h = 24;
                     let color = '';
-                    if (COLOR_TASK !=='') {
+
+                    // Phân loại màu sắc theo type_of hoặc config của bạn
+                    if (task.type_of === 'rest') {
+                        color =  '#e5e7eb'; // Màu giờ nghỉ
+                    } else if (task.type_of === 'overtime') {
+                        color ='#10b981'; // Màu tăng ca
+                    } else if (COLOR_TASK !== '') {
                         color = COLOR_TASK;
                     } else {
                         color = getRandomPastelColor(task.workcenter_name);
                     }
-
                     // Kiểm tra xem task có nằm ngang trong tầm nhìn chiều ngang không (tùy chọn tối ưu thêm)
                     if (x2 < container.scrollLeft || x1 > container.scrollLeft + container.clientWidth) {
                         return; // Bỏ qua task nằm ngoài màn hình theo chiều ngang
@@ -453,18 +483,36 @@
                         ctx.fillStyle = '#ef4444';
                     }
                    
-                    // ctx.strokeStyle = (task.status === 'warning' || task.status === 'locked') ? '#ef4444' : '#64748b';
-                    ctx.lineWidth = (task.status === 'warning' || task.status === 'locked') ? 2 : 1;
+                    // Phân biệt kiểu vẽ dựa vào type_of: gantt, rest, ...
+                    if (task.type_of === 'rest') {
+                       // --- 1. VẼ LỊCH GIỜ NGHỈ ---
+                        ctx.fillStyle = color; // Màu xám nhạt nền
+                        ctx.strokeStyle = '#d1d5db';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([2, 2]); // Nét đứt biểu thị giờ nghỉ
 
-                    ctx.beginPath();
-                    ctx.roundRect(x1, y, x2-x1, h, 4);
-                    ctx.fill();
-                    ctx.stroke();
+                        ctx.beginPath();
+                        ctx.rect(x1, y, x2-x1, h);
+                        ctx.fill();
+                        ctx.stroke();
 
-                    ctx.fillStyle = '#1e293b';
-                    ctx.font = 'bold 11px Segoe UI';
-                    ctx.fillText(`${task.id} (${task.code_op}) ${task.start_setup}`, x1 + 6, y + 16);
+                    } else {
 
+                        /// VẼ GANTT THƯ
+                        // ctx.strokeStyle = (task.status === 'warning' || task.status === 'locked') ? '#ef4444' : '#64748b';
+                        ctx.lineWidth = (task.status === 'warning' || task.status === 'locked') ? 2 : 1;
+    
+                        ctx.beginPath();
+                        ctx.roundRect(x1, y, x2-x1, h, 4);
+                        ctx.fill();
+                        ctx.stroke();
+    
+                        ctx.fillStyle = color;
+                        ctx.font = 'bold 11px Segoe UI';
+                        ctx.fillText(`${task.id} (${task.code_op}) ${task.start_setup}`, x1 + 6, y + 16);
+                    }
+
+                    // VẼ ICON
                     if (task.status === 'warning' || task.status === 'locked') {
                         canvas_warning(ctx, x2 - 14, y + 12);
                     }
@@ -474,7 +522,7 @@
             // Gọi hàm vẽ đường liên kết tiến trình nếu tính năng được bật
             drawPrecedenceLinks(ctx);
         }
-
+ 
         function renderHeaderCanvas() {
             const container = document.getElementById('ganttContainer');
             const headerCanvas = document.getElementById('headerCanvas');
@@ -1305,7 +1353,7 @@ function drawTempOvertimeRect() {
     let h = ROW_HEIGHT - 8;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.35);'; // Xanh lá mờ
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.35)'; // Xanh lá mờ
     ctx.strokeStyle = '#10B981'; // Xanh lá đậm
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
