@@ -62,7 +62,14 @@
             </button>
 
             <!-- Nút kích hoạt chế độ vẽ máy hư -->
-            <button id="btnToggleBreakdown" title="đóng trạm làm việc" onclick="toggleBreakdownMode()">Close</button>
+            <button id="btnToggleBreakdown" title="đóng trạm làm việc" onclick="toggleBreakdownMode()">🛠️ Close</button>
+            <!-- Nút kích hoạt chế độ vẽ tăng ca (màu xanh lá) -->
+            <button title="🟢 Tạo lịch tăng ca" id="btnToggleOvertime" onclick="toggleOvertimeMode()" 
+                style="margin-left: 10px; 
+                    padding: 6px 12px; 
+                    border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer;">
+                🟢 Open
+            </button>
 
         </div>
     </header>
@@ -124,6 +131,26 @@
             <div style="text-align: right; margin-top: 15px;">
                 <button onclick="cancelBreakdownModal()" style="margin-right: 10px; padding: 6px 12px;">Hủy / Xóa</button>
                 <button onclick="saveBreakdownModal()" style="background:#dc2626; color:white; padding: 6px 12px; border:none; border-radius:4px;">Lưu lịch</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal nhập liệu tăng ca -->
+    <div id="overtimeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;">
+        <div style="background:white; padding:20px; border-radius:8px; width:400px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+            <h3>Thêm Lịch Tăng Ca / Sản Xuất Thêm</h3>
+            <p><strong>Nguồn lực (Workstation):</strong> <span id="otModalWorkstationName">---</span></p>
+            <p><strong>Bắt đầu:</strong> <span id="otModalStartTime">---</span></p>
+            <p><strong>Kết thúc:</strong> <span id="otModalEndTime">---</span></p>
+            
+            <div style="margin: 10px 0;">
+                <label>Nội dung / Ca tăng cường:</label>
+                <input type="text" id="overtimeReasonInput" placeholder="Ví dụ: Tăng ca ca 3, Chạy bù đơn hàng gấp..." style="width:100%; padding:8px; margin-top:5px;">
+            </div>
+
+            <div style="text-align: right; margin-top: 15px;">
+                <button onclick="cancelOvertimeModal()" style="margin-right: 10px; padding: 6px 12px;">Hủy / Xóa</button>
+                <button onclick="saveOvertimeModal()" style="background:#10b981; color:white; padding: 6px 12px; border:none; border-radius:4px; cursor:pointer;">Lưu lịch</button>
             </div>
         </div>
     </div>
@@ -764,7 +791,6 @@
     }
 
     
-    
     </script>
     <script>
         // Các biến trạng thái bổ sung cho việc kéo thả 2 chiều
@@ -988,126 +1014,301 @@
     </script>
     <script>
         // Biến trạng thái cho chế độ vẽ máy hư
-let isBreakdownModeActive = false;
-let isDrawingBreakdown = false;
-let bdStartX = 0;
-let bdCurrentX = 0;
-let bdTargetRowIndex = -1;
-let tempBreakdownData = null;
+        let isBreakdownModeActive = false;
+        let isDrawingBreakdown = false;
+        let bdStartX = 0;
+        let bdCurrentX = 0;
+        let bdTargetRowIndex = -1;
+        let tempBreakdownData = null;
 
-// 1. Hàm bật/tắt chế độ vẽ (Chuyển màu nút và gắn/gỡ sự kiện)
-function toggleBreakdownMode() {
-    isBreakdownModeActive = !isBreakdownModeActive;
-    const btn = document.getElementById('btnToggleBreakdown');
+        // 1. Hàm bật/tắt chế độ vẽ (Chuyển màu nút và gắn/gỡ sự kiện)
+        function toggleBreakdownMode() {
+            isBreakdownModeActive = !isBreakdownModeActive;
+            const btn = document.getElementById('btnToggleBreakdown');
 
+            if (isBreakdownModeActive) {
+                // Đổi màu nút sang trạng thái đang Active (ví dụ: màu đỏ cảnh báo)
+                btn.style.backgroundColor = '#ef4444';
+                btn.style.color = '#ffffff';
+                btn.innerText = '🛑 Đang bật chế độ vẽ máy hư...';
+
+                // Gắn lắng nghe sự kiện chuột lên canvas
+                ganttCanvas.addEventListener('mousedown', handleBreakdownMouseDown);
+                window.addEventListener('mousemove', handleBreakdownMouseMove);
+                window.addEventListener('mouseup', handleBreakdownMouseUp);
+            } else {
+                // Trả nút về màu ban đầu
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+                btn.innerText = '🛠️ Close';
+
+                // Gỡ bỏ sự kiện khi tắt chế độ
+                ganttCanvas.removeEventListener('mousedown', handleBreakdownMouseDown);
+                window.removeEventListener('mousemove', handleBreakdownMouseMove);
+                window.removeEventListener('mouseup', handleBreakdownMouseUp);
+                
+                isDrawingBreakdown = false;
+            }
+        }
+
+        // 2. MOUSE DOWN: Bắt đầu bấm chuột để vẽ
+        function handleBreakdownMouseDown(e) {
+            if (!isBreakdownModeActive) return;
+
+            const rect = ganttCanvas.getBoundingClientRect();
+            bdStartX = e.clientX - rect.left;
+            bdCurrentX = bdStartX;
+            
+            // Xác định dòng workstation tương ứng dựa vào tọa độ Y và chiều cao mỗi dòng (ROW_HEIGHT)
+            bdTargetRowIndex = Math.floor((e.clientY - rect.top) / ROW_HEIGHT);
+
+            if (bdTargetRowIndex >= 0 && bdTargetRowIndex < rsGantt.length) {
+                isDrawingBreakdown = true;
+            }
+        }
+
+        // 3. MOUSE MOVE: Kéo chuột co giãn khung chữ nhật thời gian
+        function handleBreakdownMouseMove(e) {
+            if (!isBreakdownModeActive || !isDrawingBreakdown) return;
+
+            const rect = ganttCanvas.getBoundingClientRect();
+            bdCurrentX = e.clientX - rect.left;
+
+            // Vẽ lại canvas nền, sau đó đè hình chữ nhật tạm thời lên
+            if (typeof renderGanttCanvas === 'function') {
+                renderGanttCanvas();
+            }
+            drawTempBreakdownRect();
+        }
+
+        // 4. MOUSE UP: Thả chuột -> Dừng vẽ và bật Modal hiển thị thông tin & tên nguồn lực
+        function handleBreakdownMouseUp(e) {
+            if (!isBreakdownModeActive || !isDrawingBreakdown) return;
+            isDrawingBreakdown = false;
+
+            const rect = ganttCanvas.getBoundingClientRect();
+            const endX = e.clientX - rect.left;
+
+            // Lấy khoảng min và max (phòng trường hợp người dùng kéo ngược từ phải sang trái)
+            let minX = Math.min(bdStartX, endX);
+            let maxX = Math.max(bdStartX, endX);
+
+            // Chuyển đổi tọa độ pixel thành thời gian chuẩn (giống như hàm convertXToDateTime bạn đang dùng)
+            let startDateTime = convertXToDateTime(minX, ganttContainer.scrollLeft);
+            let endDateTime = convertXToDateTime(maxX, ganttContainer.scrollLeft);
+
+            if (startDateTime && endDateTime && bdTargetRowIndex >= 0) {
+                const targetRow = rsGantt[bdTargetRowIndex];
+                
+                // Lấy tên nguồn lực (Workstation name hoặc workcenter_id tùy cấu trúc dữ liệu của bạn)
+                const workstationName = targetRow.workstation_name || targetRow.workcenter_id || `Trạm ${bdTargetRowIndex + 1}`;
+
+                // Đóng gói dữ liệu tạm
+                tempBreakdownData = {
+                    id: `BD-${Date.now()}`,
+                    workcenter_id: targetRow.workcenter_id,
+                    workstation: workstationName,
+                    start_setup: startDateTime.formattedDateTime, // Dạng 'YYYY-MM-DD HH:mm:ss+00'
+                    end_moving: endDateTime.formattedDateTime,     // Hoặc end_setup
+                    type: 'breakdown',
+                    targetRowIndex: bdTargetRowIndex
+                };
+
+                // Hiển thị Modal và thông tin nguồn lực
+                openBreakdownModal(tempBreakdownData);
+            } else {
+                if (typeof renderGanttCanvas === 'function') renderGanttCanvas();
+            }
+        }
+
+        // Hàm phụ trợ: Vẽ khung chữ nhật sọc/đỏ tạm thời khi kéo chuột
+        function drawTempBreakdownRect() {
+            const ctx = ganttCanvas.getContext('2d');
+            let x = Math.min(bdStartX, bdCurrentX);
+            let w = Math.abs(bdCurrentX - bdStartX);
+            let y = bdTargetRowIndex * ROW_HEIGHT + 4;
+            let h = ROW_HEIGHT - 8;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.35)'; // Màu đỏ mờ
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]); // Nét đứt cảnh báo
+
+            ctx.beginPath();
+            ctx.roundRect(x, y, Math.max(w, 10), h, 4);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- CÁC HÀM XỬ LÝ MODAL ---
+
+        function openBreakdownModal(data) {
+            document.getElementById('modalWorkstationName').innerText = data.workstation;
+            document.getElementById('modalStartTime').innerText = data.start_setup;
+            document.getElementById('modalEndTime').innerText = data.end_moving;
+            document.getElementById('breakdownReasonInput').value = ''; // Reset ô nhập lý do
+            document.getElementById('breakdownModal').style.display = 'flex';
+        }
+
+        function saveBreakdownModal() {
+            const reason = document.getElementById('breakdownReasonInput').value || 'Máy hư không rõ lý do';
+
+            if (tempBreakdownData) {
+                // Hoàn thiện đối tượng task máy hư
+                let newBreakdownTask = {
+                    id: tempBreakdownData.id,
+                    name: `Bảo trì/Hư: ${reason}`,
+                    start_setup: tempBreakdownData.start_setup,
+                    end_moving: tempBreakdownData.end_moving,
+                    workcenter_id: tempBreakdownData.workcenter_id,
+                };
+                // set màu cho gantt task sẽ vẽ 
+                COLOR_TASK = '#ef4444'; // Màu đỏ đặc trưng cho lịch máy chết
+
+                // Đẩy vào mảng tasks của trạm làm việc tương ứng trong rsGantt
+                const targetRow = rsGantt[tempBreakdownData.targetRowIndex];
+                if (!targetRow.tasks) targetRow.tasks = [];
+                targetRow.tasks.push(newBreakdownTask);
+
+                // (Tùy chọn) Gọi hàm lưu xuống Supabase tại đây nếu cần:
+                // saveToSupabase(newBreakdownTask);
+            }
+
+            closeBreakdownModal();
+            if (typeof renderGanttCanvas === 'function') renderGanttCanvas();
+        }
+
+        function cancelBreakdownModal() {
+            tempBreakdownData = null;
+            closeBreakdownModal();
+            if (typeof renderGanttCanvas === 'function') renderGanttCanvas(); // Xóa khung vẽ tạm
+        }
+
+        function closeBreakdownModal() {
+            document.getElementById('breakdownModal').style.display = 'none';
+        }
+    </script>
+    <script>
+        // Biến trạng thái riêng cho chế độ vẽ Tăng Ca
+let isOvertimeModeActive = false;
+let isDrawingOvertime = false;
+let otStartX = 0;
+let otCurrentX = 0;
+let otTargetRowIndex = -1;
+let tempOvertimeData = null;
+
+// 1. Hàm bật/tắt chế độ vẽ tăng ca
+function toggleOvertimeMode() {
+    // Nếu chế độ máy hư đang bật, hãy tắt nó trước để tránh xung đột sự kiện
     if (isBreakdownModeActive) {
-        // Đổi màu nút sang trạng thái đang Active (ví dụ: màu đỏ cảnh báo)
-        btn.style.backgroundColor = '#ef4444';
-        btn.style.color = '#ffffff';
-        btn.innerText = '🛑 Đang bật chế độ vẽ máy hư...';
+        toggleBreakdownMode();
+    }
 
-        // Gắn lắng nghe sự kiện chuột lên canvas
-        ganttCanvas.addEventListener('mousedown', handleBreakdownMouseDown);
-        window.addEventListener('mousemove', handleBreakdownMouseMove);
-        window.addEventListener('mouseup', handleBreakdownMouseUp);
+    isOvertimeModeActive = !isOvertimeModeActive;
+    const btn = document.getElementById('btnToggleOvertime');
+
+    if (isOvertimeModeActive) {
+        // Đổi màu nút sang xanh lá đậm báo hiệu đang hoạt động
+        btn.style.backgroundColor = '#10b981';
+        btn.style.color = '#ffffff';
+        btn.innerText = '🟢 Đang bật chế độ tăng ca...';
+
+        // Gắn sự kiện lên canvas
+        ganttCanvas.addEventListener('mousedown', handleOvertimeMouseDown);
+        window.addEventListener('mousemove', handleOvertimeMouseMove);
+        window.addEventListener('mouseup', handleOvertimeMouseUp);
     } else {
-        // Trả nút về màu ban đầu
+        // Trả nút về mặc định
         btn.style.backgroundColor = '';
         btn.style.color = '';
-        btn.innerText = '🛠️ Tạo lịch máy hư';
+        btn.innerText = '🟢 Open';
 
-        // Gỡ bỏ sự kiện khi tắt chế độ
-        ganttCanvas.removeEventListener('mousedown', handleBreakdownMouseDown);
-        window.removeEventListener('mousemove', handleBreakdownMouseMove);
-        window.removeEventListener('mouseup', handleBreakdownMouseUp);
+        // Gỡ sự kiện
+        ganttCanvas.removeEventListener('mousedown', handleOvertimeMouseDown);
+        window.removeEventListener('mousemove', handleOvertimeMouseMove);
+        window.removeEventListener('mouseup', handleOvertimeMouseUp);
         
-        isDrawingBreakdown = false;
+        isDrawingOvertime = false;
     }
 }
 
-// 2. MOUSE DOWN: Bắt đầu bấm chuột để vẽ
-function handleBreakdownMouseDown(e) {
-    if (!isBreakdownModeActive) return;
+// 2. MOUSE DOWN
+function handleOvertimeMouseDown(e) {
+    if (!isOvertimeModeActive) return;
 
     const rect = ganttCanvas.getBoundingClientRect();
-    bdStartX = e.clientX - rect.left;
-    bdCurrentX = bdStartX;
+    otStartX = e.clientX - rect.left;
+    otCurrentX = otStartX;
     
-    // Xác định dòng workstation tương ứng dựa vào tọa độ Y và chiều cao mỗi dòng (ROW_HEIGHT)
-    bdTargetRowIndex = Math.floor((e.clientY - rect.top) / ROW_HEIGHT);
+    otTargetRowIndex = Math.floor((e.clientY - rect.top) / ROW_HEIGHT);
 
-    if (bdTargetRowIndex >= 0 && bdTargetRowIndex < rsGantt.length) {
-        isDrawingBreakdown = true;
+    if (otTargetRowIndex >= 0 && otTargetRowIndex < rsGantt.length) {
+        isDrawingOvertime = true;
     }
 }
 
-// 3. MOUSE MOVE: Kéo chuột co giãn khung chữ nhật thời gian
-function handleBreakdownMouseMove(e) {
-    if (!isBreakdownModeActive || !isDrawingBreakdown) return;
+// 3. MOUSE MOVE
+function handleOvertimeMouseMove(e) {
+    if (!isOvertimeModeActive || !isDrawingOvertime) return;
 
     const rect = ganttCanvas.getBoundingClientRect();
-    bdCurrentX = e.clientX - rect.left;
+    otCurrentX = e.clientX - rect.left;
 
-    // Vẽ lại canvas nền, sau đó đè hình chữ nhật tạm thời lên
     if (typeof renderGanttCanvas === 'function') {
         renderGanttCanvas();
     }
-    drawTempBreakdownRect();
+    drawTempOvertimeRect(); // Vẽ hình chữ nhật tạm màu xanh lá
 }
 
-// 4. MOUSE UP: Thả chuột -> Dừng vẽ và bật Modal hiển thị thông tin & tên nguồn lực
-function handleBreakdownMouseUp(e) {
-    if (!isBreakdownModeActive || !isDrawingBreakdown) return;
-    isDrawingBreakdown = false;
+// 4. MOUSE UP
+function handleOvertimeMouseUp(e) {
+    if (!isOvertimeModeActive || !isDrawingOvertime) return;
+    isDrawingOvertime = false;
 
     const rect = ganttCanvas.getBoundingClientRect();
     const endX = e.clientX - rect.left;
 
-    // Lấy khoảng min và max (phòng trường hợp người dùng kéo ngược từ phải sang trái)
-    let minX = Math.min(bdStartX, endX);
-    let maxX = Math.max(bdStartX, endX);
+    let minX = Math.min(otStartX, endX);
+    let maxX = Math.max(otStartX, endX);
 
-    // Chuyển đổi tọa độ pixel thành thời gian chuẩn (giống như hàm convertXToDateTime bạn đang dùng)
     let startDateTime = convertXToDateTime(minX, ganttContainer.scrollLeft);
     let endDateTime = convertXToDateTime(maxX, ganttContainer.scrollLeft);
 
-    if (startDateTime && endDateTime && bdTargetRowIndex >= 0) {
-        const targetRow = rsGantt[bdTargetRowIndex];
-        
-        // Lấy tên nguồn lực (Workstation name hoặc workcenter_id tùy cấu trúc dữ liệu của bạn)
-        const workstationName = targetRow.workstation_name || targetRow.workcenter_id || `Trạm ${bdTargetRowIndex + 1}`;
+    if (startDateTime && endDateTime && otTargetRowIndex >= 0) {
+        const targetRow = rsGantt[otTargetRowIndex];
+        const workstationName = targetRow.workstation_name || targetRow.workcenter_id || `Trạm ${otTargetRowIndex + 1}`;
 
-        // Đóng gói dữ liệu tạm
-        tempBreakdownData = {
-            id: `BD-${Date.now()}`,
+        tempOvertimeData = {
+            id: `OT-${Date.now()}`,
             workcenter_id: targetRow.workcenter_id,
             workstation: workstationName,
-            start_setup: startDateTime.formattedDateTime, // Dạng 'YYYY-MM-DD HH:mm:ss+00'
-            end_moving: endDateTime.formattedDateTime,     // Hoặc end_setup
-            type: 'breakdown',
-            targetRowIndex: bdTargetRowIndex
+            start_setup: startDateTime.formattedDateTime,
+            end_moving: endDateTime.formattedDateTime,
+            type: 'overtime',
+            targetRowIndex: otTargetRowIndex
         };
 
-        // Hiển thị Modal và thông tin nguồn lực
-        openBreakdownModal(tempBreakdownData);
+        openOvertimeModal(tempOvertimeData);
     } else {
         if (typeof renderGanttCanvas === 'function') renderGanttCanvas();
     }
 }
 
-// Hàm phụ trợ: Vẽ khung chữ nhật sọc/đỏ tạm thời khi kéo chuột
-function drawTempBreakdownRect() {
+// Vẽ khung tạm thời màu xanh lá khi kéo chuột
+function drawTempOvertimeRect() {
     const ctx = ganttCanvas.getContext('2d');
-    let x = Math.min(bdStartX, bdCurrentX);
-    let w = Math.abs(bdCurrentX - bdStartX);
-    let y = bdTargetRowIndex * ROW_HEIGHT + 4;
+    let x = Math.min(otStartX, otCurrentX);
+    let w = Math.abs(otCurrentX - otStartX);
+    let y = otTargetRowIndex * ROW_HEIGHT + 4;
     let h = ROW_HEIGHT - 8;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.35)'; // Màu đỏ mờ
-    ctx.strokeStyle = '#dc2626';
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.35);'; // Xanh lá mờ
+    ctx.strokeStyle = '#10B981'; // Xanh lá đậm
     ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]); // Nét đứt cảnh báo
+    ctx.setLineDash([4, 4]);
 
     ctx.beginPath();
     ctx.roundRect(x, y, Math.max(w, 10), h, 4);
@@ -1116,52 +1317,46 @@ function drawTempBreakdownRect() {
     ctx.restore();
 }
 
-// --- CÁC HÀM XỬ LÝ MODAL ---
+// --- XỬ LÝ MODAL TĂNG CA ---
 
-function openBreakdownModal(data) {
-    document.getElementById('modalWorkstationName').innerText = data.workstation;
-    document.getElementById('modalStartTime').innerText = data.start_setup;
-    document.getElementById('modalEndTime').innerText = data.end_moving;
-    document.getElementById('breakdownReasonInput').value = ''; // Reset ô nhập lý do
-    document.getElementById('breakdownModal').style.display = 'flex';
+function openOvertimeModal(data) {
+    document.getElementById('otModalWorkstationName').innerText = data.workstation;
+    document.getElementById('otModalStartTime').innerText = data.start_setup;
+    document.getElementById('otModalEndTime').innerText = data.end_moving;
+    document.getElementById('overtimeReasonInput').value = '';
+    document.getElementById('overtimeModal').style.display = 'flex';
 }
 
-function saveBreakdownModal() {
-    const reason = document.getElementById('breakdownReasonInput').value || 'Máy hư không rõ lý do';
+function saveOvertimeModal() {
+    const reason = document.getElementById('overtimeReasonInput').value || 'Tăng ca sản xuất';
 
-    if (tempBreakdownData) {
-        // Hoàn thiện đối tượng task máy hư
-        let newBreakdownTask = {
-            id: tempBreakdownData.id,
-            name: `Bảo trì/Hư: ${reason}`,
-            start_setup: tempBreakdownData.start_setup,
-            end_moving: tempBreakdownData.end_moving,
-            workcenter_id: tempBreakdownData.workcenter_id,
+    if (tempOvertimeData) {
+        let newOvertimeTask = {
+            id: tempOvertimeData.id,
+            name: `Tăng ca: ${reason}`,
+            start_setup: tempOvertimeData.start_setup,
+            end_moving: tempOvertimeData.end_moving,
+            workcenter_id: tempOvertimeData.workcenter_id
         };
-        // set màu cho gantt task sẽ vẽ 
-        COLOR_TASK = '#ef4444'; // Màu đỏ đặc trưng cho lịch máy chết
+        COLOR_TASK = '#10b981'; // Màu xanh lá đặc trưng cho lịch tăng ca
 
-        // Đẩy vào mảng tasks của trạm làm việc tương ứng trong rsGantt
-        const targetRow = rsGantt[tempBreakdownData.targetRowIndex];
+        const targetRow = rsGantt[tempOvertimeData.targetRowIndex];
         if (!targetRow.tasks) targetRow.tasks = [];
-        targetRow.tasks.push(newBreakdownTask);
-
-        // (Tùy chọn) Gọi hàm lưu xuống Supabase tại đây nếu cần:
-        // saveToSupabase(newBreakdownTask);
+        targetRow.tasks.push(newOvertimeTask);
     }
 
-    closeBreakdownModal();
+    closeOvertimeModal();
     if (typeof renderGanttCanvas === 'function') renderGanttCanvas();
 }
 
-function cancelBreakdownModal() {
-    tempBreakdownData = null;
-    closeBreakdownModal();
-    if (typeof renderGanttCanvas === 'function') renderGanttCanvas(); // Xóa khung vẽ tạm
+function cancelOvertimeModal() {
+    tempOvertimeData = null;
+    closeOvertimeModal();
+    if (typeof renderGanttCanvas === 'function') renderGanttCanvas();
 }
 
-function closeBreakdownModal() {
-    document.getElementById('breakdownModal').style.display = 'none';
+function closeOvertimeModal() {
+    document.getElementById('overtimeModal').style.display = 'none';
 }
     </script>
     
