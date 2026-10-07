@@ -877,9 +877,15 @@
          */
         function convertXToDateTime(x, scrollLeft = 0) {
             const absoluteX = x + scrollLeft;
-            const totalBlockIndex = Math.floor(absoluteX / BLOCK_WIDTH);
             
-            // Xác định ngày thứ mấy trong timelineData
+            // Tính chính xác số block dưới dạng số thực (có phần thập phân để tính phút/giây)
+            const exactBlockIndex = absoluteX / BLOCK_WIDTH;
+            const totalBlockIndex = Math.floor(exactBlockIndex);
+            
+            // Phần dư trong block hiện tại (từ 0.0 đến 1.0) tính theo pixel
+            const blockFraction = exactBlockIndex - totalBlockIndex;
+
+            // Xác định ngày tương ứng trong timelineData
             const dayIndex = Math.floor(totalBlockIndex / BLOCKS_PER_DAY);
             const blockInDay = totalBlockIndex % BLOCKS_PER_DAY;
 
@@ -887,15 +893,30 @@
                 return null;
             }
 
-            const dateStr = timelineData[dayIndex].timeline_date;
-            const hoursPerBlock = 3; // Khớp với cấu trúc trong renderHeaderCanvas của bạn
-            const hour = (blockInDay * hoursPerBlock) % 24;
+            const dateStr = timelineData[dayIndex].timeline_date; // Ví dụ: '2026-06-07'
+            const hoursPerBlock = 3; // Hoặc số giờ quy định trên mỗi block của bạn
+
+            // Tổng số giờ tính từ đầu ngày (bao gồm cả phần thập phân do dịch chuyển pixel)
+            const totalHoursFromDayStart = (blockInDay + blockFraction) * hoursPerBlock;
+
+            // Tách ra Giờ, Phút, Giây
+            const hours = Math.floor(totalHoursFromDayStart);
+            const remainderMinutes = (totalHoursFromDayStart - hours) * 60;
+            const minutes = Math.floor(remainderMinutes);
+            const seconds = Math.floor((remainderMinutes - minutes) * 60);
+
+            // Đảm bảo không vượt quá 24h trong ngày (nếu kéo tràn sang ngày tiếp theo thì để logic ngày xử lý)
+            const safeHour = Math.min(hours, 23);
+            const safeMinute = Math.min(minutes, 59);
+            const safeSecond = Math.min(seconds, 59);
 
             return {
                 date: dateStr,
                 dayIndex: dayIndex,
-                hour: hour,
-                formattedDateTime: `${dateStr} ${String(hour).padStart(2, '0')}:00`
+                hour: safeHour,
+                minute: safeMinute,
+                second: safeSecond,
+                formattedDateTime: `${dateStr} ${String(safeHour).padStart(2, '0')}:${String(safeMinute).padStart(2, '0')}:${String(safeSecond).padStart(2, '0')}`
             };
         }
 
@@ -923,6 +944,9 @@
                             dragStartX = mouseX;
                             dragStartY = mouseY;
                             originalRowIndex = rowIndex;
+                            // Trong sự kiện mousedown:
+                            originalTaskStartTime = new Date(selectedTaskForMove.start_setup).getTime();
+                            originalTaskEndTime = new Date(selectedTaskForMove.end_moving).getTime(); // <-- Lưu thêm mốc kết thúc gốc
                         }
                     });
                 }
@@ -937,16 +961,55 @@
             const currentX = e.clientX - rect.left;
             const currentY = e.clientY - rect.top;
 
+
             // --- Kéo ngang (thời gian) ---
+            // 1. Tính độ dịch chuyển pixel so với lúc bắt đầu click
             const deltaX = currentX - dragStartX;
-            const blockShift = Math.round(deltaX / BLOCK_WIDTH);
             
-            if (blockShift !== 0) {
-                let newStart = (selectedTaskForMove.startBlock || 0) + blockShift;
-                if (newStart < 0) newStart = 0;
-                selectedTaskForMove.startBlock = newStart;
-                dragStartX = currentX;
+            // tính lại thời điểm bắt đầu và kết thúc mới được dịch chuyển
+            if (typeof originalTaskStartTime !== 'undefined' && originalTaskStartTime) {
+                const hoursPerBlock = 3; 
+                const msPerHour = 60 * 60 * 1000;
+                const msPerBlock = hoursPerBlock * msPerHour;
+                const msPerPixel = msPerBlock / BLOCK_WIDTH;
+                
+                // 1. Tính mốc thời gian bắt đầu mới (milliseconds)
+                const newTimestamp = originalTaskStartTime + (deltaX * msPerPixel);
+                const newDate = new Date(newTimestamp);
+
+                // Format chuỗi cho start_setup
+                const yyyy = newDate.getFullYear();
+                const mm = String(newDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(newDate.getDate()).padStart(2, '0');
+                const hh = String(newDate.getHours()).padStart(2, '0');
+                const min = String(newDate.getMinutes()).padStart(2, '0');
+                const ss = String(newDate.getSeconds()).padStart(2, '0');
+                
+                const formattedStartDateTime = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+                selectedTaskForMove.start_setup = formattedStartDateTime;
+
+                // 2. Tính toán để giữ nguyên thời lượng (duration) cho thời gian kết thúc (end_moving / end_setup)
+                // Lấy thời gian kết thúc gốc ban đầu trừ đi thời gian bắt đầu gốc để ra độ dài task (ms)
+                const originalEndTimestamp = new Date(originalTaskEndTime || selectedTaskForMove.end_moving).getTime();
+                const taskDurationMs = originalEndTimestamp - originalTaskStartTime;
+
+                if (!isNaN(taskDurationMs) && taskDurationMs > 0) {
+                    const newEndTimestamp = newTimestamp + taskDurationMs;
+                    const newEndDate = new Date(newEndTimestamp);
+                    
+                    const endYyyy = newEndDate.getFullYear();
+                    const endMm = String(newEndDate.getMonth() + 1).padStart(2, '0');
+                    const endDd = String(newEndDate.getDate()).padStart(2, '0');
+                    const endHh = String(newEndDate.getHours()).padStart(2, '0');
+                    const endMin = String(newEndDate.getMinutes()).padStart(2, '0');
+                    const endSs = String(newEndDate.getSeconds()).padStart(2, '0');
+                    
+                    selectedTaskForMove.end_moving = `${endYyyy}-${endMm}-${endDd} ${endHh}:${endMin}:${endSs}`;
+                }
             }
+
+
+
 
             // --- Kéo dọc (đổi Workstation) ---
             const targetRowIndex = Math.floor(currentY / ROW_HEIGHT);
@@ -963,7 +1026,7 @@
                 if (!targetRow.tasks) targetRow.tasks = [];
                 targetRow.tasks.push(selectedTaskForMove);
 
-                selectedTaskForMove.workstation = targetRow.workstation;
+                selectedTaskForMove.workcenter_id = targetRow.workcenter_id;
                 originalRowIndex = targetRowIndex;
                 dragStartY = currentY;
             }
