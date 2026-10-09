@@ -104,7 +104,6 @@ async function get_profiles_data() {
 }
 async function fetch_insert_data_from_flask(tableName, row) {
     try {
-        // Sử dụng fetch gửi tên bảng lên Flask
         const response = await fetch('/api/insert-table-data', {
             method: 'POST',
             headers: {
@@ -113,17 +112,37 @@ async function fetch_insert_data_from_flask(tableName, row) {
             body: JSON.stringify({ table_name: tableName, row: row })
         });
         
-        const result = await response.json();
+        // Đọc dữ liệu trả về dưới dạng text trước để phòng hờ server trả về chuỗi thuần
+        const textResult = await response.text();
+        let result;
+        try {
+            result = JSON.parse(textResult);
+        } catch (e) {
+            result = textResult; // Nếu không phải JSON (ví dụ server trả về chữ 'ok' hoặc 'success')
+        }
         
+        // Nếu HTTP Status không thành công (vd: 500, 400)
         if (!response.ok) {
-            throw new Error(result.error || 'Lỗi kết nối server');
+            const errorMessage = typeof result === 'object' ? (result.error || result.message || 'Lỗi kết nối server') : result;
+            throw new Error(errorMessage);
         }
 
-        !result.message ? console.log(`bảng ${tableName} chưa tạo rls trong bảng permission`): null;
+        // --- ĐOẠN QUAN TRỌNG: TỰ ĐỘNG CHUẨN HÓA KẾT QUẢ THÀNH CÔNG ---
+        // Nếu server trả về dữ liệu thành công nhưng không có trường status hay success,
+        // ta tự động gán thêm thuộc tính success = true để bên ngoài nhận diện được.
+        if (typeof result === 'object' && result !== null) {
+            if (!result.status && !result.success) {
+                result.success = true; 
+            }
+        } else if (result === 'ok' || result === 'success' || result === true) {
+            // Nếu server trả về chuỗi 'ok' hoặc 'success', chuyển thành object { status: 'ok', success: true }
+            result = { status: 'ok', success: true };
+        }
+
         return result;
         
     } catch (error) {
         console.error("Error:", error);
-        return null; // Trả về null nếu lỗi để tránh crash code bên dưới
+        throw error; // Ném lỗi ra ngoài để hàm saveGoodsReceipt biết và dừng lại nếu thực sự lỗi
     }
 }

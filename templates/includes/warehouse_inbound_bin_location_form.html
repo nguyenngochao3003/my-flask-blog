@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-
         /* Custom scrollbar for table container */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
@@ -24,71 +23,292 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* Tách các Style CSS tùy chỉnh từ các lớp Tailwind */
+        .banner-header {
+            background: linear-gradient(to right, #312e81, #1e293b);
+            padding: 1rem 1.5rem;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        @media (min-width: 640px) {
+            .banner-header {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+
+        .banner-title {
+            font-size: 1.25rem;
+            line-height: 1.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .banner-subtitle {
+            font-size: 0.75rem;
+            line-height: 1rem;
+            color: #c7d2fe;
+            margin-top: 0.125rem;
+        }
+
+        .status-badge {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-family: monospace;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-text {
+            color: #fde047;
+            font-weight: 600;
+        }
+
+        .section-general {
+            padding: 1.5rem;
+            background-color: rgba(248, 250, 252, 0.7);
+            border-bottom: 1px solid #e2e8f0;
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .section-general {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        @media (min-width: 1024px) {
+            .section-general {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+        }
+
+        .input-icon-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            inset: 0 0 0 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            padding-left: 0.75rem;
+            pointer-events: none;
+            color: #94a3b8;
+        }
+
+        .form-input {
+            width: 100%;
+            padding-left: 2.5rem;
+            padding-right: 0.75rem;
+            padding-top: 0.625rem;
+            padding-bottom: 0.625rem;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            font-weight: 500;
+            color: #1e293b;
+            outline: none;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .form-input:focus {
+            ring: 2px;
+            ring-color: #6366f1;
+            border-color: #6366f1;
+        }
+
+        .form-select {
+            width: 100%;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            padding-top: 0.625rem;
+            padding-bottom: 0.625rem;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            font-weight: 500;
+            color: #1e293b;
+            outline: none;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            appearance: none;
+        }
+        .form-select:focus {
+            ring: 2px;
+            ring-color: #6366f1;
+            border-color: #6366f1;
+        }
+
+        .select-chevron {
+            position: absolute;
+            inset: 0 0 0 auto;
+            right: 0;
+            padding-right: 0.75rem;
+            display: flex;
+            align-items: center;
+            pointer-events: none;
+            color: #94a3b8;
+        }
+
+        .section-scan {
+            padding: 1.5rem;
+            background-color: rgba(238, 242, 255, 0.5);
+            border-bottom: 1px solid #e0e7ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .section-scan {
+                flex-direction: row;
+            }
+        }
+
+        .btn-primary {
+            background-color: #4f46e5;
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+
+        .btn-secondary {
+            background-color: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+        }
+        .btn-secondary:hover {
+            background-color: #f8fafc;
+        }
+
+        .table-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-overlay.hidden {
+            display: none;
+        }
     </style>
 </head>
-
-            
+<body>
     <!-- Form Title Banner -->
-    <div class="bg-gradient-to-r from-indigo-900 to-slate-800 px-6 py-4 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <div class="banner-header">
         <div>
-            <h2 class="text-xl font-bold flex items-center gap-2">
+            <h2 class="banner-title">
                 <i class="fa-solid fa-file-invoice text-indigo-400"></i> PHIẾU NHẬP KHO & XẾP KỆ VỊ TRÍ
             </h2>
-            <p class="text-xs text-indigo-200 mt-0.5">Tạo mới và gán vị trí lưu kho ngay khi hàng về</p>
+            <p class="banner-subtitle">Tạo mới và gán vị trí lưu kho ngay khi hàng về</p>
         </div>
-        <div class="bg-white/10 px-3 py-1.5 rounded-lg text-sm font-mono border border-white/10">
-            Trạng thái: <span class="text-amber-300 font-semibold">Đang soạn thảo</span>
+        <div class="status-badge">
+            Trạng thái: <span class="status-text">Đang soạn thảo</span>
         </div>
     </div>
 
- 
-
     <!-- SECTION 1: General Info -->
-    <div class="p-6 bg-slate-50/70 border-b border-slate-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="section-general">
         <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Mã phiếu nhập *</label>
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <label class="form-label">Mã phiếu nhập *</label>
+            <div class="input-icon-wrapper">
+                <span class="input-icon">
                     <i class="fa-solid fa-barcode"></i>
                 </span>
-                <input type="text" id="receiptCode" value="PN-20260924-01" class="w-full pl-10 pr-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm" readonly>
+                <input type="text" id="receiptCode" class="form-input" style="font-weight: 600;" >
             </div>
         </div>
 
         <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Ngày giờ nhập *</label>
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <label class="form-label">Ngày giờ nhập *</label>
+            <div class="input-icon-wrapper">
+                <span class="input-icon">
                     <i class="fa-regular fa-calendar"></i>
                 </span>
-                <input type="text" id="receiptDate" value="24/09/2026 10:30" class="w-full pl-10 pr-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm">
+                <input type="text" id="receiptDate" value="24/09/2026 10:30" class="form-input">
             </div>
         </div>
 
         <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Nhà cung cấp *</label>
-            <div class="relative">
-                <select id="supplierSelect" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
-                    <option value="NCC-01">VN - Công ty Cơ khí ABC</option>
-                    <option value="NCC-02">JP - Tập đoàn Thép Miền Nam</option>
-                    <option value="NCC-03">KR - Linh Kiện Điện Tử Vina</option>
-                    <option value="NCC-04">US - Vật Tư Công Nghiệp Global</option>
+            <label class="form-label">Nhà cung cấp *</label>
+            <div class="input-icon-wrapper">
+                <select id="supplierSelect" onchange="generateReceiptCode()" class="form-select">
+                    <option value="1">VN - Công ty Cơ khí ABC</option>
+                    <option value="2">JP - Tập đoàn Thép Miền Nam</option>
+                    <option value="3">KR - Linh Kiện Điện Tử Vina</option>
+                    <option value="4">US - Vật Tư Công Nghiệp Global</option>
                 </select>
-                <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                <span class="select-chevron">
                     <i class="fa-solid fa-chevron-down text-xs"></i>
                 </span>
             </div>
         </div>
 
         <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Kho nhận hàng *</label>
-            <div class="relative">
-                <select id="warehouseSelect" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
-                    <option value="WH-NL">Kho Nguyên Liệu & Vật Tư Chính</option>
-                    <option value="WH-PT">Kho Phụ Tùng & Thiết Bị</option>
-                    <option value="WH-TP">Kho Thành Phẩm Lắp Ráp</option>
+            <label class="form-label">Kho nhận hàng *</label>
+            <div class="input-icon-wrapper">
+                <select id="warehouseSelect" class="form-select">
+                    <option value="1">Kho Nguyên Liệu & Vật Tư Chính</option>
+                    <option value="2">Kho Phụ Tùng & Thiết Bị</option>
+                    <option value="3">Kho Thành Phẩm Lắp Ráp</option>
                 </select>
-                <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                <span class="select-chevron">
                     <i class="fa-solid fa-chevron-down text-xs"></i>
                 </span>
             </div>
@@ -96,15 +316,15 @@
     </div>
 
     <!-- SECTION 2: Quick Barcode Scan Simulation -->
-    <div class="p-6 bg-indigo-50/50 border-b border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="section-scan">
         <div class="w-full md:w-2/3">
             <label class="block text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1.5 flex items-center gap-1.5">
-                <i  class="fa-solid fa-qrcode text-indigo-600"></i> Quét nhanh Barcode sản phẩm (F2 hoặc Nhập mã)
+                <i class="fa-solid fa-qrcode text-indigo-600"></i> Quét nhanh Barcode sản phẩm (F2 hoặc Nhập mã)
             </label>
             <div class="flex gap-2">
                 <div class="relative flex-grow">
                     <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-indigo-400">
-                        <i  class="fa-solid fa-barcode text-lg"></i>
+                        <i class="fa-solid fa-barcode text-lg"></i>
                     </span>
                     <input type="text" id="quickBarcodeScan" placeholder="Quét hoặc chọn mã sản phẩm để thêm dòng..." class="w-full pl-11 pr-4 py-3 bg-white border border-indigo-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm">
                 </div>
@@ -132,7 +352,7 @@
             </span>
         </div>
 
-        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="table-container">
             <div class="overflow-x-auto custom-scrollbar max-h-[420px]">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead class="bg-slate-100 text-slate-700 uppercase text-xs tracking-wider sticky top-0 z-10 border-b border-slate-200">
@@ -153,12 +373,12 @@
                             <td class="py-3 px-4">
                                 <div class="flex gap-1.5 items-center">
                                     <div class="relative flex-grow">
-                                        <select class="row-bin w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                                        <select class="row-bin form-select" style="font-size: 0.75rem; padding-top: 0.375rem; padding-bottom: 0.375rem;">
                                             <option value="A-01-02-B">SKU-BL-01</option>
                                             <option value="A-01-01-A">SKU-BL-01</option>
                                             <option value="B-03-01-A">SKU-BL-01</option>
                                         </select>
-                                        <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                                        <span class="select-chevron">
                                             <i class="fa-solid fa-chevron-down text-[10px]"></i>
                                         </span>
                                     </div>
@@ -179,14 +399,14 @@
                             <td class="py-3 px-4">
                                 <div class="flex gap-1.5 items-center">
                                     <div class="relative flex-grow">
-                                        <select class="row-bin w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                                        <select class="row-bin form-select" style="font-size: 0.75rem; padding-top: 0.375rem; padding-bottom: 0.375rem;">
                                             <option value="A-01-02-B">A-01-02-B (Khu A, Kệ 01, Tầng 2, Ô B)</option>
                                             <option value="A-01-01-A">A-01-01-A (Khu A, Kệ 01, Tầng 1, Ô A)</option>
                                             <option value="B-03-01-A">B-03-01-A (Khu B, Kệ 03, Tầng 1, Ô A)</option>
                                             <option value="C-02-04-C">C-02-04-C (Khu C, Kệ 02, Tầng 4, Ô C)</option>
                                             <option value="Z-99-99-Z">Z-99-99-Z (Khu Lưu Kho Tạm)</option>
                                         </select>
-                                        <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                                        <span class="select-chevron">
                                             <i class="fa-solid fa-chevron-down text-[10px]"></i>
                                         </span>
                                     </div>
@@ -219,7 +439,7 @@
         <!-- Notes and Summary Section -->
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <div class="lg:col-span-2">
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Ghi chú phiếu nhập kho</label>
+                <label class="form-label mb-1.5">Ghi chú phiếu nhập kho</label>
                 <textarea id="noteInput" rows="3" placeholder="Nhập ghi chú tình trạng hàng hóa, bao bì, xe giao hàng..." class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm resize-none">Hàng giao đợt 1, chất lượng gia công tốt, đã kiểm tra kích thước sơ bộ.</textarea>
             </div>
 
@@ -236,7 +456,7 @@
                     </div>
                     <div class="flex justify-between pt-1 text-xs text-slate-500">
                         <span>Người lập phiếu:</span>
-                        <span class="font-medium text-slate-700">Thủ Kho - Nguyễn Văn A</span>
+                        <span id="person" class="font-medium text-slate-700">Thủ Kho - Nguyễn Văn A</span>
                     </div>
                 </div>
             </div>
@@ -245,19 +465,20 @@
 
     <!-- Form Footer Actions -->
     <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
-        <button onclick="resetForm()" class="w-full sm:w-auto px-5 py-2.5 border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-2">
+        <button onclick="resetForm()" class="btn-secondary w-full sm:w-auto">
             <i class="fa-solid fa-rotate-left"></i> Làm mới form
         </button>
         <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-            <button onclick="closeForm()" class="w-full sm:w-auto px-5 py-2.5 border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm transition shadow-sm">
+            <button onclick="closeForm()" class="btn-secondary w-full sm:w-auto">
                 Hủy bỏ
             </button>
-            <button onclick="saveAndPrint()" class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition shadow-md hover:shadow-indigo-500/25 flex items-center justify-center gap-2 active:scale-95">
+            <button onclick="saveGoodsReceipt()" class="btn-primary w-full sm:w-auto active:scale-95">
                 <i class="fa-solid fa-print"></i> Lưu
             </button>
         </div>
     </div>
-   <!-- Notification Toast / Alert Box -->
+
+    <!-- Notification Toast / Alert Box -->
     <div id="toastMessage" class="hidden mx-6 mt-4 p-4 rounded-xl text-sm flex items-center justify-between shadow-sm transition-all duration-300">
         <div class="flex items-center gap-2.5" id="toastContent">
             <!-- Dynamic content -->
@@ -266,7 +487,7 @@
     </div>
 
     <!-- Modal: Simulated Bin Barcode Scanner Popup -->
-    <div id="binScannerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="binScannerModal" class="modal-overlay hidden">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 transform transition-all">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -328,10 +549,10 @@
         let activeRowForBinScan = null;
 
         // Initialize application on load
+        // Gọi hàm này ngay khi trang tải xong
         window.onload = function() {
             updateSummary();
             
-            // Enter key listener for quick barcode scan input
             const scanInput = document.getElementById('quickBarcodeScan');
             scanInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -339,7 +560,6 @@
                 }
             });
 
-            // Keyboard shortcut F2 to focus quick scan
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'F2') {
                     e.preventDefault();
@@ -384,18 +604,15 @@
             let val = input.value.trim().toUpperCase();
             
             if (!val) {
-                // If empty, pick a random item from catalog for quick demonstration
                 const randomItem = mockCatalog[Math.floor(Math.random() * mockCatalog.length)];
                 addItemToTable(randomItem.sku, randomItem.name, 50, randomItem.unit, randomItem.defaultBin);
                 showToast(`Đã quét giả lập thành công sản phẩm: ${randomItem.sku}`);
             } else {
-                // Search in catalog or create custom
                 let found = mockCatalog.find(i => i.sku.toUpperCase() === val || i.name.toUpperCase().includes(val));
                 if (found) {
                     addItemToTable(found.sku, found.name, 100, found.unit, found.defaultBin);
                     showToast(`Thêm sản phẩm từ mã vạch: ${found.sku}`);
                 } else {
-                    // Create dynamic item if not in mock catalog
                     addItemToTable(val, `Sản phẩm quét mã tự động (${val})`, 10, "Cái", "A-01-01-A");
                     showToast(`Đã thêm mã mới từ máy quét: ${val}`);
                 }
@@ -415,30 +632,27 @@
             const tbody = document.getElementById('productTableBody');
             const rowCount = tbody.rows.length + 1;
 
-            // Lấy dữ liệu từ API
             const productData = await fetch_data_from_flask('products');
             const shelvesData = await fetch_data_from_flask('shelves');
             const unitData = await fetch_data_from_flask('view_product_type');
 
-            // Tạo danh sách các thẻ <option> cho Sản phẩm từ dữ liệu JS
             const productOptionsHtml = productData.map(item => `
                 <option value="${item.id}">
                     ${item.name}
                 </option>
             `).join('');
 
-            // Nếu muốn render linh hoạt vị trí kệ từ shelvesData:
             const shelfOptionsHtml = shelvesData.map(shelf => `
-                    <option value="${shelf.code}">
-                        ${shelf.code} (${shelf.area}, Kệ ${shelf.row}, Tầng ${shelf.level}, Ô ${shelf.box})
-                    </option>
-                `).join('');
+                <option value="${shelf.code}">
+                    ${shelf.code} (${shelf.area}, Kệ ${shelf.row}, Tầng ${shelf.level}, Ô ${shelf.box})
+                </option>
+            `).join('');
 
             const unitOptionsHtml = unitData.map(unit => `
-                    <option value="${unit.enumlabel}">
-                        ${unit.enumlabel}
-                    </option>
-                `).join('');
+                <option value="${unit.enumlabel}">
+                    ${unit.enumlabel}
+                </option>
+            `).join('');
 
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50/80 transition';
@@ -447,10 +661,10 @@
                 <td class="py-3 px-4">
                     <div class="flex gap-1.5 items-center">
                         <div class="relative flex-grow">
-                            <select class="row-product w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                            <select class="row-sku form-select" style="font-size: 0.75rem; padding-top: 0.375rem; padding-bottom: 0.375rem;">
                                 ${productOptionsHtml}
                             </select>
-                            <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                            <span class="select-chevron">
                                 <i class="fa-solid fa-chevron-down text-[10px]"></i>
                             </span>
                         </div>
@@ -466,17 +680,17 @@
                     <input type="number" min="1" value="${qty}" class="row-qty w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-center shadow-sm" oninput="updateSummary()">
                 </td>
                 <td class="py-3 px-4">
-                    <select class="row-product w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                    <select class="row-unit form-select" style="font-size: 0.75rem; padding-top: 0.375rem; padding-bottom: 0.375rem;">
                         ${unitOptionsHtml}
                     </select>
                 </td>
                 <td class="py-3 px-4">
                     <div class="flex gap-1.5 items-center">
                         <div class="relative flex-grow">
-                            <select class="row-bin w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-sm appearance-none">
+                            <select class="row-bin form-select" style="font-size: 0.75rem; padding-top: 0.375rem; padding-bottom: 0.375rem;">
                                 ${shelfOptionsHtml}
                             </select>
-                            <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                            <span class="select-chevron">
                                 <i class="fa-solid fa-chevron-down text-[10px]"></i>
                             </span>
                         </div>
@@ -552,7 +766,7 @@
         function openBinScannerModal() {
             const rows = document.querySelectorAll('#productTableBody tr');
             if (rows.length > 0) {
-                activeRowForBinScan = rows[rows.length - 1]; // Default to last row
+                activeRowForBinScan = rows[rows.length - 1];
             } else {
                 showToast("Vui lòng thêm ít nhất một sản phẩm trước khi gán vị trí.", "error");
                 return;
@@ -576,7 +790,6 @@
             if (binCode && activeRowForBinScan) {
                 const select = activeRowForBinScan.querySelector('.row-bin');
                 
-                // Check if option exists, else add it
                 let optionExists = false;
                 for (let opt of select.options) {
                     if (opt.value === binCode) {
@@ -598,18 +811,60 @@
             closeBinScannerModal();
         }
 
-        // Save and Print action simulation
-        function saveAndPrint() {
-            const rows = document.querySelectorAll('#productTableBody tr');
-            if (rows.length === 0) {
-                showToast("Phiếu nhập chưa có sản phẩm nào để lưu!", "error");
-                return;
+        async function saveGoodsReceipt() {
+            const selectElement = document.getElementById('supplierSelect');
+            console.log('Thẻ select tìm thấy:', selectElement)
+            try {
+                const receiptMasterData = {
+                    code: document.getElementById('receiptCode')?.value || '',
+                    supplier_id: 1,
+                    warehouse_id: document.getElementById('warehouseSelect')?.value || '',
+                    note: document.getElementById('noteInput')?.value || '',
+                    created_by: document.getElementById('person')?.innerHTML || '',
+                    type: 'IN'
+                };
+                
+                console.log('func saveGoodsRe', receiptMasterData);
+                const masterResponse = await fetch_insert_data_from_flask('inventory_transactions', receiptMasterData);
+                
+                console.log('Phản hồi từ server:', masterResponse);
+
+                if (masterResponse.data.length = 0) {
+                    throw new Error('Lỗi khi lưu phiếu nhập kho chính (inventory_transaction).');
+                }
+
+                const detailRows = document.querySelectorAll('#productTableBody tr');
+                const detailList = [];
+
+                detailRows.forEach((row) => {
+                    const sku = row.querySelector('.row-sku')?.value || row.querySelector('select[name="sku"]')?.value;
+                    const quantity = parseFloat(row.querySelector('.row-qty')?.value || 0);
+                    const unit = row.querySelector('.row-unit')?.textContent.trim() || '';
+                    const location = row.querySelector('.row-bin')?.value || '';
+                    const qcStatus = row.querySelector('.row-qc')?.value || '';
+
+                    if (sku && quantity > 0) {
+                        // Dùng await ở đây hoàn toàn hợp lệ
+                        await fetch_insert_data_from_flask('inventory_transaction_details', {
+                            receipt_code: receiptMasterData.code, // Sửa lại đúng biến mã phiếu
+                            product_id: sku,
+                            quantity: quantity,
+                            unit: unit,
+                            shelf_id: location,
+                            qc_status: qcStatus
+                        });
+                        
+                        console.log('Đã lưu chi tiết SKU:', sku, rs);
+                    }
+                });
+
+               
+
+                alert('Lưu phiếu nhập kho và chi tiết thành công!');
+            } catch (error) {
+                console.error('Lỗi trong quá trình lưu dữ liệu:', error);
+                alert('Đã xảy ra lỗi: ' + error.message);
             }
-            
-            showToast("Đang tạo mã vạch vị trí và lưu phiếu vào hệ thống WMS...");
-            setTimeout(() => {
-                showToast("Lưu phiếu nhập thành công! Đang chuyển sang lệnh in tem vị trí kệ...");
-            }, 1200);
         }
 
         // Reset form
@@ -627,8 +882,25 @@
                 window.location.reload();
             }
         }
-
-       
+        // Hàm tự động tạo mã phiếu nhập không trùng lặp khi mở trang
+function generateReceiptCode() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    
+    // Tạo một dãy số ngẫu nhiên có 4 chữ số hoặc dùng timestamp để đảm bảo không trùng
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    
+    // Ghép thành định dạng: PN-YYYYMMDD-XXXX
+    const generatedCode = `PN-${year}${month}${day}-${randomNum}`;
+    
+    // Gán giá trị vào thẻ input có id là receiptCode
+    const codeInput = document.getElementById('receiptCode');
+    if (codeInput) {
+        codeInput.value = generatedCode;
+    }
+}
     </script>
     <script type="module" src="{{ url_for('static', filename='js/product.js') }}"></script>
 </body>

@@ -621,3 +621,23 @@ document.addEventListener("DOMContentLoaded", ()=>{
         return null; // Trả về null nếu lỗi để tránh crash code bên dưới
     }
   }
+
+
+  window.fetch_insert_multiple_data = async function fetch_insert_multiple_data(tableName, rowsArray) {
+    try {
+        const response = await fetch('/api/insert-multiple-table-data', { // Đường dẫn API hỗ trợ nhiều dòng
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ table_name: tableName, rows: rowsArray }) // Truyền mảng rows
+        });
+        
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Lỗi server');
+        return result;
+    } catch (error) {
+        console.error("Error:", error);
+        throw error;
+    }
+}
