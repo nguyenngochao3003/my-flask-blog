@@ -68,6 +68,9 @@
             <button title="🟢 Tạo lịch tăng ca" id="btnToggleOvertime" class="btn" onclick="toggleOvertimeMode()" >
                 🟢 Open
             </button>
+            <button title="🟢 lịch nghỉ" id="btnToggleRest" class="btn" onclick="toggleRestMode()" >
+                🟢 rest
+            </button>
 
         </div>
     </header>
@@ -176,12 +179,14 @@
 
         // lấy dữ liệu bằng fetch 
         async function fetchData() {
+            const startTime = Date.now();
 
             try {
                 // Lúc này đảm bảo fetch_data_from_flask đã sẵn sàng
                 // const apsData = await fetch_data_from_flask('test_working_time', 'test');
                 // Lúc này đảm bảo fetch_data_from_flask đã sẵn sàng
                 rsGantt = await fetch_data_from_flask('v_rs_gantt', 'test');
+                rsRest = await fetch_data_from_flask('v_rs_rest', 'test');
                 timelineData = await fetch_data_from_flask('v_timeline', 'test');
 
                 // const test_routine = await fetch_data_from_flask('test_routine', 'test');
@@ -190,8 +195,9 @@
             } catch (err) {
                 console.error('Lỗi tải dữ liệu:', err);
             }
-            // document.addEventListener('DOMContentLoaded', async () => {
-            // });
+  
+            const endTime = Date.now();
+            console.log(`Thời gian fetch: ${endTime - startTime} ms`);
         }
 
         function getRandomPastelColor(seedStr) {
@@ -214,11 +220,12 @@
             // lấy dữ liệu từ supabase
             await fetchData();
             
-            // update data
             updateLayout();
+
         }
         function updateLayout() {
             // Cập nhật kích thước spacer
+            const startTime = Date.now();
             
             const totalHeight = rsGantt.length * ROW_HEIGHT;
             document.getElementById('treeSpacer').style.height = totalHeight + 'px';
@@ -228,10 +235,19 @@
 
             setupCanvasSize();
             renderVirtualTree();
-            renderGanttCanvas();
             renderHeaderCanvas();
 
+            renderAllGantt();
+            // if (isDrawingRest == true) {
+            //     renderRestCanvas();
+            // }
+            // renderGanttCanvas();
+
+            console.log('func updateLayout: isDrawingRest: ', isDrawingRest);
+
             document.getElementById('statsInfo').innerText = `Tổng số Workstation: ${rsGantt.filter(r=>r.type_of==='workstation').length}`;
+            const endTime = Date.now();
+            console.log(`Thời gian updateLayout ${endTime - startTime} ms`);
         }
 
 
@@ -382,8 +398,8 @@
             // KIỂM TRA VÙNG THỜI GIAN NHÌN THẤY KHI SCROLL NGANG-----------
             // --- LẤY THỜI GIAN VÙNG NHÌN THẤY ---
                 // Nhận trực tiếp đối tượng (có thể chứa null) và không truy xuất .formattedDateTime ngay
-                const viewStartObj = convertXToDateTime(scrollLeft, scrollLeft);
-                const viewEndObj = convertXToDateTime(scrollLeft + clientWidth, scrollLeft);
+                const viewStartObj = convertXToDateTime(0, scrollLeft);
+                const viewEndObj = convertXToDateTime(clientWidth, scrollLeft);
 
                 // Nếu cuộn ra ngoài biên gây ra null thì return luôn lập tức
                 if (!viewStartObj || !viewStartObj.formattedDateTime || !viewEndObj || !viewEndObj.formattedDateTime) {
@@ -501,7 +517,6 @@
 
                     ctx.fillStyle = '#ef4444';
                     ctx.font = 'bold 11px Segoe UI';
-                    console.log('test', x1, y);
                     ctx.fillText(`${task.id} (${task.code_op}) ${task.start_setup}`, x1 + 6, y + 16);
                     // VẼ ICON
                     if (task.status === 'warning' || task.status === 'locked') {
@@ -515,13 +530,11 @@
         }
  
         
-        function renderRest() {
+        function renderRestCanvas() {
+            // lấy dữ liệu canvas
             const canvas = document.getElementById('ganttCanvas');
             const container = document.getElementById('ganttContainer');
             const ctx = canvas.getContext('2d');
-
-            // xóa hết canvas cũ
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const scrollTop = container.scrollTop;
             const scrollLeft = container.scrollLeft;
@@ -529,22 +542,27 @@
             const clientWidth = container.clientWidth;
 
             // Xác định chỉ số dòng (row index) bắt đầu và kết thúc hiển thị trên màn hình (+ dư ra 2 dòng để chống giật khi cuộn nhanh)
-            const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
+            const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2) ;
             const endRow = Math.min(rsGantt.length, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + 2);
 
             // KIỂM TRA VÙNG THỜI GIAN NHÌN THẤY KHI SCROLL NGANG-----------
-            // --- LẤY THỜI GIAN VÙNG NHÌN THẤY ---
-                // Nhận trực tiếp đối tượng (có thể chứa null) và không truy xuất .formattedDateTime ngay
-                const viewStartObj = convertXToDateTime(scrollLeft, scrollLeft);
-                const viewEndObj = convertXToDateTime(scrollLeft + clientWidth, scrollLeft);
+            // --- LẤY THỜI GIAN VÙNG NHÌN THẤY --- xxxxxxxxxxxxxx kiểm tra lại  convertXToDateTime
+            // Cạnh trái của vùng nhìn thấy (tọa độ viewport = 0)
+            const viewStartObj = convertXToDateTime(0, scrollLeft);
 
-                // Nếu cuộn ra ngoài biên gây ra null thì return luôn lập tức
-                if (!viewStartObj || !viewStartObj.formattedDateTime || !viewEndObj || !viewEndObj.formattedDateTime) {
-                    return; 
-                }
+            // Cạnh phải của vùng nhìn thấy (tọa độ viewport = clientWidth)
+            const viewEndObj = convertXToDateTime(clientWidth, scrollLeft);
 
-                const viewStartTime = viewStartObj.formattedDateTime;
-                const viewEndTime = viewEndObj.formattedDateTime;
+            console.log('func renderRestCanvas --- vùng thời gian nhìn thấy: ', viewStartObj, viewEndObj);
+
+            // Nếu cuộn ra ngoài biên gây ra null thì return luôn lập tức >>> tối ưu performance
+            if (!viewStartObj || !viewStartObj.formattedDateTime || !viewEndObj || !viewEndObj.formattedDateTime) {
+                return; 
+            }
+
+            /// chuển sang mili-giây
+            const viewStartTime = viewStartObj.formattedDateTime;
+            const viewEndTime = viewEndObj.formattedDateTime;
 
             // Chuyển sang giá trị timestamp (số mili-giây) để so sánh cực nhanh
             const viewStartMs = new Date(viewStartTime.replace('T', ' ')).getTime();
@@ -559,79 +577,28 @@
             );
  
 
-            // 1. Chỉ vẽ lưới dọc cho các khung giờ
-            ctx.strokeStyle = '#f1f5f9';
-            ctx.lineWidth = 1;
-            for (let i = startCol; i < endCol; i++) {
-                ctx.beginPath();
-                ctx.moveTo(i * BLOCK_WIDTH, 0);
-                ctx.lineTo(i * BLOCK_WIDTH, canvas.height);
-                ctx.stroke();
-            }
-
-            // 2. vẽ đường lưới dọc cho ngày
-            ctx.strokeStyle = '#E2E8F0'; // Màu xanh dương đậm cho đường liên kết
-            ctx.fillStyle = '#2563eb';
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 3]); // Nét đứt tinh tế
-
-            const startDateNum = Math.round(startCol/BLOCKS_PER_DAY);
-            const endDateNum = Math.round(endCol/BLOCKS_PER_DAY);
-            for (let i = startDateNum; i < endDateNum; i++) {
-                ctx.beginPath();
-                ctx.moveTo(i * BLOCK_WIDTH * BLOCKS_PER_DAY, 0);
-                ctx.lineTo(i * BLOCK_WIDTH * BLOCKS_PER_DAY, canvas.height);
-                ctx.stroke();
-            }
-
-            // 3. Chỉ vẽ lưới ngang trong khoảng từ startRow đến endRow
-            ctx.strokeStyle = '#e2e8f0';
-            for (let i = startRow; i <= endRow; i++) {
-                ctx.beginPath();
-                ctx.moveTo(0, i * ROW_HEIGHT);
-                ctx.lineTo(canvas.width, i * ROW_HEIGHT);
-                ctx.stroke();
-            }
-
             // 3. Chỉ lặp và vẽ các task thuộc các dòng nằm trong khung nhìn (Viewport)
             for (let index = startRow; index < endRow; index++) {
-                let ws = rsGantt[index];
-                if (!ws || !ws.tasks || ws.tasks.length ===0) continue; // kiểm tra nếu là workstation và có task 
-                let y = index * ROW_HEIGHT + 8;
+                let ws = rsRest[index];
+                if (!ws || ws.type_of !=='workstation'|| !ws.tasks || ws.tasks.length ===0) continue; // kiểm tra nếu là workstation và có task 
+                let y = index * ROW_HEIGHT;
 
                 ws.tasks.forEach(task => {
-                    // Chuẩn hóa chuỗi thời gian của task sang timestamp để so sánh ==========================
-                    let taskStartMs = null;
-                    let taskEndMs = null;
-  
-                    if (task.type === 'rest') {
-                        taskStartMs = new Date(task.break_start.replace('T', ' ')).getTime();
-                        taskEndMs = new Date(task.break_end.replace('T', ' ')).getTime();
-                        task.break_start;
-                        task.break_end;
-                    }
+
+                    // lọc thời gian trong vùng hiển thị từ data
+                    let taskStartMs = new Date(task.break_start.replace('T', ' ')).getTime();
+                    let taskEndMs = new Date(task.break_end.replace('T', ' ')).getTime();
 
                     // ⚡ BỎ QUA LUÔN: Nếu task kết thúc trước khung nhìn HOẶC bắt đầu sau khung nhìn
                     if (taskEndMs < viewStartMs || taskStartMs > viewEndMs) {
                         return; // Nhẹ máy tuyệt đối, không gọi tính toán X nữa!
                     }
-                    // =================================================================
 
                     // --- CHỈ KHI NÀO TASK NẰM TRONG TẦM NHÌN MỚI TÍNH TỌA ĐỘ PIXEL ĐỂ VẼ ---
                     let x1 = calculateXFromDateTime(task.break_start, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY)
                     let x2 = calculateXFromDateTime(task.break_end, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY)
-                    console.log('x1', x1, 'x2', x2);
                     if (x1 === null || x2 === null) return;
                     
-                    let h = 24;
-                    let color = '';
-
-                    // Phân loại màu sắc theo type_of hoặc config của bạn
-                    if (task.type === 'rest') {
-                        color = '#e5e7eb'; // Màu giờ nghỉ
-                    } else if (task.type === 'overtime') {
-                        color ='#10b981'; // Màu tăng ca
-                    } 
                     // Kiểm tra xem task có nằm ngang trong tầm nhìn chiều ngang không (tùy chọn tối ưu thêm)
                     if (x2 < container.scrollLeft || x1 > container.scrollLeft + container.clientWidth) {
                         return; // Bỏ qua task nằm ngoài màn hình theo chiều ngang
@@ -640,16 +607,15 @@
                     // Phân biệt kiểu vẽ dựa vào type_of: gantt, rest, ...
                     if (task.type === 'rest') {
                        // --- 1. VẼ LỊCH GIỜ NGHỈ ---
-                        ctx.fillStyle = color; // Màu xám nhạt nền
+                        ctx.fillStyle = '#A9A9A9'; // Màu xám nhạt nền
                         ctx.strokeStyle = '#d1d5db';
                         ctx.lineWidth = 1;
                         ctx.setLineDash([2, 2]); // Nét đứt biểu thị giờ nghỉ
 
                         ctx.beginPath();
-                        ctx.rect(x1, y, x2-x1, h);
+                        ctx.rect(x1, y, x2-x1, ROW_HEIGHT);
                         ctx.fill();
                         ctx.stroke();
-                        console.log('rest',x1, y, x2-x1, h);
 
                     } 
 
@@ -658,6 +624,178 @@
 
         }
  
+function renderAllGantt() {
+    const canvas = document.getElementById('ganttCanvas');
+    const container = document.getElementById('ganttContainer');
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext('2d');
+
+    // ==========================================
+    // BƯỚC 0: XÓA CANVAS MỘT LẦN DUY NHẤT Ở ĐẦU
+    // ==========================================
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const scrollTop = container.scrollTop;
+    const scrollLeft = container.scrollLeft;
+    const clientHeight = container.clientHeight;
+    const clientWidth = container.clientWidth;
+
+    const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
+    const endRow = Math.min(rsGantt.length, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + 2);
+
+    // Lấy mốc thời gian hiển thị khung nhìn ngang
+    const viewStartObj = convertXToDateTime(0, scrollLeft);
+    const viewEndObj = convertXToDateTime(clientWidth, scrollLeft);
+
+    if (!viewStartObj || !viewStartObj.formattedDateTime || !viewEndObj || !viewEndObj.formattedDateTime) {
+        return;
+    }
+
+    const viewStartMs = new Date(viewStartObj.formattedDateTime.replace('T', ' ')).getTime();
+    const viewEndMs = new Date(viewEndObj.formattedDateTime.replace('T', ' ')).getTime();
+
+    const startCol = Math.max(0, Math.floor(scrollLeft / BLOCK_WIDTH) - 2);
+    const endCol = Math.min(
+        Math.ceil((scrollLeft + clientWidth) / BLOCK_WIDTH) + 2,
+        timelineData.length * BLOCKS_PER_DAY
+    );
+
+    // ==========================================
+    // BƯỚC 1: VẼ LƯỚI VÀ CÁC KHỐI REST (NẰM Ở ĐÁY / PHÍA SAU)
+    // ==========================================
+    
+    // 1.1. Vẽ lưới dọc khung giờ
+    ctx.strokeStyle = '#f1f5f9';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    for (let i = startCol; i < endCol; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * BLOCK_WIDTH, 0);
+        ctx.lineTo(i * BLOCK_WIDTH, canvas.height);
+        ctx.stroke();
+    }
+
+    // 1.2. Vẽ lưới dọc theo ngày
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    const startDateNum = Math.round(startCol / BLOCKS_PER_DAY);
+    const endDateNum = Math.round(endCol / BLOCKS_PER_DAY);
+    for (let i = startDateNum; i < endDateNum; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * BLOCK_WIDTH * BLOCKS_PER_DAY, 0);
+        ctx.lineTo(i * BLOCK_WIDTH * BLOCKS_PER_DAY, canvas.height);
+        ctx.stroke();
+    }
+
+    // 1.3. Vẽ lưới ngang
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.setLineDash([]);
+    for (let i = startRow; i <= endRow; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * ROW_HEIGHT);
+        ctx.lineTo(canvas.width, i * ROW_HEIGHT);
+        ctx.stroke();
+    }
+
+    // 1.4. Vẽ các khoảng thời gian nghỉ (REST) - Nằm dưới cùng
+    if (isDrawingRest === true) { // Chỉ vẽ rest nếu điều kiện này đúng
+        for (let index = startRow; index < endRow; index++) {
+            
+            let ws = rsRest[index];
+            if (!ws || ws.type_of !== 'workstation' || !ws.tasks || ws.tasks.length === 0) continue;
+            let y = index * ROW_HEIGHT;
+
+            ws.tasks.forEach(task => {
+                if (task.type === 'rest') {
+                    let taskStartMs = new Date(task.break_start.replace('T', ' ')).getTime();
+                    let taskEndMs = new Date(task.break_end.replace('T', ' ')).getTime();
+
+                    if (taskEndMs < viewStartMs || taskStartMs > viewEndMs) return;
+
+                    let x1 = calculateXFromDateTime(task.break_start, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY);
+                    let x2 = calculateXFromDateTime(task.break_end, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY);
+                    if (x1 === null || x2 === null) return;
+
+                    if (x2 < scrollLeft || x1 > scrollLeft + clientWidth) return;
+
+                    ctx.fillStyle = '#A9A9A9'; // Màu xám nhạt nền nghỉ
+                    ctx.strokeStyle = '#d1d5db';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+
+                    ctx.beginPath();
+                    ctx.rect(x1, y, x2 - x1, ROW_HEIGHT);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            });
+        }
+    };
+    // ==========================================
+    // BƯỚC 2: VẼ CÁC THANH GANTT (NẰM Ở LỚP TRÊN, CHE PHỦ REST)
+    // ==========================================
+    for (let index = startRow; index < endRow; index++) {
+        let ws = rsGantt[index];
+        if (!ws || !ws.tasks || ws.tasks.length === 0) continue;
+        let y = index * ROW_HEIGHT + 8; // Cách lề một chút để nằm giữa dòng
+
+        ws.tasks.forEach(task => {
+            let taskStartMs = null;
+            let taskEndMs = null;
+
+            if (task.type === 'task') {
+                taskStartMs = new Date(task.start_setup.replace('T', ' ')).getTime();
+                taskEndMs = new Date(task.end_moving.replace('T', ' ')).getTime();
+            }
+
+            if (taskEndMs < viewStartMs || taskStartMs > viewEndMs) return;
+
+            let x1 = calculateXFromDateTime(task.start_setup, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY);
+            let x2 = calculateXFromDateTime(task.end_moving, timelineData, BLOCK_WIDTH, BLOCKS_PER_DAY);
+
+            if (x1 === null || x2 === null) return;
+            if (x2 < scrollLeft || x1 > scrollLeft + clientWidth) return;
+
+            let h = 24;
+            let color = '';
+            if (task.type === 'overtime') {
+                color = '#10b981';
+            } else if (typeof COLOR_TASK !== 'undefined' && COLOR_TASK !== '') {
+                color = COLOR_TASK;
+            } else {
+                color = getRandomPastelColor(task.workcenter_name);
+            }
+
+            ctx.fillStyle = (selectedTaskId !== task.id) ? color : '#ef4444';
+            ctx.lineWidth = (task.status === 'warning' || task.status === 'locked') ? 2 : 1;
+            ctx.setLineDash([]); // Reset nét đứt
+
+            ctx.beginPath();
+            ctx.roundRect(x1, y, x2 - x1, h, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Viết chữ lên task
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px Segoe UI';
+            ctx.fillText(`${task.id} (${task.code_op})`, x1 + 6, y + 16);
+
+            if (task.status === 'warning' || task.status === 'locked') {
+                canvas_warning(ctx, x2 - 14, y + 12);
+            }
+        });
+    }
+
+    // ==========================================
+    // BƯỚC 3: VẼ ĐƯỜNG LIÊN KẾT (NẾU CÓ)
+    // ==========================================
+    if (typeof drawPrecedenceLinks === 'function') {
+        drawPrecedenceLinks(ctx);
+    }
+}
+
+
         function renderHeaderCanvas() {
             const container = document.getElementById('ganttContainer');
             const headerCanvas = document.getElementById('headerCanvas');
@@ -1377,10 +1515,33 @@
         // Biến trạng thái riêng cho chế độ vẽ Tăng Ca
 let isOvertimeModeActive = false;
 let isDrawingOvertime = false;
+let isDrawingRest = false;
 let otStartX = 0;
 let otCurrentX = 0;
 let otTargetRowIndex = -1;
 let tempOvertimeData = null;
+
+function toggleRestMode() {
+    // hàm vẽ giờ nghỉ 
+     isDrawingRest = !isDrawingRest;
+    console.log('toggle isDrawingRest', isDrawingRest);
+    const btn = document.getElementById('btnToggleRest');
+
+    if (isDrawingRest) {
+        // Đổi màu nút sang xanh lá đậm báo hiệu đang hoạt động
+        btn.style.backgroundColor = '#10b981';
+        btn.style.color = '#ffffff';
+        btn.innerText = '🟢 Rest Active';
+
+    } else {
+        // Trả nút về mặc định
+        btn.style.backgroundColor = '';
+        btn.style.color = '';
+        btn.innerText = '🟢 Rest';
+
+    }
+    renderAllGantt();
+}
 
 // 1. Hàm bật/tắt chế độ vẽ tăng ca
 function toggleOvertimeMode() {
