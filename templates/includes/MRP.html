@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced MRP Workbench with Recursive Collapse</title>
+    <script type="module" src="{{ url_for('static', filename='js/product.js') }}" defer></script>
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --border-color: #cbd5e1;
+            --bg-header: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --row-height: 40px;
+            --col-width: 90px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .workspace {
+            max-width: 1650px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .toolbar h2 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .filter-group input, .filter-group select {
+            padding: 5px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #475569; }
+        .btn-secondary:hover { background-color: #334155; }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            z-index: 100;
+        }
+
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown-content label { display: block; margin-bottom: 6px; font-weight: normal; cursor: pointer; }
+
+        .view-wrapper {
+            position: relative;
+            width: 100%;
+            height: 620px;
+            overflow: hidden;
+        }
+
+        .view-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
+            background: #fff;
+        }
+
+        .view-panel.matrix-hidden {
+            transform: translateY(-20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .view-panel.summary-hidden {
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .viewport-container {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 500px 1fr;
+            grid-template-rows: 45px 1fr;
+        }
+
+        .pane-top-left {
+            grid-row: 1; grid-column: 1;
+            background: var(--bg-header);
+            border-bottom: 2px solid var(--border-color);
+            border-right: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            padding: 0 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            z-index: 30;
+        }
+
+        .pane-top-right {
+            grid-row: 1; grid-column: 2;
+            background: var(--bg-header);
+            border-bottom: 2px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+            z-index: 20;
+        }
+
+        .pane-bottom-left {
+            grid-row: 2; grid-column: 1;
+            border-right: 2px solid var(--border-color);
+            overflow-y: hidden;
+            background: #fff;
+            position: relative;
+        }
+
+        .pane-bottom-right {
+            grid-row: 2; grid-column: 2;
+            overflow: auto;
+            position: relative;
+            background: #fff;
+        }
+
+        .timeline-header-track {
+            position: absolute; top: 0; left: 0; height: 100%; display: flex;
+        }
+
+        .timeline-col-header {
+            width: var(--col-width); min-width: var(--col-width); height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            border-right: 1px solid var(--border-color);
+            font-size: 0.8rem; font-weight: 600; color: var(--text-muted);
+        }
+
+        .label-row-item {
+            position: absolute; left: 0; width: 100%; height: var(--row-height);
+            display: flex; align-items: center; padding: 0 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem; box-sizing: border-box; background: #fff;
+            transition: top 0.3s ease, opacity 0.3s ease;
+        }
+
+        .label-row-item.group-header { background: #f8fafc; font-weight: 600; }
+
+        .canvas-track {
+            position: relative;
+            background-image: linear-gradient(to right, #f1f5f9 1px, transparent 1px);
+            background-size: var(--col-width) 100%;
+        }
+
+        .coordinate-cell {
+            position: absolute; height: 28px; top: 6px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); padding: 0 4px;
+            transition: top 0.3s ease, opacity 0.3s ease;
+        }
+
+        .cell-normal { background: #e2e8f0; color: #334155; }
+        .cell-negative { background: #fee2e2; color: #dc2626; border: 1px solid #f87171; }
+        .cell-planned { background: #dbeafe; color: #1e40af; border: 1px dashed #3b82f6; }
+
+        .summary-container {
+            padding: 20px;
+            overflow-x: auto;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        table.summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        table.summary-table th, table.summary-table td {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        table.summary-table th {
+            background-color: var(--bg-header);
+            font-weight: 600;
+        }
+
+        .toggle-btn {
+            background: none; border: none; cursor: pointer; font-weight: bold;
+            color: var(--primary-color); padding: 0 4px; margin-right: 4px;
+        }
+        
+        .level-badge {
+            padding: 1px 5px; font-size: 0.7rem; border-radius: 4px;
+            background: #e2e8f0; color: #475569; margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="workspace">
+    <div class="toolbar">
+        <h2>Advanced MRP Tree Workbench & APS Core</h2>
+        <div class="filter-group">
+            <label>Từ:</label>
+            <input type="date" id="startDate" value="2026-10-01">
+            <label>Đến:</label>
+            <input type="date" id="endDate" value="2026-10-15">
+            
+            <label>Góc nhìn:</label>
+            <select id="viewMode" onchange="onFilterChanged()">
+                <option value="day">Theo Ngày</option>
+                <option value="week">Theo Tuần</option>
+            </select>
+
+            <div class="dropdown">
+                <button class="btn btn-secondary">Tùy chọn Cột ▾</button>
+                <div class="dropdown-content" id="columnSelector">
+                    <label><input type="checkbox" value="lotSize" checked onchange="renderUI()"> Lot Size Method</label>
+                    <label><input type="checkbox" value="status" checked onchange="renderUI()"> Status</label>
+                    <label><input type="checkbox" value="leadTime" checked onchange="renderUI()"> Lead Time</label>
+                    <label><input type="checkbox" value="orderNo" checked onchange="renderUI()"> Mã đơn (Order No)</label>
+                    <label><input type="checkbox" value="unit" checked onchange="renderUI()"> Unit</label>
+                </div>
+            </div>
+
+            <button class="btn" onclick="toggleViewType()" id="toggleViewBtn">Chuyển sang Bảng MRP Tổng</button>
+        </div>
+    </div>
+
+    <div class="view-wrapper">
+        <!-- 1. Ma trận Timeline -->
+        <div class="view-panel" id="matrixViewPanel">
+            <div class="viewport-container">
+                <div class="pane-top-left">Cấu trúc BOM / Thông tin</div>
+                <div class="pane-top-right" id="paneTopRight">
+                    <div class="timeline-header-track" id="headerTrack"></div>
+                </div>
+                <div class="pane-bottom-left" id="paneBottomLeft">
+                    <div id="labelsTrack" style="position: absolute; top: 0; left: 0; width: 100%;"></div>
+                </div>
+                <div class="pane-bottom-right" id="paneBottomRight" onscroll="handleScroll(this)">
+                    <div class="canvas-track" id="canvasTrack">
+                        <div id="cellsTrack" style="position: absolute; top: 0; left: 0; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Bảng MRP Tổng -->
+        <div class="view-panel summary-hidden" id="summaryViewPanel">
+            <div class="summary-container">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Mã & Tên Chi Tiết (BOM Tree)</th>
+                            <th>Trạm làm việc</th>
+                            <th>Tồn kho</th>
+                            <th class="col-opt col-lotSize">Lot Size Method</th>
+                            <th class="col-opt col-status">Status</th>
+                            <th class="col-opt col-leadTime">Lead Time</th>
+                            <th class="col-opt col-orderNo">Mã đơn</th>
+                            <th class="col-opt col-unit">Unit</th>
+                            <th>Qty (Yêu cầu/Đề xuất)</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <!-- Render bằng JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// Đặt ở ngoài cùng của file JS
+window.fetch_func_from_flask = async function(funcTxt, startTime, endTime, schema = 'public') {
+    try {
+        const response = await fetch('/api/run-function', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ funct_txt: funcTxt, startTime: startTime, endTime: endTime, schema: schema })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Lỗi kết nối server');
+        return result;
+    } catch (error) {
+        console.error("Error:", error);
+        return null;
+    }
+};
+
+    const colWidth = 90;
+    const rowHeight = 40;
+    let isSummaryView = false;
+    loadMrpData();
+
+    // Cấu trúc BOM có liên kết parentId để phục vụ đệ quy
+    
+    // const bomTreeData = [
+    //     {
+    //         id: "ITEM-001", parentId: null, level: 0, name: "Bàn làm việc gỗ cao cấp", workCenter: "Line Lắp Ráp 01", onHand: 15,
+    //         lotSize: "Lump-for-Lump", status: "Active", leadTime: "2 ngày", orderNo: "ORD-9012", unit: "Bộ", expanded: true,
+    //         rows: [
+    //             { type: "Gross Req", values: [0, 10, 0, 25, 0, 0, 10] },
+    //             { type: "Scheduled Receipts", values: [20, 0, 0, 0, 0, 0, 0] },
+    //             { type: "Projected On-Hand", values: [35, 25, 25, 0, 0, 0, -10] },
+    //             { type: "Planned Order", values: [0, 0, 0, 25, 0, 0, 10] }
+    //         ]
+    //     },
+    //     {
+    //         id: "ITEM-002", parentId: "ITEM-001", level: 1, name: "Mặt bàn gỗ sồi (Sub)", workCenter: "Máy Cắt CNC 02", onHand: 5,
+    //         lotSize: "Fixed (50)", status: "Active", leadTime: "3 ngày", orderNo: "ORD-9013", unit: "Cái", expanded: true,
+    //         rows: [
+    //             { type: "Gross Req", values: [0, 0, 25, 0, 0, 10, 0] },
+    //             { type: "Scheduled Receipts", values: [30, 0, 0, 0, 0, 0, 0] },
+    //             { type: "Projected On-Hand", values: [35, 35, 10, 10, 10, 0, 0] },
+    //             { type: "Planned Order", values: [0, 0, 15, 0, 0, 10, 0] }
+    //         ]
+    //     },
+    //     {
+    //         id: "ITEM-004", parentId: "ITEM-002", level: 2, name: "Phôi gỗ sồi thô", workCenter: "Kho Nguyên Liệu", onHand: 100,
+    //         lotSize: "Lot-for-Lot", status: "Active", leadTime: "5 ngày", orderNo: "ORD-9014", unit: "M3", expanded: true,
+    //         rows: [
+    //             { type: "Gross Req", values: [0, 0, 15, 0, 0, 10, 0] },
+    //             { type: "Projected On-Hand", values: [100, 100, 85, 85, 85, 75, 75] },
+    //             { type: "Planned Order", values: [0, 0, 0, 0, 0, 0, 0] }
+    //         ]
+    //     },
+    //     {
+    //         id: "ITEM-003", parentId: "ITEM-001", level: 1, name: "Chân bàn sắt sơn tĩnh điện", workCenter: "Xưởng Hàn", onHand: 40,
+    //         lotSize: "Lot-for-Lot", status: "Active", leadTime: "1 ngày", orderNo: "ORD-9015", unit: "Bộ", expanded: true,
+    //         rows: [
+    //             { type: "Gross Req", values: [0, 25, 0, 0, 0, 0, 20] },
+    //             { type: "Projected On-Hand", values: [40, 15, 15, 15, 15, 15, -5] },
+    //             { type: "Planned Order", values: [0, 0, 0, 0, 0, 0, 5] }
+    //         ]
+    //     }
+    // ];
+
+
+    // Ví dụ khi người dùng bấm nút hoặc khi tải trang:
+async function loadMrpData() {
+    let func_txt = 'get_mrp_tree_matrix';
+    let startTime = '2025-04-01';
+    let endTime = '2025-05-01';
+    
+    console.log('Đang gửi request lên Flask...');
+    
+    // Dùng await để đợi server xử lý và trả về kết quả
+    bomTreeData = await window.fetch_func_from_flask(func_txt, startTime, endTime, 'test');
+    
+    console.log('Đã nhận được dữ liệu:', bomTreeData);
+    
+    // Lúc này bạn có thể thoải mái dùng bomTreeData để vẽ bảng MRP trên trang
+    // if (bomTreeData) {
+    //     renderMrpTable(bomTreeData); 
+    // }
+}
+
+// Gọi hàm này khi cần
+
+    // console.log('xxxxbomtreeData', bomTreeData);
+
+    let currentDates = [];
+
+    function generateTimelineColumns() {
+        const startVal = document.getElementById('startDate').value;
+        const endVal = document.getElementById('endDate').value;
+        const viewMode = document.getElementById('viewMode').value;
+
+        let arr = [];
+        let dt = new Date(startVal);
+        let endDt = new Date(endVal);
+
+        if (viewMode === 'day') {
+            while (dt <= endDt) {
+                let day = String(dt.getDate()).padStart(2, '0');
+                let month = String(dt.getMonth() + 1).padStart(2, '0');
+                arr.push(`${day}/${month}`);
+                dt.setDate(dt.getDate() + 1);
+            }
+        } else {
+            let weekNum = 1;
+            while (dt <= endDt) {
+                arr.push(`Tuần ${weekNum} (${dt.getDate()}/${dt.getMonth()+1})`);
+                dt.setDate(dt.getDate() + 7);
+                weekNum++;
+            }
+        }
+        return arr;
+    }
+
+    function renderUI() {
+        currentDates = generateTimelineColumns();
+        
+        const checkedCols = {};
+        document.querySelectorAll('#columnSelector input').forEach(inp => {
+            checkedCols[inp.value] = inp.checked;
+        });
+
+        document.querySelectorAll('.col-opt').forEach(el => el.style.display = 'none');
+        Object.keys(checkedCols).forEach(key => {
+            if (checkedCols[key]) {
+                document.querySelectorAll(`.col-${key}`).forEach(el => el.style.display = '');
+            }
+        });
+
+        if (!isSummaryView) {
+            renderMatrixView(checkedCols);
+        } else {
+            renderSummaryView(checkedCols);
+        }
+    }
+
+    // Hàm kiểm tra xem một item có được phép hiển thị dựa trên trạng thái đóng/mở của các cấp cha hay không (Recursive Check)
+    function isItemVisible(item) {
+        if (!item.parentId) return true;
+        const parent = bomTreeData.find(p => p.id === item.parentId);
+        if (!parent || !parent.expanded) return false;
+        return isItemVisible(parent);
+    }
+function renderMatrixView(checkedCols) {
+    const totalWidth = currentDates.length * colWidth;
+    
+    let visibleRows = [];
+    bomTreeData.forEach(item => {
+        if (isItemVisible(item)) {
+            item.rows.forEach((r, idx) => {
+                visibleRows.push({ item, row: r, isFirstRow: idx === 0 });
+            });
+        }
+    });
+
+    const totalHeight = visibleRows.length * rowHeight;
+
+    // 1. Render Header ngày tháng
+    document.getElementById('headerTrack').style.width = totalWidth + 'px';
+    document.getElementById('headerTrack').innerHTML = currentDates.map(d => `<div class="timeline-col-header">${d}</div>`).join('');
+
+    // 2. Render Cột Nhãn (Labels) - KHAI BÁO BIẾN labelsHtml Ở ĐÂY
+    let labelsHtml = '';
+    visibleRows.forEach((vr, index) => {
+        const indent = vr.item.level * 22;
+        let optText = '';
+        if (vr.isFirstRow) {
+            if (checkedCols.lotSize) optText += ` | ${vr.item.lotSize}`;
+            if (checkedCols.status) optText += ` | ${vr.item.status}`;
+        }
+
+        const hasChildren = bomTreeData.some(child => child.parentId === vr.item.id);
+        let toggleHtml = hasChildren 
+            ? `<button class="toggle-btn" onclick="toggleNode('${vr.item.id}')">${vr.item.expanded ? '▼' : '▶'}</button>` 
+            : `<span style="display:inline-block; width:16px;"></span>`;
+
+        labelsHtml += `
+            <div class="label-row-item ${vr.isFirstRow ? 'group-header' : ''}" style="top: ${index * rowHeight}px; height: ${rowHeight}px; line-height: ${rowHeight}px; position: absolute;">
+                <div style="padding-left: ${indent}px; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    ${vr.isFirstRow ? `${toggleHtml}<span class="level-badge">L${vr.item.level}</span><strong>${vr.item.id}</strong> -${vr.item.name} <span style="color:var(--text-muted); font-size:0.75rem;">${optText}</span>` : `<span style="margin-left: 20px; font-style: italic; color: var(--text-muted);">${vr.row.type}</span>`}
+                </div>
+            </div>
+        `;
+    });
+    
+    const labelsTrack = document.getElementById('labelsTrack');
+    labelsTrack.style.height = totalHeight + 'px';
+    labelsTrack.innerHTML = labelsHtml;
+
+    const canvasTrack = document.getElementById('canvasTrack');
+    canvasTrack.style.width = totalWidth + 'px';
+    canvasTrack.style.height = totalHeight + 'px';
+
+    // 3. Render Vùng Dữ Liệu & Đường Lưới (Cells Track)
+    const cellsTrack = document.getElementById('cellsTrack');
+    cellsTrack.style.width = totalWidth + 'px';
+    cellsTrack.style.height = totalHeight + 'px';
+    cellsTrack.style.position = 'relative';
+
+    // Tạo lưới (Grid Lines) nằm lót dưới
+    let gridLinesHtml = '';
+    
+    // Đường kẻ ngang
+    for (let i = 0; i <= visibleRows.length; i++) {
+        const topPos = i * rowHeight;
+        gridLinesHtml += `<div style="position: absolute; left: 0; width: ${totalWidth}px; top: ${topPos}px; height: 1px; background-color: #e0e0e0; pointer-events: none;"></div>`;
+    }
+    
+    // Đường kẻ dọc
+    for (let j = 0; j <= currentDates.length; j++) {
+        const leftPos = j * colWidth;
+        gridLinesHtml += `<div style="position: absolute; top: 0; height: ${totalHeight}px; left: ${leftPos}px; width: 1px; background-color: #e0e0e0; pointer-events: none;"></div>`;
+    }
+
+    // Tạo các ô dữ liệu (Cells)
+    let cellsHtml = '';
+    visibleRows.forEach((vr, rIndex) => {
+        vr.row.values.forEach((val, cIndex) => {
+            if (val !== 0 && cIndex < currentDates.length) {
+                const leftPos = cIndex * colWidth + 4;
+                const topPos = rIndex * rowHeight + 6;
+                const widthPos = colWidth - 8;
+                let cssClass = 'cell-normal';
+                if (val < 0) cssClass = 'cell-negative';
+                if (vr.row.type.includes('Planned Order')) cssClass = 'cell-planned';
+
+                cellsHtml += `
+                    <div class="coordinate-cell ${cssClass}" style="position: absolute; left: ${leftPos}px; top: ${topPos}px; width: ${widthPos}px;">
+                        ${val}
+                    </div>
+                `;
+            }
+        });
+    });
+
+    // Gộp cả lưới (z-index: 0) và dữ liệu (z-index: 1) vào cellsTrack
+    cellsTrack.innerHTML = `
+        <div style="position: absolute; top: 0; left: 0; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: none; z-index: 0;">${gridLinesHtml}</div>
+        <div style="position: absolute; top: 0; left: 0; width: ${totalWidth}px; height: ${totalHeight}px; z-index: 1;">${cellsHtml}</div>
+    `;
+}
+    function renderSummaryView(checkedCols) {
+        const tbody = document.getElementById('summaryTableBody');
+        let html = '';
+
+        bomTreeData.forEach(item => {
+            if (isItemVisible(item)) {
+                item.rows.forEach((r, idx) => {
+                    if (r.type.includes('Planned Order') || r.type.includes('Gross Req')) {
+                        html += `
+                            <tr>
+                                <td><span class="level-badge">L${item.level}</span><strong>${item.id}</strong> - ${item.name} (${r.type})</td>
+                                <td>${item.workCenter}</td>
+                                <td>${item.onHand}</td>
+                                <td class="col-opt col-lotSize" style="display:${checkedCols.lotSize?'':'none'}">${item.lotSize}</td>
+                                <td class="col-opt col-status" style="display:${checkedCols.status?'':'none'}">${item.status}</td>
+                                <td class="col-opt col-leadTime" style="display:${checkedCols.leadTime?'':'none'}">${item.leadTime}</td>
+                                <td class="col-opt col-orderNo" style="display:${checkedCols.orderNo?'':'none'}">${item.orderNo}</td>
+                                <td class="col-opt col-unit" style="display:${checkedCols.unit?'':'none'}">${item.unit}</td>
+                                <td><strong>${r.values.reduce((a,b)=>a+Math.abs(b),0)}</strong></td>
+                                <td>${document.getElementById('startDate').value} → ${document.getElementById('endDate').value}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            }
+        });
+        tbody.innerHTML = html;
+    }
+
+    // Hàm đệ quy đóng toàn bộ các nhánh con bên trong khi thu gọn (Collapse)
+    function setExpandedRecursive(itemId, expandStatus) {
+        const item = bomTreeData.find(i => i.id === itemId);
+        if (!item) return;
+
+        item.expanded = expandStatus;
+
+        // Tìm tất cả các con trực tiếp của item này
+        const children = bomTreeData.filter(child => child.parentId === itemId);
+        children.forEach(child => {
+            // Nếu đóng cha, bắt buộc đóng toàn bộ con cháu bên trong
+            setExpandedRecursive(child.id, expandStatus);
+        });
+    }
+
+    function toggleNode(id) {
+        const item = bomTreeData.find(i => i.id === id);
+        if (item) {
+            const nextStatus = !item.expanded;
+            // Gọi hàm đệ quy để đóng/mở toàn bộ nhánh
+            setExpandedRecursive(id, nextStatus);
+            renderUI();
+        }
+    }
+
+    function toggleViewType() {
+        isSummaryView = !isSummaryView;
+        const btn = document.getElementById('toggleViewBtn');
+        const matrixPanel = document.getElementById('matrixViewPanel');
+        const summaryPanel = document.getElementById('summaryViewPanel');
+
+        if (isSummaryView) {
+            btn.innerText = "Chuyển về Ma trận Timeline";
+            matrixPanel.classList.add('matrix-hidden');
+            summaryPanel.classList.remove('summary-hidden');
+        } else {
+            btn.innerText = "Chuyển sang Bảng MRP Tổng";
+            matrixPanel.classList.remove('matrix-hidden');
+            summaryPanel.classList.add('summary-hidden');
+        }
+        renderUI();
+    }
+
+    function onFilterChanged() { renderUI(); }
+
+    function handleScroll(el) {
+        document.getElementById('paneTopRight').scrollLeft = el.scrollLeft;
+        document.getElementById('paneBottomLeft').scrollTop = el.scrollTop;
+    }
+
+    document.addEventListener("DOMContentLoaded", renderUI);
+
+    
+</script>
+
+</body>
+</html>

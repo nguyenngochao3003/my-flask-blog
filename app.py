@@ -132,6 +132,14 @@ def logout():
 def warehouse():
     return render_template('smart_warehouse_management_system_wms.html')
 
+@app.route('/import_stock')
+def import_stock():
+    return render_template('includes/warehouse_inbound_bin_location_form.html')
+
+@app.route('/MRP')
+def MRP():
+    return render_template('includes/MRP.html')
+
 # 3. qr
 @app.route('/QR')
 def QR():
@@ -142,7 +150,54 @@ def QR():
 def permission():
     return render_template('permission.html')
 
+# lấy dữ liệu từ function 
+@app.route("/api/run-function", methods=["POST"])
+def get_func_data():
+    data = request.get_json() or {}
+    schema = data.get("schema", "public")
+    
+    # Sửa lại key từ "function" thành "funct_txt" cho khớp với Javascript
+    funct_txt = data.get("funct_txt") 
+    startTime = data.get("startTime")
+    endTime = data.get("endTime")
+    
+    # (Tùy chọn) Nếu bạn muốn truyền params riêng từ JS:
+    # params = data.get("params", {})
 
+    user_access_token = session.get('access_token')
+    if not user_access_token:
+        return jsonify({
+            "error": "Chưa đăng nhập hoặc phiên làm việc đã hết hạn"
+        }), 401
+    
+    try:
+        user_supabase = create_client(
+            url, 
+            key, 
+            options=ClientOptions(
+                headers={"Authorization": f"Bearer {user_access_token}"},
+                schema=schema
+            )
+        )
+        
+        # LƯU Ý: rpc() chỉ nhận tên hàm. 
+        # Nếu hàm trong Postgres của bạn có nhận tham số, hãy truyền dạng: user_supabase.rpc(funct_txt, {"p_start": "2025-04-01", "p_end": "2025-05-01"}).execute()
+        # Hoặc nếu bạn muốn xử lý chuỗi SQL phức tạp, bạn phải dùng thực thi raw query (nếu thư viện hỗ trợ) hoặc sửa lại cách gọi rpc chuẩn.
+        
+        # Ví dụ gọi RPC với tên hàm đơn thuần:
+        res = user_supabase.rpc(funct_txt, {
+            "p_start_date": startTime, 
+            "p_end_date": endTime
+        }).execute()
+        
+        table_data = res.data
+        return jsonify(table_data), 200
+
+    except Exception as e:
+        print(f"Lỗi Supabase/RLS: {e}")
+        return jsonify({
+            "error": f"Lỗi truy cập dữ liệu (RLS): {str(e)}"
+        }), 400
 
 # nhập tên bảng để lấy dữ liệu từ bảng
 

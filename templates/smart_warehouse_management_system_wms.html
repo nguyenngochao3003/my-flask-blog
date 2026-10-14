@@ -103,9 +103,13 @@
                     <i class="fa-solid fa-chart-pie w-5 text-center"></i>
                     <span>Sản phẩm</span>
                 </button>
-                <button onclick="switchTab('mps')" id="nav-product" class="mobile-tab mobile-tab-item inactive">
+                <button onclick="window.location.href='/MRP'" id="nav-sales" class="mobile-tab mobile-tab-item inactive">
                     <i class="fa-solid fa-chart-pie w-5 text-center"></i>
-                    <span>MPS</span>
+                    <span>MRP</span>
+                </button>
+                <button onclick="switchTab('item_card')" id="nav-itemCard" class="mobile-tab mobile-tab-item inactive">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>item card</span>
                 </button>
                 <button onclick="window.location.href='/APS'" id="nav-aps" class="mobile-tab mobile-tab-item inactive">
                     <i class="fa-solid fa-industry"></i>
@@ -134,7 +138,7 @@
                     <span>Quét QR Nhập / Xuất</span>
                 </button>
 
-                <button onclick="switchTab('importStock')" id="nav-importStock" class="mobile-tab mobile-tab-item inactive">
+                <button onclick="window.location.href='/import_stock'" id="nav-importStock" class="mobile-tab mobile-tab-item inactive">
                     <i class="fa-solid fa-list w-5 text-center"></i>
                     <span>Nhập kho</span>
                 </button>
@@ -208,8 +212,9 @@
             <div id="tab-product" class="tab-content space-y-6">
                 {% include 'includes/main-wrapper_product.html' %}
             </div>
-            <div id="tab-mps" class="tab-content space-y-6">
-                mps
+
+            <div id="tab-MRP" class="tab-content space-y-6">
+                {% include 'includes/MRP.html' %}
             </div>
 
             <div id="tab-bom" class="tab-content space-y-6">
