@@ -33,10 +33,13 @@ app.secret_key = 'my_super_secret_key_123456' # Thêm dòng này
 def home():
     return render_template('main.html')
 
-@app.route('/aps')
+@app.route('/APS')
 def test_aps():
     return render_template('test gantt/aps_gantt main xxxxx.html')
 
+@app.route('/BOM')
+def BOM():
+    return render_template('test gantt/test_bom_create.html')
 
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/login')
