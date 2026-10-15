@@ -263,7 +263,7 @@
 
 <div class="workspace">
     <div class="toolbar">
-        <h2>Advanced MRP Tree Workbench & APS Core</h2>
+        <h2><button class="btn" onclick="window.location.href='/warehouse'"><i class="fa-solid fa-chevron-left"></i></button>Advanced MRP Tree Workbench & APS Core</h2>
         <div class="filter-group">
             <label>Từ:</label>
             <input type="date" id="startDate" value="2026-10-01">
@@ -556,16 +556,27 @@ function renderMatrixView(checkedCols) {
     }
 
     // Tạo các ô dữ liệu (Cells)
+    // Tạo các ô dữ liệu (Cells) với cơ chế bảo vệ lỗi
     let cellsHtml = '';
     visibleRows.forEach((vr, rIndex) => {
-        vr.row.values.forEach((val, cIndex) => {
-            if (val !== 0 && cIndex < currentDates.length) {
+        // Kiểm tra xem row có values hay không
+        if (!vr.row.values) return;
+
+        // Xử lý nếu values là Mảng (Array) hoặc Object (Dictionary theo ngày)
+        const valuesEntries = Array.isArray(vr.row.values) 
+            ? vr.row.values.map((val, idx) => [idx, val]) 
+            : Object.entries(vr.row.values);
+
+        valuesEntries.forEach(([cIndexKey, val]) => {
+            const cIndex = Number(cIndexKey);
+            // Nếu có giá trị khác 0 và cột nằm trong khoảng cho phép
+            if (val !== null && val !== undefined && val !== 0 && cIndex < currentDates.length) {
                 const leftPos = cIndex * colWidth + 4;
                 const topPos = rIndex * rowHeight + 6;
                 const widthPos = colWidth - 8;
                 let cssClass = 'cell-normal';
                 if (val < 0) cssClass = 'cell-negative';
-                if (vr.row.type.includes('Planned Order')) cssClass = 'cell-planned';
+                if (vr.row.type && vr.row.type.includes('Planned Order')) cssClass = 'cell-planned';
 
                 cellsHtml += `
                     <div class="coordinate-cell ${cssClass}" style="position: absolute; left: ${leftPos}px; top: ${topPos}px; width: ${widthPos}px;">
@@ -575,7 +586,6 @@ function renderMatrixView(checkedCols) {
             }
         });
     });
-
     // Gộp cả lưới (z-index: 0) và dữ liệu (z-index: 1) vào cellsTrack
     cellsTrack.innerHTML = `
         <div style="position: absolute; top: 0; left: 0; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: none; z-index: 0;">${gridLinesHtml}</div>

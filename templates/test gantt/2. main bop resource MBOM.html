@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siemens Teamcenter PLM - Advanced BOP & MBOM Process Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #eef2f6;
+            color: #1e293b;
+            user-select: none;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .tree-node:hover {
+            background-color: rgba(0, 82, 204, 0.08);
+        }
+        .tree-node.selected {
+            background-color: #0052cc !important;
+            color: white !important;
+        }
+        .tree-node.selected * {
+            color: white !important;
+        }
+        .drag-over {
+            background-color: rgba(139, 92, 246, 0.25) !important;
+            border: 2px dashed #8b5cf6 !important;
+        }
+        .tree-branch {
+            position: relative;
+        }
+        .tree-branch::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 12px;
+            left: 14px;
+            border-left: 1px dashed #cbd5e1;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Modal Tạo Mới / Chỉnh Sửa Resource -->
+    <div id="resource-modal" class="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-[420px] p-4 text-xs space-y-3">
+            <div class="font-bold text-slate-800 text-sm border-b pb-2 flex justify-between items-center">
+                <span id="modal-title"><i class="fa-solid fa-plus text-emerald-600 mr-1.5"></i> Tạo mới Resource / Nguồn lực</span>
+                <button onclick="closeResourceModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div id="parent-select-group">
+                <label class="block text-slate-500 font-semibold mb-1">Parent Resource (Chọn node cha):</label>
+                <select id="modal-parent-select" onchange="onParentChange()" class="w-full border rounded p-1.5 text-xs bg-white text-slate-700">
+                    <option value="">-- Gốc (Root / Plant mới) --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-slate-500 font-semibold mb-1">Tên Resource (Name):</label>
+                <input type="text" id="modal-res-name" class="w-full border rounded p-1.5 text-xs text-slate-700" placeholder="Nhập tên nguồn lực...">
+            </div>
+            <div>
+                <label class="block text-slate-500 font-semibold mb-1">Loại Nguồn Lực (Type):</label>
+                <select id="modal-res-type" class="w-full border rounded p-1.5 text-xs bg-white text-slate-700">
+                    <option value="plant">Plant</option>
+                    <option value="workcenter">Workcenter</option>
+                    <option value="operation">Operation</option>
+                    <option value="task">Sub-operation / Task</option>
+                </select>
+            </div>
+            <div id="modal-operation-fields" class="hidden space-y-2 border-t pt-2 bg-purple-50/60 p-2.5 rounded border-purple-200">
+                <div class="font-bold text-purple-800 text-[11px] flex items-center">
+                    <i class="fa-solid fa-gears mr-1"></i> Thuộc tính Operation / Task:
+                </div>
+                <div>
+                    <label class="block text-slate-600 text-[10px] font-semibold">Standard Time (Thời gian chuẩn):</label>
+                    <input type="text" id="modal-std-time" class="w-full border rounded p-1 text-xs bg-white text-slate-700" value="5.0s">
+                </div>
+                <div>
+                    <label class="block text-slate-600 text-[10px] font-semibold">Operation Type:</label>
+                    <select id="modal-op-subtype" class="w-full border rounded p-1 text-xs bg-white text-slate-700">
+                        <option value="Setup">Setup (Chuẩn bị)</option>
+                        <option value="Run">Run (Gia công)</option>
+                        <option value="Waiting">Waiting (Chờ đợi)</option>
+                        <option value="Moving">Moving (Vận chuyển)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-600 text-[10px] font-semibold">Công thức tính toán (Formula):</label>
+                    <input type="text" id="modal-formula" class="w-full border rounded p-1 text-xs bg-white text-slate-700 font-mono" placeholder="VD: CycleTime * Qty">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2 border-t">
+                <button onclick="closeResourceModal()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded font-semibold text-slate-700">Hủy</button>
+                <button onclick="submitResourceModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Header -->
+    <header class="bg-[#1e293b] text-white flex items-center justify-between px-4 py-2 border-b border-slate-700 shadow-sm text-sm">
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1 rounded border border-slate-700">
+                <i class="fa-solid fa-gears text-purple-400"></i>
+                <span class="font-bold tracking-wide">Siemens Teamcenter PLM - MPP & Routine Builder</span>
+            </div>
+            <span class="text-slate-400 text-xs hidden md:inline">(Advanced Resource Library, BOP Routing & Auto-sync MBOM)</span>
+        </div>
+        <div class="flex items-center space-x-3 text-xs">
+            <button onclick="showToast('Đã đồng bộ thành công với cơ sở dữ liệu PLM!')" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded font-semibold shadow transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-sync text-xs"></i>
+                <span>Đồng bộ PLM / Supabase</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace: 3-Tier Architecture Layout -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-slate-200 gap-2 p-2">
+
+        <!-- ================= TIER 1: PLANT & RESOURCE MASTER LIBRARY (TOP) ================= -->
+        <div class="h-[38%] bg-white rounded-lg shadow-sm border border-slate-300 flex flex-col overflow-hidden">
+            <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-emerald-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">PLANT & RESOURCE MASTER LIBRARY</span>
+                    <span class="font-bold text-slate-800">Thư viện Gốc: Plant, Workcenter, Workstation, Operations & Sub-operations</span>
+                </div>
+                <div class="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <i class="fa-solid fa-info-circle mr-1"></i> Kéo thả Operation/Task vào Process ở BOP bên dưới
+                </div>
+            </div>
+
+            <div class="flex-1 grid grid-cols-12 overflow-hidden">
+                <!-- Left: Tree View (4 cols) -->
+                <div class="col-span-4 border-r border-slate-200 flex flex-col bg-white overflow-hidden">
+                    <div class="bg-slate-50 px-3 py-1 border-b border-slate-200 text-xs font-bold text-slate-700 flex items-center justify-between">
+                        <span>Resource Hierarchy Tree</span>
+                        <div class="space-x-1 flex items-center">
+                            <button onclick="openResourceModal('create')" class="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px]" title="Tạo mới Resource"><i class="fa-solid fa-plus"></i></button>
+                            <button onclick="moveResourceItem('up')" class="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-[10px]" title="Đưa lên"><i class="fa-solid fa-arrow-up"></i></button>
+                            <button onclick="moveResourceItem('down')" class="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-[10px]" title="Đưa xuống"><i class="fa-solid fa-arrow-down"></i></button>
+                            <button onclick="deleteSelectedResourceNode()" class="px-1.5 py-0.5 bg-red-100 text-red-700 hover:bg-red-200 rounded text-[10px]" title="Xóa node"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div id="plant-tree" class="flex-1 overflow-y-auto p-2 text-xs font-mono space-y-1"></div>
+                </div>
+
+                <!-- Middle: Layout Viewport (4 cols) -->
+                <div class="col-span-4 border-r border-slate-200 flex flex-col bg-slate-900 relative overflow-hidden">
+                    <div class="bg-slate-800 border-b border-slate-700 px-2 py-1 flex items-center justify-between text-xs text-slate-300">
+                        <span class="font-bold text-white text-[11px]">Factory Layout Viewport <i class="fa-solid fa-cube text-emerald-400"></i></span>
+                        <span class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-white">CAD 2D Mock</span>
+                    </div>
+                    <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
+                        <canvas id="plant-canvas" class="w-full h-full absolute inset-0"></canvas>
+                        <div class="absolute bottom-2 left-2 text-[10px] text-slate-400 font-sans bg-slate-900/80 px-2 py-1 rounded border border-slate-700">
+                            Selected: <span id="plant-selected-name" class="text-emerald-400 font-bold">PL-005871 / PLANT MAIN SHOP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Properties Panel (4 cols) -->
+                <div class="col-span-4 flex flex-col bg-white overflow-hidden">
+                    <div class="bg-slate-100 border-b border-slate-200 px-3 py-1 font-bold text-slate-700 text-xs flex items-center justify-between">
+                        <span>Resource Properties & Attributes</span>
+                        <div class="space-x-1">
+                            <button onclick="openResourceModal('edit')" class="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-semibold"><i class="fa-solid fa-pen-to-square mr-1"></i> Sửa</button>
+                            <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-semibold">Active</span>
+                        </div>
+                    </div>
+                    <div class="p-3 flex-1 overflow-y-auto text-xs space-y-2.5">
+                        <div class="border border-slate-200 rounded p-2 bg-slate-50">
+                            <div class="grid grid-cols-2 gap-2 text-slate-700">
+                                <div><span class="text-slate-400 block text-[10px]">Node ID:</span> <span id="p-prop-id" class="font-semibold">PL-005871</span></div>
+                                <div><span class="text-slate-400 block text-[10px]">Type:</span> <span id="p-prop-type" class="font-semibold text-emerald-600">PLANT</span></div>
+                                <div><span class="text-slate-400 block text-[10px]">Cycle Time:</span> <span id="p-prop-time" class="font-semibold">12.5s</span></div>
+                                <div><span class="text-slate-400 block text-[10px]">Status:</span> <span class="text-emerald-600 font-semibold">Active</span></div>
+                                <div class="col-span-2"><span class="text-slate-400 block text-[10px]">Description:</span> <span id="p-prop-desc" class="font-medium">Khu vực nhà máy chính</span></div>
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded overflow-hidden">
+                            <div class="bg-slate-100 px-2.5 py-1 font-bold text-slate-700 border-b">Sub-Operations / Tasks & Parameters</div>
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 border-b">
+                                        <th class="p-1.5">Task Name / Step</th>
+                                        <th class="p-1.5">Std Time</th>
+                                        <th class="p-1.5">Type</th>
+                                        <th class="p-1.5">Formula</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sub-op-table">
+                                    <tr class="border-b"><td colspan="4" class="p-2 text-slate-400 italic text-center">Chọn một Operation hoặc Workcenter để xem danh sách thao tác con.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TIER 2 & 3: BOP & MBOM (BOTTOM SPLIT) ================= -->
+        <div class="flex-1 grid grid-cols-2 gap-2 overflow-hidden">
+            
+            <!-- BOTTOM LEFT: BOP (Bill of Process / Routine) -->
+            <div class="bg-white rounded-lg shadow-sm border border-slate-300 flex flex-col overflow-hidden">
+                <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-purple-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">BOP (Bill of Process / Routine)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="createNewProcess()" class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-0.5 rounded text-[10px] font-semibold">
+                            <i class="fa-solid fa-plus mr-1"></i> Tạo Process Mới
+                        </button>
+                        <span class="text-[11px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                            Kéo thả Operation từ trên xuống đây
+                        </span>
+                    </div>
+                </div>
+                <div class="flex-1 flex overflow-hidden">
+                    <!-- BOP Tree (6 cols) -->
+                    <div class="w-1/2 border-r border-slate-200 flex flex-col overflow-hidden">
+                        <div class="bg-slate-50 px-2 py-1 border-b text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                            <span>Process Routing Tree</span>
+                            <div class="space-x-1">
+                                <button onclick="moveSelectedItem('up')" class="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-[10px]" title="Đưa lên"><i class="fa-solid fa-arrow-up"></i></button>
+                                <button onclick="moveSelectedItem('down')" class="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-[10px]" title="Đưa xuống"><i class="fa-solid fa-arrow-down"></i></button>
+                            </div>
+                        </div>
+                        <div id="bop-tree" class="flex-1 overflow-y-auto p-2 text-xs font-mono space-y-1"></div>
+                    </div>
+                    <!-- BOP Properties & Detailed Attributes (6 cols) -->
+                    <div class="w-1/2 flex flex-col p-3 overflow-y-auto text-xs space-y-3">
+                        <div class="font-bold text-slate-900 border-b pb-1 flex items-center justify-between">
+                            <span>BOP Sequence & Detailed Inspector</span>
+                            <span class="bg-purple-100 text-purple-800 text-[9px] px-2 py-0.5 rounded font-semibold">Active Details</span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded border space-y-2 text-[11px]">
+                            <div><span class="text-slate-400 text-[10px] block">Selected Item Name:</span> <span id="bop-sel-name" class="font-semibold text-purple-700 text-xs">Chưa chọn node</span></div>
+                            <div class="grid grid-cols-2 gap-2 border-t pt-1.5">
+                                <div><span class="text-slate-400 text-[10px] block">Workcenter:</span> <span id="bop-sel-wc" class="font-semibold text-amber-600">WC-ASSEMBLY-01</span></div>
+                                <div><span class="text-slate-400 text-[10px] block">Workstation:</span> <span id="bop-sel-ws" class="font-semibold text-emerald-600">STA110-NEST</span></div>
+                            </div>
+                            <div class="border-t pt-1.5">
+                                <span class="text-slate-400 text-[10px] block">Parent Operation (Operation Cha):</span> 
+                                <span id="bop-sel-parent" class="font-semibold text-blue-700">Root Process</span>
+                            </div>
+                            <div class="border-t pt-1.5">
+                                <span class="text-slate-400 text-[10px] block">Standard Time:</span> 
+                                <span id="bop-sel-time" class="font-semibold text-purple-600">4.2s</span>
+                            </div>
+                            <div class="border-t pt-1.5">
+                                <label class="text-slate-400 text-[10px] block font-bold mb-1">Mô tả thông tin quy trình sản xuất (Description):</label>
+                                <textarea id="bop-sel-desc" oninput="updateProcessDescription(this.value)" rows="2" class="w-full text-xs p-1.5 border rounded bg-white text-slate-700" placeholder="Nhập mô tả chi tiết..."></textarea>
+                            </div>
+                            <div class="border-t pt-1.5">
+                                <span class="text-slate-400 text-[10px] block">Công thức tính toán nhu cầu vật tư:</span> 
+                                <div class="bg-white p-1.5 rounded border font-mono text-[10px] text-blue-900 mt-0.5">
+                                    Total Demand = Production Qty × Usage Rate (2.0 pcs)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-1">
+                            <button onclick="deleteSelectedBopNode()" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded text-xs font-semibold shadow flex items-center justify-center space-x-1">
+                                <i class="fa-solid fa-trash mr-1"></i> Xóa Step / Đối tượng đã chọn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM RIGHT: MBOM (Manufacturing Bill of Materials) -->
+            <div class="bg-white rounded-lg shadow-sm border border-slate-300 flex flex-col overflow-hidden">
+                <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">MBOM (Manufacturing Bill of Materials)</span>
+                    </div>
+                    <span class="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        Đồng bộ toàn bộ cây Resource 1:1
+                    </span>
+                </div>
+                <div class="flex-1 flex overflow-hidden">
+                    <!-- MBOM Tree (6 cols) -->
+                    <div class="w-1/2 border-r border-slate-200 flex flex-col overflow-hidden">
+                        <div class="bg-slate-50 px-2 py-1 border-b text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                            <span>MBOM Structure Tree (Auto-synced)</span>
+                            <button onclick="deleteSelectedMbomNode()" class="px-2 py-0.5 bg-red-100 text-red-700 hover:bg-red-200 rounded text-[10px] font-semibold"><i class="fa-solid fa-trash mr-1"></i> Xóa MBOM</button>
+                        </div>
+                        <div id="mbom-tree" class="flex-1 overflow-y-auto p-2 text-xs font-mono space-y-1"></div>
+                    </div>
+                    <!-- MBOM Material Assignment & Property Inspector (6 cols) -->
+                    <div class="w-1/2 flex flex-col p-3 overflow-y-auto text-xs space-y-3">
+                        <div class="font-bold text-slate-900 border-b pb-1 flex items-center justify-between">
+                            <span>Material & Resource Property Inspector</span>
+                            <div class="space-x-1">
+                                <button onclick="openMaterialForm('create')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-0.5 rounded text-[10px] font-semibold" title="Thêm vật tư"><i class="fa-solid fa-plus"></i></button>
+                                <button onclick="openMaterialForm('edit')" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded text-[10px] font-semibold" title="Chỉnh sửa vật tư"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                            </div>
+                        </div>
+
+                        <!-- Read-only Property Card Style -->
+                        <div class="border border-slate-200 rounded p-2.5 bg-slate-50 space-y-2">
+                            <div><span class="text-slate-400 text-[10px] block">Selected MBOM Node:</span> <span id="mbom-sel-name" class="font-semibold text-blue-700 text-xs">Chưa chọn node</span></div>
+                            <div class="grid grid-cols-2 gap-2 border-t pt-1.5 text-slate-700">
+                                <div><span class="text-slate-400 block text-[10px]">Node ID:</span> <span id="mbom-prop-id" class="font-semibold">-</span></div>
+                                <div><span class="text-slate-400 block text-[10px]">Type:</span> <span id="mbom-prop-type" class="font-semibold text-blue-600">-</span></div>
+                            </div>
+                            <div class="border-t pt-1.5">
+                                <span class="text-slate-400 block text-[10px]">Danh sách vật tư & Định mức đã gán:</span>
+                                <div id="attached-materials-list" class="mt-1 space-y-1 text-[11px] text-slate-700 max-h-24 overflow-y-auto bg-white p-2 rounded border">
+                                    <div class="text-slate-400 italic">Chưa có vật tư nào được gán.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Form (Hidden by default, shown on Add/Edit) -->
+                        <div id="material-form-container" class="hidden border border-purple-200 bg-purple-50/50 rounded p-2.5 space-y-2 text-xs">
+                            <div class="font-bold text-purple-900 text-[11px] flex items-center justify-between border-b pb-1">
+                                <span id="material-form-title"><i class="fa-solid fa-box mr-1"></i> Thêm / Cài đặt Vật tư & Định mức</span>
+                                <button onclick="closeMaterialForm()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 text-[10px] font-semibold mb-0.5">Chọn / Tìm vật liệu (Material Catalog):</label>
+                                <select id="form-material-select" class="w-full border rounded p-1 text-xs bg-white text-slate-700">
+                                    <option value="Steel Sheet 2.5mm">Steel Sheet 2.5mm (Tấm thép)</option>
+                                    <option value="Aluminum Panel 1.8mm">Aluminum Panel 1.8mm (Nhôm)</option>
+                                    <option value="Hex Weld Nut M8">Hex Weld Nut M8 (Ecu hàn)</option>
+                                    <option value="Structural Adhesive">Structural Adhesive (Keo cấu trúc)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 text-[10px] font-semibold mb-0.5">Công thức tính định mức (Formula):</label>
+                                <input type="text" id="form-material-formula" class="w-full border rounded p-1 text-xs bg-white text-slate-700 font-mono" value="CycleTime * Qty * 2.0">
+                            </div>
+                            <div class="flex justify-between items-center pt-1">
+                                <button onclick="testMaterialFormula()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[10px] font-semibold"><i class="fa-solid fa-flask mr-1"></i> Test thử</button>
+                                <div class="space-x-1">
+                                    <button onclick="closeMaterialForm()" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-semibold text-[10px]">Hủy</button>
+                                    <button onclick="saveMaterialForm()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold text-[10px]">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-2.5 rounded-lg shadow-lg text-xs font-medium text-white toast-animate flex items-center space-x-2 ${type === 'success' ? 'bg-slate-900 border border-slate-700' : 'bg-red-600'}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-triangle-exclamation'} text-sm"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Tier 1: Plant & Resource Master Library Data (Default isLocked: true)
+        let plantTreeData = [
+            {
+                id: "PL-005871",
+                name: "PL-005871/aa-PLANT MAIN SHOP",
+                type: "plant",
+                expanded: true,
+                isLocked: true,
+                cycle: "12.5s",
+                workcenter: "WC-PLANT-MAIN",
+                workstation: "WS-SHOP-01",
+                parentName: "Root Enterprise",
+                stdTime: "12.5s",
+                opSubtype: "Run",
+                formula: "CycleTime * Qty",
+                desc: "Khu vực nhà máy chính chịu trách nhiệm tổng hợp các dây chuyền lắp ráp ô tô.",
+                children: [
+                    {
+                        id: "PL-008605",
+                        name: "PL-008605/aa-UNDERBODY WORKCENTER",
+                        type: "workcenter",
+                        expanded: true,
+                        isLocked: true,
+                        cycle: "25.0s",
+                        workcenter: "WC-ASSEMBLY-01",
+                        workstation: "WS-LINE-02",
+                        parentName: "PLANT MAIN SHOP",
+                        stdTime: "25.0s",
+                        opSubtype: "Run",
+                        formula: "CycleTime * 2",
+                        desc: "Workcenter chuyên dụng cho khu vực hàn gầm xe.",
+                        children: [
+                            {
+                                id: "PL-017563",
+                                name: "PL-017563/aa-STA110 LOAD & WELD",
+                                type: "operation",
+                                expanded: true,
+                                isLocked: true,
+                                cycle: "12.5s",
+                                workcenter: "WC-ASSEMBLY-01",
+                                workstation: "STA110-NEST",
+                                parentName: "UNDERBODY WORKCENTER",
+                                stdTime: "12.5s",
+                                opSubtype: "Run",
+                                formula: "CycleTime * Qty",
+                                desc: "Thao tác nạp liệu và hàn điểm tự động trạm STA110.",
+                                children: [
+                                    { id: "TS-01", name: "Step 1: Place component into fixture", type: "task", isLocked: true, workcenter: "WC-ASSEMBLY-01", workstation: "STA110-NEST", parentName: "STA110 LOAD & WELD", stdTime: "4.2s", opSubtype: "Setup", formula: "BaseTime * 1.0", desc: "Đặt tấm sàn vào đồ gá định vị chính xác." },
+                                    { id: "TS-02", name: "Step 2: Automatic spot welding pulse", type: "task", isLocked: true, workcenter: "WC-ASSEMBLY-01", workstation: "STA110-NEST", parentName: "STA110 LOAD & WELD", stdTime: "8.3s", opSubtype: "Run", formula: "WeldTime * Spots", desc: "Kích hoạt xung hàn điểm rô-bốt 4.2kA." }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        let bopData = [
+            {
+                id: "PROC-01",
+                name: "PROC-01 / MAIN ASSEMBLY ROUTINE",
+                type: "process",
+                expanded: true,
+                isLocked: true,
+                workcenter: "WC-ROUTINE",
+                workstation: "WS-ROUTINE",
+                parentName: "Enterprise Master",
+                stdTime: "37.5s",
+                desc: "Quy trình lắp ráp chính cho thân xe ô tô.",
+                children: []
+            }
+        ];
+
+        // MBOM Data Structure (Auto-synced full hierarchy 1:1 with PlantTree)
+        let mbomData = [
+            {
+                id: "PL-009083",
+                name: "PL-009083/aa-PLANT PRODUCT (TOP)",
+                type: "gear",
+                expanded: true,
+                isLocked: true,
+                materials: [],
+                materialConfigs: {},
+                children: []
+            }
+        ];
+
+        let selectedPlantNode = null;
+        let selectedBopNode = null;
+        let selectedMbomNode = null;
+        let modalMode = 'create';
+
+        // Auto-sync Resource Library full hierarchy 1:1 to MBOM root children while preserving lock state & materials
+        function syncMbomWithResources() {
+            if (!mbomData || mbomData.length === 0) return;
+            let topProduct = mbomData[0];
+            
+            function cloneResourceTree(nodes) {
+                return nodes.map(n => {
+                    let existing = findNode(mbomData, n.id);
+                    let cloned = {
+                        id: n.id,
+                        name: n.name,
+                        type: n.type,
+                        expanded: existing ? existing.expanded : (n.expanded !== undefined ? n.expanded : true),
+                        isLocked: existing ? existing.isLocked : (n.isLocked !== undefined ? n.isLocked : true),
+                        materials: existing && existing.materials ? existing.materials : [],
+                        materialConfigs: existing && existing.materialConfigs ? existing.materialConfigs : {},
+                        children: n.children && n.children.length > 0 ? cloneResourceTree(n.children) : []
+                    };
+                    return cloned;
+                });
+            }
+            topProduct.children = cloneResourceTree(plantTreeData);
+        }
+
+        function getIcon(type) {
+            switch(type) {
+                case 'plant': return '<i class="fa-solid fa-industry text-[#10b981] mr-1.5" title="Plant"></i>';
+                case 'workcenter': return '<i class="fa-solid fa-gear text-[#f59e0b] mr-1.5" title="Workcenter"></i>';
+                case 'operation': return '<i class="fa-solid fa-gear text-[#8b5cf6] mr-1.5" title="Operation"></i>';
+                case 'task': return '<i class="fa-solid fa-list-check text-purple-400 mr-1.5" title="Sub-operation/Task"></i>';
+                case 'process': return '<i class="fa-solid fa-diagram-project text-purple-600 mr-1.5" title="Process"></i>';
+                case 'gear': return '<i class="fa-solid fa-gear text-[#3b82f6] mr-1.5" title="Part / Material"></i>';
+                default: return '<i class="fa-solid fa-circle-dot text-slate-400 mr-1.5"></i>';
+            }
+        }
+
+        function isProcessLocked(node) {
+            function findParentProcess(nodes, targetId, currentProc = null) {
+                for (let n of nodes) {
+                    let proc = (n.type === 'process') ? n : currentProc;
+                    if (n.id === targetId) return proc;
+                    if (n.children) {
+                        let found = findParentProcess(n.children, targetId, proc);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            }
+            const proc = findParentProcess(bopData, node.id);
+            return proc ? proc.isLocked : false;
+        }
+
+        // Render Plant Tree
+        function renderPlantTree() {
+            const container = document.getElementById('plant-tree');
+            container.innerHTML = buildPlantTreeHtml(plantTreeData, 0);
+
+            container.querySelectorAll('.plant-lock-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const item = findNode(plantTreeData, id);
+                    if(item) {
+                        item.isLocked = !item.isLocked;
+                        renderPlantTree();
+                        showToast(`Resource [${item.name.split('/')[0]}] đã được ${item.isLocked ? 'KHÓA' : 'MỞ KHÓA'}!`, item.isLocked ? 'error' : 'success');
+                    }
+                });
+            });
+
+            container.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const item = findNode(plantTreeData, id);
+                    if(item) {
+                        item.expanded = !item.expanded;
+                        renderPlantTree();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('#plant-tree .tree-node').forEach(node => {
+                node.addEventListener('click', (e) => {
+                    if (e.target.closest('.toggle-btn') || e.target.closest('.plant-lock-toggle')) return;
+                    const id = node.getAttribute('data-id');
+                    selectedPlantNode = findNode(plantTreeData, id);
+                    if(selectedPlantNode) {
+                        updatePlantPropertiesPanel(selectedPlantNode);
+                    }
+                    document.querySelectorAll('#plant-tree .tree-node').forEach(n => n.classList.remove('selected'));
+                    node.classList.add('selected');
+                });
+
+                const type = node.getAttribute('data-type');
+                if(type === 'operation' || type === 'task') {
+                    node.setAttribute('draggable', 'true');
+                    node.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', node.getAttribute('data-id'));
+                        e.dataTransfer.setData('data-type', type);
+                    });
+                }
+            });
+        }
+
+        function updatePlantPropertiesPanel(item) {
+            document.getElementById('p-prop-id').textContent = item.id;
+            document.getElementById('p-prop-type').textContent = item.type.toUpperCase();
+            document.getElementById('p-prop-time').textContent = item.cycle || item.stdTime || '12.5s';
+            document.getElementById('plant-selected-name').textContent = item.name;
+            document.getElementById('p-prop-desc').textContent = item.desc || 'Không có mô tả';
+
+            const subOpTable = document.getElementById('sub-op-table');
+            if (item.children && item.children.length > 0) {
+                subOpTable.innerHTML = item.children.map(child => `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-1.5 text-purple-700 font-semibold"><i class="fa-solid fa-gear text-purple-600 mr-1"></i> ${child.name}</td>
+                        <td class="p-1.5">${child.stdTime || '5.0s'}</td>
+                        <td class="p-1.5"><span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-semibold">${child.opSubtype || 'Run'}</span></td>
+                        <td class="p-1.5 font-mono text-[10px] text-slate-600">${child.formula || 'CycleTime * Qty'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                subOpTable.innerHTML = `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-1.5 text-slate-800 font-medium">${item.name}</td>
+                        <td class="p-1.5">${item.stdTime || item.cycle || '5.0s'}</td>
+                        <td class="p-1.5"><span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-semibold">${item.opSubtype || 'Run'}</span></td>
+                        <td class="p-1.5 font-mono text-[10px] text-slate-600">${item.formula || 'CycleTime * Qty'}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Render BOP Tree
+        function renderBopTree() {
+            const container = document.getElementById('bop-tree');
+            container.innerHTML = buildBopTreeHtml(bopData, 0);
+
+            container.querySelectorAll('.lock-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const item = findNode(bopData, id);
+                    if(item) {
+                        item.isLocked = !item.isLocked;
+                        renderBopTree();
+                        showToast(`Quy trình [${item.name.split('/')[0]}] đã được ${item.isLocked ? 'KHÓA' : 'MỞ KHÓA'}!`, item.isLocked ? 'error' : 'success');
+                    }
+                });
+            });
+
+            container.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const item = findNode(bopData, id);
+                    if(item) {
+                        item.expanded = !item.expanded;
+                        renderBopTree();
+                    }
+                });
+            });
+
+            document.querySelectorAll('#bop-tree .tree-node').forEach(node => {
+                node.addEventListener('click', (e) => {
+                    if (e.target.closest('.toggle-btn') || e.target.closest('.lock-toggle-btn')) return;
+                    const id = node.getAttribute('data-id');
+                    selectedBopNode = findNode(bopData, id);
+                    if(selectedBopNode) {
+                        document.getElementById('bop-sel-name').textContent = selectedBopNode.name;
+                        document.getElementById('bop-sel-wc').textContent = selectedBopNode.workcenter || 'WC-ASSEMBLY-01';
+                        document.getElementById('bop-sel-ws').textContent = selectedBopNode.workstation || 'STA110-NEST';
+                        document.getElementById('bop-sel-parent').textContent = selectedBopNode.parentName || 'Process Root';
+                        document.getElementById('bop-sel-time').textContent = selectedBopNode.stdTime || '4.2s';
+                        document.getElementById('bop-sel-desc').value = selectedBopNode.desc || '';
+                    }
+                    document.querySelectorAll('#bop-tree .tree-node').forEach(n => n.classList.remove('selected'));
+                    node.classList.add('selected');
+                });
+
+                node.addEventListener('dragover', (e) => { e.preventDefault(); node.classList.add('drag-over'); });
+                node.addEventListener('dragleave', () => { node.classList.remove('drag-over'); });
+                node.addEventListener('drop', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    node.classList.remove('drag-over');
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    const draggedType = e.dataTransfer.getData('data-type');
+                    const targetId = node.getAttribute('data-id');
+
+                    const targetItem = findNode(bopData, targetId);
+                    if (targetItem && isProcessLocked(targetItem)) {
+                        showToast('Quy trình này đang bị KHÓA! Không thể chèn vào bên trong.', 'error');
+                        return;
+                    }
+
+                    if(draggedType !== 'operation' && draggedType !== 'task') {
+                        showToast('BOP chỉ cho phép kéo thả Operation hoặc Step/Task con!', 'error');
+                        return;
+                    }
+
+                    const draggedItem = findNode(plantTreeData, draggedId);
+                    if(draggedItem && targetItem) {
+                        const cloned = JSON.parse(JSON.stringify(draggedItem));
+                        cloned.parentName = targetItem.name;
+                        if(!targetItem.children) targetItem.children = [];
+                        targetItem.children.push(cloned);
+                        targetItem.expanded = true;
+                        renderBopTree();
+                        showToast(`Đã kéo thả [${draggedItem.name}] vào [${targetItem.name}] thành công!`);
+                    }
+                });
+            });
+        }
+
+        // Render MBOM Tree
+        function renderMbomTree() {
+            syncMbomWithResources();
+            const container = document.getElementById('mbom-tree');
+            container.innerHTML = buildMbomTreeHtml(mbomData, 0);
+
+            container.querySelectorAll('.mbom-lock-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const item = findNode(mbomData, id);
+                    if(item) {
+                        item.isLocked = !item.isLocked;
+                        renderMbomTree();
+                        showToast(`MBOM Node [${item.name.split('/')[0]}] đã được ${item.isLocked ? 'KHÓA' : 'MỞ KHÓA'}!`, item.isLocked ? 'error' : 'success');
+                    }
+                });
+            });
+
+            container.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const item = findNode(mbomData, id);
+                    if(item) {
+                        item.expanded = !item.expanded;
+                        renderMbomTree();
+                    }
+                });
+            });
+
+            document.querySelectorAll('#mbom-tree .tree-node').forEach(node => {
+                node.addEventListener('click', (e) => {
+                    if (e.target.closest('.toggle-btn') || e.target.closest('.mbom-lock-toggle')) return;
+                    const id = node.getAttribute('data-id');
+                    selectedMbomNode = findNode(mbomData, id);
+                    if(selectedMbomNode) {
+                        document.getElementById('mbom-sel-name').textContent = selectedMbomNode.name;
+                        document.getElementById('mbom-prop-id').textContent = selectedMbomNode.id;
+                        document.getElementById('mbom-prop-type').textContent = selectedMbomNode.type.toUpperCase();
+                        updateAttachedMaterialsView();
+                        closeMaterialForm();
+                    }
+                    document.querySelectorAll('#mbom-tree .tree-node').forEach(n => n.classList.remove('selected'));
+                    node.classList.add('selected');
+                });
+            });
+        }
+
+        function buildPlantTreeHtml(items, depth = 0) {
+            let html = '';
+            items.forEach(item => {
+                const hasChildren = item.children && item.children.length > 0;
+                const pl = depth * 16 + 8;
+                html += `
+                    <div class="tree-branch ${depth > 0 ? 'ml-2' : ''}">
+                        <div class="tree-node flex items-center justify-between py-1 px-1 rounded cursor-pointer text-slate-700 transition"
+                             style="padding-left: ${pl}px;" data-id="${item.id}" data-name="${item.name}" data-type="${item.type}">
+                            <div class="flex items-center space-x-1.5 truncate pointer-events-none">
+                                <button class="plant-lock-toggle w-4 h-4 text-center text-[10px] text-slate-600 hover:text-slate-900 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-0.5 pointer-events-auto" data-id="${item.id}" title="${item.isLocked ? 'Đang khóa (Click để mở)' : 'Đang mở (Click để khóa)'}">
+                                    <i class="fa-solid ${item.isLocked ? 'fa-lock text-red-600' : 'fa-lock-open text-emerald-600'} text-[9px]"></i>
+                                </button>
+                                ${hasChildren ? `
+                                    <button class="toggle-btn w-4 h-4 text-center text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-1 pointer-events-auto" data-id="${item.id}">
+                                        ${item.expanded ? '-' : '+'}
+                                    </button>
+                                ` : '<span class="w-4 mr-1"></span>'}
+                                ${getIcon(item.type)}
+                                <span class="truncate hover:underline">${item.name}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                if(hasChildren && item.expanded) {
+                    html += buildPlantTreeHtml(item.children, depth + 1);
+                }
+            });
+            return html;
+        }
+
+        function buildBopTreeHtml(items, depth = 0) {
+            let html = '';
+            items.forEach(item => {
+                const hasChildren = item.children && item.children.length > 0;
+                const pl = depth * 16 + 8;
+                const isProcess = item.type === 'process';
+                
+                html += `
+                    <div class="tree-branch ${depth > 0 ? 'ml-2' : ''}">
+                        <div class="tree-node flex items-center justify-between py-1 px-1 rounded cursor-pointer text-slate-700 transition"
+                             style="padding-left: ${pl}px;" data-id="${item.id}" data-name="${item.name}" data-type="${item.type}">
+                            <div class="flex items-center space-x-1.5 truncate pointer-events-none">
+                                ${isProcess ? `
+                                    <button class="lock-toggle-btn w-4 h-4 text-center text-[10px] text-slate-600 hover:text-slate-900 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-0.5 pointer-events-auto" data-id="${item.id}" title="${item.isLocked ? 'Đang khóa (Click để mở)' : 'Đang mở (Click để khóa)'}">
+                                        <i class="fa-solid ${item.isLocked ? 'fa-lock text-red-600' : 'fa-lock-open text-emerald-600'} text-[9px]"></i>
+                                    </button>
+                                ` : ''}
+                                ${hasChildren ? `
+                                    <button class="toggle-btn w-4 h-4 text-center text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-1 pointer-events-auto" data-id="${item.id}">
+                                        ${item.expanded ? '-' : '+'}
+                                    </button>
+                                ` : '<span class="w-4 mr-1"></span>'}
+                                ${getIcon(item.type)}
+                                <span class="truncate hover:underline">${item.name}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                if(hasChildren && item.expanded) {
+                    html += buildBopTreeHtml(item.children, depth + 1);
+                }
+            });
+            return html;
+        }
+
+        function buildMbomTreeHtml(items, depth = 0) {
+            let html = '';
+            items.forEach(item => {
+                const hasChildren = item.children && item.children.length > 0;
+                const pl = depth * 16 + 8;
+                const hasMaterials = item.materials && item.materials.length > 0;
+                
+                html += `
+                    <div class="tree-branch ${depth > 0 ? 'ml-2' : ''}">
+                        <div class="tree-node flex items-center justify-between py-1 px-1 rounded cursor-pointer text-slate-700 transition"
+                             style="padding-left: ${pl}px;" data-id="${item.id}" data-name="${item.name}" data-type="${item.type}">
+                            <div class="flex items-center space-x-1.5 truncate pointer-events-none">
+                                <button class="mbom-lock-toggle w-4 h-4 text-center text-[10px] text-slate-600 hover:text-slate-900 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-0.5 pointer-events-auto" data-id="${item.id}" title="${item.isLocked ? 'Đang khóa (Click để mở)' : 'Đang mở (Click để khóa)'}">
+                                    <i class="fa-solid ${item.isLocked ? 'fa-lock text-red-600' : 'fa-lock-open text-emerald-600'} text-[9px]"></i>
+                                </button>
+                                ${hasChildren ? `
+                                    <button class="toggle-btn w-4 h-4 text-center text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-1 pointer-events-auto" data-id="${item.id}">
+                                        ${item.expanded ? '-' : '+'}
+                                    </button>
+                                ` : '<span class="w-4 mr-1"></span>'}
+                                ${getIcon(item.type)}
+                                <span class="truncate hover:underline">${item.name}</span>
+                                ${hasMaterials ? '<i class="fa-solid fa-triangle-exclamation text-amber-500 text-[10px] ml-1" title="Đã gán vật tư"></i>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                if(hasChildren && item.expanded) {
+                    html += buildMbomTreeHtml(item.children, depth + 1);
+                }
+            });
+            return html;
+        }
+
+        function findNode(nodes, id) {
+            for(let node of nodes) {
+                if(node.id === id) return node;
+                if(node.children) {
+                    const found = findNode(node.children, id);
+                    if(found) return found;
+                }
+            }
+            return null;
+        }
+
+        // Modal Logic for Creating / Editing Resource
+        function openResourceModal(mode) {
+            modalMode = mode;
+            const selectElem = document.getElementById('modal-parent-select');
+            selectElem.innerHTML = `<option value="">-- Gốc (Root / Plant mới) --</option>`;
+            
+            function flatten(nodes) {
+                nodes.forEach(n => {
+                    selectElem.innerHTML += `<option value="${n.id}">${n.name} (${n.type.toUpperCase()})</option>`;
+                    if(n.children) flatten(n.children);
+                });
+            }
+            flatten(plantTreeData);
+
+            if (mode === 'edit' && selectedPlantNode) {
+                document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-600 mr-1.5"></i> Chỉnh sửa Resource: ${selectedPlantNode.name}`;
+                document.getElementById('modal-res-name').value = selectedPlantNode.name;
+                document.getElementById('modal-res-type').value = selectedPlantNode.type;
+                document.getElementById('modal-std-time').value = selectedPlantNode.stdTime || selectedPlantNode.cycle || '5.0s';
+                document.getElementById('modal-op-subtype').value = selectedPlantNode.opSubtype || 'Run';
+                document.getElementById('modal-formula').value = selectedPlantNode.formula || '';
+                
+                function findParentId(nodes, targetId, parentId = "") {
+                    for(let n of nodes) {
+                        if(n.id === targetId) return parentId;
+                        if(n.children) {
+                            let found = findParentId(n.children, targetId, n.id);
+                            if(found) return found;
+                        }
+                    }
+                    return "";
+                }
+                selectElem.value = findParentId(plantTreeData, selectedPlantNode.id);
+                onParentChange();
+            } else {
+                document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-plus text-emerald-600 mr-1.5"></i> Tạo mới Resource / Nguồn lực`;
+                document.getElementById('modal-res-name').value = '';
+                document.getElementById('modal-res-type').value = 'workcenter';
+                document.getElementById('modal-std-time').value = '5.0s';
+                document.getElementById('modal-op-subtype').value = 'Run';
+                document.getElementById('modal-formula').value = '';
+                selectElem.value = "";
+                onParentChange();
+            }
+
+            document.getElementById('resource-modal').classList.remove('hidden');
+        }
+
+        function closeResourceModal() {
+            document.getElementById('resource-modal').classList.add('hidden');
+        }
+
+        function onParentChange() {
+            const parentId = document.getElementById('modal-parent-select').value;
+            const opFields = document.getElementById('modal-operation-fields');
+            if(!parentId) {
+                opFields.classList.add('hidden');
+                return;
+            }
+            const parentNode = findNode(plantTreeData, parentId);
+            if(parentNode && (parentNode.type === 'operation' || parentNode.type === 'workcenter')) {
+                opFields.classList.remove('hidden');
+            } else {
+                opFields.classList.add('hidden');
+            }
+        }
+
+        function submitResourceModal() {
+            const parentId = document.getElementById('modal-parent-select').value;
+            const name = document.getElementById('modal-res-name').value.trim();
+            const type = document.getElementById('modal-res-type').value;
+
+            if(!name) {
+                showToast('Vui lòng nhập tên resource!', 'error');
+                return;
+            }
+
+            if (modalMode === 'edit' && selectedPlantNode) {
+                selectedPlantNode.name = name;
+                selectedPlantNode.type = type;
+                selectedPlantNode.stdTime = document.getElementById('modal-std-time').value;
+                selectedPlantNode.cycle = selectedPlantNode.stdTime;
+                selectedPlantNode.opSubtype = document.getElementById('modal-op-subtype').value;
+                selectedPlantNode.formula = document.getElementById('modal-formula').value;
+
+                closeResourceModal();
+                renderPlantTree();
+                renderMbomTree();
+                updatePlantPropertiesPanel(selectedPlantNode);
+                showToast(`Đã cập nhật Resource [${name}] thành công!`);
+            } else {
+                const newNode = {
+                    id: "PL-" + Math.floor(Math.random()*10000),
+                    name: name,
+                    type: type,
+                    expanded: true,
+                    isLocked: true,
+                    cycle: "12.5s",
+                    workcenter: "WC-GEN-01",
+                    workstation: "WS-GEN-02",
+                    parentName: parentId ? findNode(plantTreeData, parentId).name : "Root Master",
+                    stdTime: document.getElementById('modal-std-time').value || "5.0s",
+                    opSubtype: document.getElementById('modal-op-subtype').value || "Run",
+                    formula: document.getElementById('modal-formula').value || "CycleTime * Qty",
+                    desc: "Nguồn lực mới tạo.",
+                    children: []
+                };
+
+                if(!parentId) {
+                    plantTreeData.push(newNode);
+                } else {
+                    const parentNode = findNode(plantTreeData, parentId);
+                    if(parentNode) {
+                        if(!parentNode.children) parentNode.children = [];
+                        parentNode.children.push(newNode);
+                        parentNode.expanded = true;
+                    }
+                }
+
+                closeResourceModal();
+                renderPlantTree();
+                renderMbomTree();
+                showToast(`Đã tạo Resource [${name}] thành công!`);
+            }
+        }
+
+        function moveResourceItem(direction) {
+            if(!selectedPlantNode) {
+                showToast('Vui lòng chọn một node trong Resource Tree để di chuyển!', 'error');
+                return;
+            }
+            if(selectedPlantNode.isLocked) {
+                showToast('Resource đang bị KHÓA! Không thể thay đổi thứ tự.', 'error');
+                return;
+            }
+            function moveInNodes(nodes) {
+                for(let i=0; i<nodes.length; i++) {
+                    if(nodes[i].id === selectedPlantNode.id) {
+                        if(direction === 'up' && i > 0) {
+                            const temp = nodes[i];
+                            nodes[i] = nodes[i-1];
+                            nodes[i-1] = temp;
+                            return true;
+                        } else if(direction === 'down' && i < nodes.length - 1) {
+                            const temp = nodes[i];
+                            nodes[i] = nodes[i+1];
+                            nodes[i+1] = temp;
+                            return true;
+                        }
+                        return false;
+                    }
+                    if(nodes[i].children) {
+                        if(moveInNodes(nodes[i].children)) return true;
+                    }
+                }
+                return false;
+            }
+            moveInNodes(plantTreeData);
+            renderPlantTree();
+            renderMbomTree();
+            showToast('Đã cập nhật vị trí Resource!');
+        }
+
+        function deleteSelectedResourceNode() {
+            if(!selectedPlantNode) {
+                showToast('Vui lòng chọn đối tượng cần xóa trong Resource Tree!', 'error');
+                return;
+            }
+            if(selectedPlantNode.isLocked) {
+                showToast('Resource đang bị KHÓA! Vui lòng mở khóa trước khi xóa.', 'error');
+                return;
+            }
+            if(!confirm(`Bạn có chắc chắn muốn xóa Resource [${selectedPlantNode.name}] không?`)) {
+                return;
+            }
+            function removeNode(nodes, id) {
+                for(let i=0; i<nodes.length; i++) {
+                    if(nodes[i].id === id) {
+                        nodes.splice(i, 1);
+                        return true;
+                    }
+                    if(nodes[i].children) {
+                        if(removeNode(nodes[i].children, id)) return true;
+                    }
+                }
+                return false;
+            }
+            removeNode(plantTreeData, selectedPlantNode.id);
+            selectedPlantNode = null;
+            renderPlantTree();
+            renderMbomTree();
+            showToast('Đã xóa Resource thành công!');
+        }
+
+        function createNewProcess() {
+            const procName = prompt("Nhập tên quy trình (Process Name):", "PROC-02 / SUB-ASSEMBLY LINE");
+            if(procName) {
+                bopData.push({
+                    id: "PROC-" + (bopData.length + 1),
+                    name: procName,
+                    type: "process",
+                    expanded: true,
+                    isLocked: true,
+                    workcenter: "WC-SUB-01",
+                    workstation: "WS-SUB-02",
+                    parentName: "Enterprise Master",
+                    stdTime: "20.0s",
+                    desc: "Mô tả chi tiết cho quy trình sản xuất mới tạo.",
+                    children: []
+                });
+                renderBopTree();
+                showToast(`Đã tạo quy trình [${procName}] thành công!`);
+            }
+        }
+
+        function updateProcessDescription(newDesc) {
+            if(selectedBopNode) {
+                selectedBopNode.desc = newDesc;
+            }
+        }
+
+        function moveSelectedItem(direction) {
+            if(!selectedBopNode) {
+                showToast('Vui lòng chọn một node trong BOP để di chuyển vị trí!', 'error');
+                return;
+            }
+            if(isProcessLocked(selectedBopNode)) {
+                showToast('Quy trình đang bị KHÓA! Không thể thay đổi thứ tự.', 'error');
+                return;
+            }
+            function moveInNodes(nodes) {
+                for(let i=0; i<nodes.length; i++) {
+                    if(nodes[i].id === selectedBopNode.id) {
+                        if(direction === 'up' && i > 0) {
+                            const temp = nodes[i];
+                            nodes[i] = nodes[i-1];
+                            nodes[i-1] = temp;
+                            return true;
+                        } else if(direction === 'down' && i < nodes.length - 1) {
+                            const temp = nodes[i];
+                            nodes[i] = nodes[i+1];
+                            nodes[i+1] = temp;
+                            return true;
+                        }
+                        return false;
+                    }
+                    if(nodes[i].children) {
+                        if(moveInNodes(nodes[i].children)) return true;
+                    }
+                }
+                return false;
+            }
+            moveInNodes(bopData);
+            renderBopTree();
+            showToast('Đã cập nhật vị trí tuần tự!');
+        }
+
+        function deleteSelectedBopNode() {
+            if(!selectedBopNode) {
+                showToast('Vui lòng chọn đối tượng cần xóa trong BOP!', 'error');
+                return;
+            }
+            if(isProcessLocked(selectedBopNode)) {
+                showToast('Quy trình đang bị KHÓA! Vui lòng mở khóa trước khi xóa.', 'error');
+                return;
+            }
+            if(!confirm(`Bạn có chắc chắn muốn xóa đối tượng [${selectedBopNode.name}] không?`)) {
+                return;
+            }
+            function removeNode(nodes, id) {
+                for(let i=0; i<nodes.length; i++) {
+                    if(nodes[i].id === id) {
+                        nodes.splice(i, 1);
+                        return true;
+                    }
+                    if(nodes[i].children) {
+                        if(removeNode(nodes[i].children, id)) return true;
+                    }
+                }
+                return false;
+            }
+            removeNode(bopData, selectedBopNode.id);
+            selectedBopNode = null;
+            document.getElementById('bop-sel-name').textContent = 'Chưa chọn node';
+            document.getElementById('bop-sel-desc').value = '';
+            renderBopTree();
+            showToast('Đã xóa đối tượng/Step khỏi BOP thành công!');
+        }
+
+        function deleteSelectedMbomNode() {
+            if(!selectedMbomNode) {
+                showToast('Vui lòng chọn node MBOM cần xóa!', 'error');
+                return;
+            }
+            if(selectedMbomNode.isLocked) {
+                showToast('Node MBOM này đang bị KHÓA! Vui lòng mở khóa trước khi xóa.', 'error');
+                return;
+            }
+            if(!confirm(`Bạn có chắc chắn muốn xóa node MBOM [${selectedMbomNode.name}] không?`)) {
+                return;
+            }
+            function removeNode(nodes, id) {
+                for(let i=0; i<nodes.length; i++) {
+                    if(nodes[i].id === id) {
+                        nodes.splice(i, 1);
+                        return true;
+                    }
+                    if(nodes[i].children) {
+                        if(removeNode(nodes[i].children, id)) return true;
+                    }
+                }
+                return false;
+            }
+            removeNode(mbomData, selectedMbomNode.id);
+            selectedMbomNode = null;
+            document.getElementById('mbom-sel-name').textContent = 'Chưa chọn node';
+            document.getElementById('mbom-prop-id').textContent = '-';
+            document.getElementById('mbom-prop-type').textContent = '-';
+            renderMbomTree();
+            showToast('Đã xóa node MBOM thành công!');
+        }
+
+        // Material Form & Property Inspector logic
+        function openMaterialForm(mode) {
+            if(!selectedMbomNode) {
+                showToast('Vui lòng chọn một node trên cây MBOM trước!', 'error');
+                return;
+            }
+            if(selectedMbomNode.isLocked) {
+                showToast('Node MBOM đang bị KHÓA! Vui lòng bấm vào icon ổ khóa để mở khóa trước khi chỉnh sửa.', 'error');
+                return;
+            }
+            const formContainer = document.getElementById('material-form-container');
+            formContainer.classList.remove('hidden');
+
+            if(mode === 'edit') {
+                document.getElementById('material-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square mr-1"></i> Chỉnh sửa Vật tư & Định mức`;
+                if(selectedMbomNode.materials && selectedMbomNode.materials.length > 0) {
+                    let firstMat = selectedMbomNode.materials[0];
+                    document.getElementById('form-material-select').value = firstMat;
+                    if(selectedMbomNode.materialConfigs && selectedMbomNode.materialConfigs[firstMat]) {
+                        document.getElementById('form-material-formula').value = selectedMbomNode.materialConfigs[firstMat].formula;
+                    }
+                }
+            } else {
+                document.getElementById('material-form-title').innerHTML = `<i class="fa-solid fa-plus mr-1"></i> Thêm mới Vật tư & Định mức`;
+                document.getElementById('form-material-formula').value = "CycleTime * Qty * 2.0";
+            }
+        }
+
+        function closeMaterialForm() {
+            document.getElementById('material-form-container').classList.add('hidden');
+        }
+
+        function testMaterialFormula() {
+            const formula = document.getElementById('form-material-formula').value;
+            showToast(`Kết quả Test công thức [${formula}] thành công: Tổng định mức = 12.5 pcs`);
+        }
+
+        function saveMaterialForm() {
+            if(!selectedMbomNode) return;
+            const matName = document.getElementById('form-material-select').value;
+            const formula = document.getElementById('form-material-formula').value.trim();
+
+            if(!selectedMbomNode.materials) selectedMbomNode.materials = [];
+            if(!selectedMbomNode.materialConfigs) selectedMbomNode.materialConfigs = {};
+
+            if(!selectedMbomNode.materials.includes(matName)) {
+                selectedMbomNode.materials.push(matName);
+            }
+            selectedMbomNode.materialConfigs[matName] = {
+                formula: formula || "CycleTime * Qty"
+            };
+
+            updateAttachedMaterialsView();
+            renderMbomTree();
+            closeMaterialForm();
+            showToast(`Đã lưu cài đặt vật tư [${matName}] thành công! Icon [!] đã được cập nhật.`);
+        }
+
+        function removeMaterialFromMbom(matName) {
+            if(!selectedMbomNode) return;
+            if(selectedMbomNode.isLocked) {
+                showToast('Node MBOM đang bị KHÓA!', 'error');
+                return;
+            }
+            if(confirm(`Bạn có muốn xóa vật tư [${matName}] khỏi node này không?`)) {
+                selectedMbomNode.materials = selectedMbomNode.materials.filter(m => m !== matName);
+                if(selectedMbomNode.materialConfigs) delete selectedMbomNode.materialConfigs[matName];
+                updateAttachedMaterialsView();
+                renderMbomTree();
+                showToast(`Đã xóa vật tư [${matName}]!`);
+            }
+        }
+
+        function updateAttachedMaterialsView() {
+            const container = document.getElementById('attached-materials-list');
+            if(!selectedMbomNode || !selectedMbomNode.materials || selectedMbomNode.materials.length === 0) {
+                container.innerHTML = `<div class="text-slate-400 italic">Chưa có vật tư nào được gán cho node này.</div>`;
+                return;
+            }
+            container.innerHTML = selectedMbomNode.materials.map(m => {
+                const config = (selectedMbomNode.materialConfigs && selectedMbomNode.materialConfigs[m]) ? selectedMbomNode.materialConfigs[m] : { formula: 'CycleTime * Qty' };
+                return `
+                    <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded border mb-1">
+                        <div>
+                            <div class="font-semibold text-slate-800"><i class="fa-solid fa-box text-blue-600 mr-1"></i> ${m}</div>
+                            <div class="text-[10px] text-slate-500 font-mono">Công thức: ${config.formula}</div>
+                        </div>
+                        <button onclick="removeMaterialFromMbom('${m}')" class="text-red-600 hover:text-red-800 text-[10px]" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function drawPlantCanvas() {
+            const canvas = document.getElementById('plant-canvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            for(let x=0; x<canvas.width; x+=30) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+            for(let y=0; y<canvas.height; y+=30) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(canvas.width/2 - 100, canvas.height/2 - 60, 200, 120);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('PLANT MAIN SHOP (CAD Layout)', canvas.width/2, canvas.height/2 - 10);
+            ctx.fillStyle = '#10b981';
+            ctx.fillText('Workcenter: UNDERBODY ZONE', canvas.width/2, canvas.height/2 + 15);
+        }
+
+        window.onload = function() {
+            renderPlantTree();
+            renderBopTree();
+            renderMbomTree();
+            drawPlantCanvas();
+            if(plantTreeData.length > 0) {
+                selectedPlantNode = plantTreeData[0];
+                updatePlantPropertiesPanel(selectedPlantNode);
+            }
+            showToast('Hệ thống Teamcenter Resource, BOP & MBOM đã sẵn sàng!');
+        };
+    </script>
+</body>
+</html>
