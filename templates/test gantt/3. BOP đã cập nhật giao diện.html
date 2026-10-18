@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Siemens Teamcenter PLM - BOR (Bill of Resources) & Dual Layout Manager</title>
+  <title>Siemens Teamcenter PLM - BOR & Layout Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -53,11 +53,14 @@
       <div class="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs tracking-wider flex items-center gap-1.5">
         <i class="fa-solid fa-cubes"></i> TEAMCENTER
       </div>
-      <span class="text-sm font-semibold text-slate-200">Bill of Resources (BOR) & Dual Layout Comparison</span>
+      <span class="text-sm font-semibold text-slate-200">Bill of Resources (BOR) & Layout Manager</span>
     </div>
     
     <div class="flex items-center space-x-2">
-      <span class="text-xs text-slate-400"><i class="fa-solid fa-circle-info text-blue-400"></i> Chỉ hiển thị và highlight đúng phần nhánh đang được chọn</span>
+      <button onclick="saveAndSyncToMain()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow" title="Lưu dữ liệu, chuyển hình SVG và tất cả tọa độ sang Main, ẩn CAD">
+        <i class="fa-solid fa-floppy-disk"></i> Save (Chuyển CAD/SVG -> Main)
+      </button>
+      <span class="text-xs text-slate-400 ml-2"><i class="fa-solid fa-circle-info text-blue-400"></i> Quản lý vị trí nhà máy</span>
     </div>
   </header>
 
@@ -139,6 +142,10 @@
 
           <button id="save-region-btn" onclick="saveSelectedRegion()" class="hidden px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-semibold flex items-center gap-1" title="Lưu vị trí vừa quét cho nhánh đang chọn">
             <i class="fa-solid fa-floppy-disk"></i> Lưu vị trí
+          </button>
+
+          <button id="show-all-btn" onclick="toggleShowAllRegions()" class="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold flex items-center gap-1" title="Hiển thị tất cả nguồn lực (Plant, WorkCenter, WorkStation...)">
+            <i class="fa-solid fa-eye"></i> Show: Tắt
           </button>
 
           <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
@@ -333,6 +340,11 @@
     let selectedParentId = null;
     let activeCadTool = "SELECT"; 
     let activeDrawingPane = "main"; 
+    let showAllRegionsMode = false; // Bật/Tắt chế độ xem toàn bộ tất cả nguồn lực
+
+    // Lưu hình nền CAD/SVG import
+    let loadedCadImage = null; 
+    let loadedMainImage = null; 
 
     // Canvas 1 (Layout Gốc - Trái)
     let zoomLevel = 1.0;
@@ -352,7 +364,6 @@
     let cadIsPanning = false;
     let cadStartPanX = 0;
     let cadStartPanY = 0;
-    let loadedCadImage = null;
     let cadIsDraggingBox = false;
     let cadBoxStartX = 0, cadBoxStartY = 0, cadBoxEndX = 0, cadBoxEndY = 0;
     let cadTempRegion = null;
@@ -459,7 +470,6 @@
 
     function selectBorNode(id) {
       selectedNodeId = id;
-      // Khi bấm chọn nhánh khác, xóa khung quét tạm thời (tempRegion) của cả 2 màn hình
       tempRegion = null;
       cadTempRegion = null;
       document.getElementById("save-region-btn").classList.add("hidden");
@@ -791,7 +801,22 @@
       alert(`Đã lưu vùng vị trí quét cho màn hình [${activeDrawingPane === 'main' ? 'Layout Gốc' : 'Bản Vẽ CAD'}] thành công!`);
     }
 
-    // --- CHỈ VẼ DUY NHẤT NODE ĐANG ĐƯỢC CHỌN (HIGHLIGHT) ---
+    // --- NÚT SHOW TẤT CẢ TẤT CẢ NGUỒN LỰC (PLANT, WORKCENTER, WORKSTATION...) ---
+    function toggleShowAllRegions() {
+      showAllRegionsMode = !showAllRegionsMode;
+      const btn = document.getElementById("show-all-btn");
+      if (showAllRegionsMode) {
+        btn.innerHTML = `<i class="fa-solid fa-eye"></i> Show: Đang bật (Hiện tất cả)`;
+        btn.className = "px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-semibold flex items-center gap-1";
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-eye-slash"></i> Show: Tắt (Chỉ hiện chọn)`;
+        btn.className = "px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold flex items-center gap-1";
+      }
+      drawCanvas();
+      drawCadCanvas();
+    }
+
+    // --- HÀM VẼ CANVAS GỐC (MAIN) ---
     function drawCanvas() {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -800,9 +825,30 @@
       ctx.translate(panX, panY);
       ctx.scale(zoomLevel, zoomLevel);
 
-      let selectedNode = findNodeById(borData, selectedNodeId);
-      if (selectedNode) {
-        drawSelectedNodeOnly(selectedNode, ctx, 'main');
+      // Hiển thị hình ảnh SVG/CAD nền nếu có
+      if (loadedMainImage) {
+        ctx.drawImage(loadedMainImage, 0, 0);
+      }
+
+      if (showAllRegionsMode) {
+        // ĐANG BẬT SHOW: Vẽ TẤT CẢ các nguồn lực từ Plant, WorkCenter, WorkStation...
+        function drawAllNodesRecursively(nodes) {
+          nodes.forEach(n => {
+            if (n.x !== null && n.y !== null && n.x !== undefined) {
+              drawNodeRectAndText(n, ctx, 'main');
+            }
+            if (n.children && n.children.length > 0) {
+              drawAllNodesRecursively(n.children);
+            }
+          });
+        }
+        drawAllNodesRecursively(borData);
+      } else {
+        // ĐANG TẮT SHOW: CHỈ HIGHLIGHT DUY NHẤT NGUỒN LỰC ĐƯỢC CHỌN
+        let selectedNode = findNodeById(borData, selectedNodeId);
+        if (selectedNode) {
+          drawNodeRectAndText(selectedNode, ctx, 'main');
+        }
       }
 
       if (isDraggingBox) {
@@ -831,6 +877,7 @@
       ctx.restore();
     }
 
+    // --- HÀM VẼ CANVAS CAD (PHẢI) ---
     function drawCadCanvas() {
       if (!cadCtx || !cadCanvas) return;
       cadCtx.clearRect(0, 0, cadCanvas.width, cadCanvas.height);
@@ -843,9 +890,23 @@
         cadCtx.drawImage(loadedCadImage, 0, 0);
       }
 
-      let selectedNode = findNodeById(borData, selectedNodeId);
-      if (selectedNode) {
-        drawSelectedNodeOnly(selectedNode, cadCtx, 'cad');
+      if (showAllRegionsMode) {
+        function drawAllCadNodesRecursively(nodes) {
+          nodes.forEach(n => {
+            if (n.cadX !== null && n.cadY !== null && n.cadX !== undefined) {
+              drawNodeRectAndText(n, cadCtx, 'cad');
+            }
+            if (n.children && n.children.length > 0) {
+              drawAllCadNodesRecursively(n.children);
+            }
+          });
+        }
+        drawAllCadNodesRecursively(borData);
+      } else {
+        let selectedNode = findNodeById(borData, selectedNodeId);
+        if (selectedNode) {
+          drawNodeRectAndText(selectedNode, cadCtx, 'cad');
+        }
       }
 
       if (cadIsDraggingBox) {
@@ -874,7 +935,7 @@
       cadCtx.restore();
     }
 
-    function drawSelectedNodeOnly(node, context, paneType) {
+    function drawNodeRectAndText(node, context, paneType) {
       let nx = paneType === 'main' ? node.x : node.cadX;
       let ny = paneType === 'main' ? node.y : node.cadY;
       let nw = paneType === 'main' ? node.w : node.cadW;
@@ -882,29 +943,31 @@
 
       if (nx === null || ny === null || nx === undefined || ny === undefined) return;
 
+      const isSelected = node.id === selectedNodeId;
+
       context.save();
       if (node.type === "PLANT") {
-        context.strokeStyle = "#3b82f6";
-        context.lineWidth = 3;
-        context.fillStyle = "rgba(59, 130, 246, 0.25)";
+        context.strokeStyle = isSelected ? "#3b82f6" : "#64748b";
+        context.lineWidth = isSelected ? 3 : 1.5;
+        context.fillStyle = isSelected ? "rgba(59, 130, 246, 0.25)" : "rgba(30, 41, 59, 0.4)";
         context.strokeRect(nx, ny, nw, nh);
         context.fillRect(nx, ny, nw, nh);
-        context.fillStyle = "#94a3b8";
+        context.fillStyle = "#cbd5e1";
         context.font = "bold 11px sans-serif";
         context.fillText(node.name, nx + 8, ny + 18);
       } else if (node.type === "WORKCENTER") {
-        context.strokeStyle = "#f59e0b";
-        context.lineWidth = 3;
-        context.fillStyle = "rgba(245, 158, 11, 0.35)";
+        context.strokeStyle = isSelected ? "#f59e0b" : "#d97706";
+        context.lineWidth = isSelected ? 3 : 1.5;
+        context.fillStyle = isSelected ? "rgba(245, 158, 11, 0.35)" : "rgba(180, 83, 9, 0.15)";
         context.strokeRect(nx, ny, nw, nh);
         context.fillRect(nx, ny, nw, nh);
-        context.fillStyle = "#f59e0b";
+        context.fillStyle = "#fbbf24";
         context.font = "10px sans-serif";
         context.fillText(node.name, nx + 6, ny + 14);
       } else {
-        context.strokeStyle = "#a855f7";
-        context.lineWidth = 3;
-        context.fillStyle = "rgba(168, 85, 247, 0.4)";
+        context.strokeStyle = isSelected ? "#a855f7" : "#9333ea";
+        context.lineWidth = isSelected ? 3 : 1;
+        context.fillStyle = isSelected ? "rgba(168, 85, 247, 0.4)" : "rgba(126, 34, 206, 0.2)";
         context.fillRect(nx, ny, nw, nh);
         context.strokeRect(nx, ny, nw, nh);
         context.fillStyle = "#e9d5ff";
@@ -912,13 +975,57 @@
         context.fillText(node.name, nx + 5, ny + 15);
       }
 
-      // Viền sáng highlight mạnh
-      context.shadowColor = "#3b82f6";
-      context.shadowBlur = 20;
-      context.strokeStyle = "#60a5fa";
-      context.lineWidth = 3;
-      context.strokeRect(nx - 3, ny - 3, nw + 6, nh + 6);
+      if (isSelected) {
+        context.shadowColor = "#3b82f6";
+        context.shadowBlur = 18;
+        context.strokeStyle = "#60a5fa";
+        context.lineWidth = 3;
+        context.strokeRect(nx - 2, ny - 2, nw + 4, nh + 4);
+      }
       context.restore();
+    }
+
+    // --- NÚT SAVE: ĐỒNG BỘ CAD -> MAIN (BAO GỒM CẢ FILE HÌNH NỀN SVG/CAD CỦA CAD SANG MAIN) ---
+    function saveAndSyncToMain() {
+      // 1. Sao chép hình nền CAD/SVG đã import sang Màn hình Main
+      if (loadedCadImage) {
+        loadedMainImage = loadedCadImage;
+      }
+
+      // 2. Đồng bộ tất cả tọa độ quét chọn từ CAD sang Main
+      function syncNodeData(node) {
+        if (node.cadX !== null && node.cadY !== null) {
+          node.x = node.cadX;
+          node.y = node.cadY;
+          node.w = node.cadW;
+          node.h = node.cadH;
+          node.hasMainRegion = true;
+        }
+        if (node.children) node.children.forEach(c => syncNodeData(c));
+      }
+      borData.forEach(n => syncNodeData(n));
+
+      // 3. Ẩn màn hình Layout CAD đi (màn hình Main chiếm toàn bộ giao diện)
+      const paneCad = document.getElementById("pane-cad");
+      const resizerDual = document.getElementById("resizer-dual");
+      const paneOriginal = document.getElementById("pane-original");
+      
+      paneCad.classList.add("hidden");
+      resizerDual.classList.add("hidden");
+      paneOriginal.style.flex = "1";
+      resizeCanvases();
+
+      // 4. Tạo Dictionary hoàn chỉnh dữ liệu chuẩn bị cho kết nối Supabase sau này
+      let borDataDictionary = {
+        timestamp: new Date().toISOString(),
+        nodes: borData,
+        hasSvgImage: loadedMainImage ? true : false
+      };
+
+      console.log("=== DICTIONARY DỮ LIỆU ĐÃ LƯU ===", borDataDictionary);
+      alert("Đã đồng bộ toàn bộ file SVG/CAD và tất cả tọa độ sang màn hình Main, ẩn màn hình CAD thành công!");
+
+      drawCanvas();
     }
 
     function zoomLayout(pane, factor) {
@@ -953,7 +1060,7 @@
           loadedCadImage = img;
           document.getElementById("cad-empty-state").classList.add("hidden");
           resizeCanvases();
-          alert(`Đã import và hiển thị file CAD/SVG [${file.name}] trên màn hình phải!`);
+          alert(`Đã import thành công file CAD/SVG [${file.name}] vào màn hình CAD!`);
         };
         img.src = evt.target.result;
       };
