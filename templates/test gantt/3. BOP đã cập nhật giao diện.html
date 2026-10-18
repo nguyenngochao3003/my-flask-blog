@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Siemens Teamcenter PLM - BOR & Layout Manager</title>
+  <title>Siemens Teamcenter PLM - BOR & Layout Manager with Tools</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -95,7 +95,7 @@
         <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="togglePropPanel()">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-circle-info text-blue-600 text-xs"></i>
-            <span class="text-xs font-bold text-slate-700">Resource Properties & Full Results</span>
+            <span class="text-xs font-bold text-slate-700">Resource Properties & Tools</span>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="event.stopPropagation(); editSelectedNode();" class="px-2 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700"><i class="fa-solid fa-pen"></i> Sửa</button>
@@ -173,10 +173,10 @@
           </div>
         </div>
 
-        <!-- RESIZER DỌC (Ẩn mặc định khi CAD ẩn) -->
+        <!-- RESIZER DỌC -->
         <div id="resizer-dual" class="resizer-v hidden" title="Kéo để thay đổi tỷ lệ 2 màn hình"></div>
 
-        <!-- MÀN HÌNH PHẢI: BẢN VẼ CAD / SVG CẬP NHẬT (Ẩn mặc định khi khởi động) -->
+        <!-- MÀN HÌNH PHẢI: BẢN VẼ CAD / SVG CẬP NHẬT -->
         <div id="pane-cad" class="flex-1 flex flex-col relative bg-slate-900 overflow-hidden hidden" style="flex: 0 0 50%;">
           <div class="bg-slate-800/90 text-sky-400 px-3 py-1.5 text-xs font-bold border-b border-slate-700 flex items-center justify-between shrink-0">
             <span class="flex items-center gap-2"><i class="fa-solid fa-file-code"></i> 2. Bản Vẽ CAD / SVG Cập Nhật</span>
@@ -202,12 +202,12 @@
 
   </div>
 
-  <!-- ================= MODAL: THÊM / CHỈNH SỬA RESOURCE ================= -->
+  <!-- ================= MODAL: THÊM / CHỈNH SỬA RESOURCE & TOOLS ================= -->
   <div id="modal-node" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl w-[520px] max-w-[90vw] overflow-hidden flex flex-col border border-slate-300">
+    <div class="bg-white rounded-lg shadow-xl w-[580px] max-w-[90vw] overflow-hidden flex flex-col border border-slate-300">
       <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
         <h3 id="modal-title" class="text-sm font-bold flex items-center gap-2">
-          <i class="fa-solid fa-pen-to-square text-blue-400"></i> <span>Chỉnh sửa Resource & Thuộc tính</span>
+          <i class="fa-solid fa-pen-to-square text-blue-400"></i> <span>Chỉnh sửa Resource & Dụng cụ (Tools)</span>
         </h3>
         <button onclick="closeModalNode()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
       </div>
@@ -217,7 +217,7 @@
           <label class="block text-xs font-bold text-slate-700 mb-1">Parent Resource (Chọn Node cha):</label>
           <input type="text" id="parent-search-input" oninput="filterParentTree()" placeholder="🔍 Gõ để lọc danh sách parent..." 
                  class="w-full text-xs p-2 border border-slate-300 rounded mb-2 focus:ring-2 focus:ring-blue-500 outline-none">
-          <div class="border border-slate-200 rounded max-h-[140px] overflow-auto p-2 bg-slate-50 text-xs border-l border-dashed border-slate-300" id="parent-tree-select-container"></div>
+          <div class="border border-slate-200 rounded max-h-[130px] overflow-auto p-2 bg-slate-50 text-xs border-l border-dashed border-slate-300" id="parent-tree-select-container"></div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -237,25 +237,43 @@
           </div>
         </div>
 
+        <!-- PHẦN QUẢN LÝ NHIỀU TOOL / DỤNG CỤ CHO TRẠM -->
+        <div class="p-3 bg-sky-50 border border-sky-200 rounded space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-toolbox text-sky-600"></i> Danh sách Dụng cụ / Công cụ (Tools):
+            </span>
+            <button onclick="addToolInputRow()" class="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded text-[11px] font-semibold flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-plus"></i> Thêm Tool
+            </button>
+          </div>
+          <div id="tools-input-container" class="space-y-2 max-h-[140px] overflow-auto pr-1">
+            <!-- Các dòng tool sẽ được thêm vào đây bằng JS -->
+          </div>
+          <p class="text-[10px] text-slate-500 italic">Thêm nhiều dụng cụ như: đồ gá, kẹp, đầu hàn, hóa chất xử lý...</p>
+        </div>
+
         <div class="p-3 bg-purple-50 border border-purple-200 rounded space-y-2.5">
           <div class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
             <i class="fa-solid fa-gears text-purple-600"></i> Thuộc tính Operation / Task:
           </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Standard Time (Thời gian chuẩn):</label>
-            <input type="text" id="input-node-stdtime" class="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="VD: 12.5s">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Operation Type:</label>
-            <select id="input-node-tasktype" class="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none">
-              <option value="Setup">Setup (Chuẩn bị)</option>
-              <option value="Run">Run (Gia công)</option>
-              <option value="Check">Check (Kiểm tra)</option>
-            </select>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Standard Time:</label>
+              <input type="text" id="input-node-stdtime" class="w-full text-xs p-2 bg-white border border-slate-300 rounded outline-none" placeholder="VD: 12.5s">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Operation Type:</label>
+              <select id="input-node-tasktype" class="w-full text-xs p-2 bg-white border border-slate-300 rounded outline-none">
+                <option value="Setup">Setup (Chuẩn bị)</option>
+                <option value="Run">Run (Gia công)</option>
+                <option value="Check">Check (Kiểm tra)</option>
+              </select>
+            </div>
           </div>
           <div>
             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Công thức tính toán (Formula):</label>
-            <input type="text" id="input-node-formula" class="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none font-mono" placeholder="VD: CycleTime * Qty">
+            <input type="text" id="input-node-formula" class="w-full text-xs p-2 bg-white border border-slate-300 rounded outline-none font-mono" placeholder="VD: CycleTime * Qty">
           </div>
         </div>
 
@@ -299,6 +317,7 @@
         hasMainRegion: true,
         cadX: null, cadY: null, cadW: null, cadH: null,
         hasCadRegion: false,
+        tools: [],
         children: [
           {
             id: "WC-101",
@@ -310,6 +329,7 @@
             hasMainRegion: true,
             cadX: null, cadY: null, cadW: null, cadH: null,
             hasCadRegion: false,
+            tools: [{ name: "Khuôn dập thủy lực chính", code: "TOOL-M01" }],
             children: [
               {
                 id: "WS-101",
@@ -321,6 +341,11 @@
                 hasMainRegion: true,
                 cadX: null, cadY: null, cadW: null, cadH: null,
                 hasCadRegion: false,
+                tools: [
+                  { name: "Đồ gá hàn khung xe (Fixturing Jig)", code: "JIG-01" },
+                  { name: "Kẹp phôi tự động pneumatic", code: "CLAMP-05" },
+                  { name: "Hóa chất chống xỉ hàn", code: "CHEM-W99" }
+                ],
                 children: []
               },
               {
@@ -333,6 +358,9 @@
                 hasMainRegion: true,
                 cadX: null, cadY: null, cadW: null, cadH: null,
                 hasCadRegion: false,
+                tools: [
+                  { name: "Súng siết lực điện tử", code: "TOOL-T02" }
+                ],
                 children: []
               },
               {
@@ -346,6 +374,7 @@
                 hasMainRegion: true,
                 cadX: null, cadY: null, cadW: null, cadH: null,
                 hasCadRegion: false,
+                tools: [],
                 children: [
                   { id: "TSK-301", name: "Step 1: Place component into fixture", type: "TASK", locked: false, stdTime: "4.2s", taskType: "Setup", formula: "BaseTime * 1.0" },
                   { id: "TSK-302", name: "Step 2: Automatic spot welding sequence", type: "TASK", locked: false, stdTime: "8.3s", taskType: "Run", formula: "WeldTime * Spots" }
@@ -577,6 +606,31 @@
 
       label.innerText = `Chọn: ${node.name}`;
 
+      // Hiển thị danh sách Tool trong panel thuộc tính
+      let toolsHtml = "";
+      if (node.tools && node.tools.length > 0) {
+        let toolRows = node.tools.map(t => `
+          <div class="flex items-center justify-between bg-sky-50 border border-sky-200 px-2.5 py-1.5 rounded text-xs mb-1">
+            <span class="font-medium text-sky-900"><i class="fa-solid fa-wrench text-sky-600 mr-1.5"></i> ${t.name}</span>
+            <span class="text-[10px] font-mono bg-white px-1.5 py-0.5 border border-sky-200 rounded text-sky-700">${t.code || 'N/A'}</span>
+          </div>
+        `).join('');
+
+        toolsHtml = `
+          <div class="mt-2.5 pt-2.5 border-t border-slate-200">
+            <b class="text-slate-800 block mb-1.5">Assigned Tools / Dụng cụ (${node.tools.length}):</b>
+            <div class="space-y-1">${toolRows}</div>
+          </div>
+        `;
+      } else {
+        toolsHtml = `
+          <div class="mt-2.5 pt-2.5 border-t border-slate-200">
+            <b class="text-slate-800 block mb-1">Assigned Tools / Dụng cụ:</b>
+            <p class="text-slate-400 italic text-[11px]">Chưa có dụng cụ nào được gán cho trạm này.</p>
+          </div>
+        `;
+      }
+
       let tasksHtml = "";
       if (node.type === "OPERATION" && node.children && node.children.length > 0) {
         let rows = node.children.map(t => `
@@ -621,6 +675,7 @@
           <div><b class="text-slate-800">Tọa độ Màn 1:</b> X=${node.x || 0}, Y=${node.y || 0}</div>
           <div><b class="text-slate-800">Tọa độ Màn 2:</b> ${node.cadX !== null ? `X=${node.cadX}, Y=${node.cadY}` : 'Chưa thiết lập'}</div>
         </div>
+        ${toolsHtml}
         ${tasksHtml}
       `;
     }
@@ -1033,9 +1088,8 @@
       context.restore();
     }
 
-    // --- HÀM TÍNH TOÁN MA TRẬN KHOẢNG CÁCH DI CHUYỂN GIỮA CÁC WORKSTATION ---
+    // --- TÍNH TOÁN MA TRẬN KHOẢNG CÁCH DI CHUYỂN GIỮA CÁC WORKSTATION ---
     function calculateWorkstationDistanceMatrix(nodes) {
-      // Thu thập tất cả các node có type là WORKSTATION
       let workstations = [];
       function collectWorkstations(list) {
         list.forEach(n => {
@@ -1054,7 +1108,6 @@
         distanceMatrix[ws1.id] = {};
         pixelMatrixSummary[ws1.id] = {};
         workstations.forEach(ws2 => {
-          // Tính tâm tọa độ (Center X, Center Y) của mỗi workstation để đo khoảng cách chính xác hơn
           let cx1 = (ws1.x || 0) + (ws1.w || 0) / 2;
           let cy1 = (ws1.y || 0) + (ws1.h || 0) / 2;
           let cx2 = (ws2.x || 0) + (ws2.w || 0) / 2;
@@ -1062,7 +1115,7 @@
 
           let deltaX = Math.abs(cx2 - cx1);
           let deltaY = Math.abs(cy2 - cy1);
-          let manhattanDistance = deltaX + deltaY; // delta x + delta y
+          let manhattanDistance = deltaX + deltaY;
 
           distanceMatrix[ws1.id][ws2.id] = {
             from: ws1.name,
@@ -1084,12 +1137,10 @@
 
     // --- NÚT SAVE: ĐỒNG BỘ CAD -> MAIN, ẨN CAD VÀ LOG MA TRẬN KHOẢNG CÁCH ---
     function saveAndSyncToMain() {
-      // 1. Sao chép hình nền CAD/SVG đã import sang Màn hình Main
       if (loadedCadImage) {
         loadedMainImage = loadedCadImage;
       }
 
-      // 2. Đồng bộ tất cả tọa độ quét chọn từ CAD sang Main
       function syncNodeData(node) {
         if (node.cadX !== null && node.cadY !== null) {
           node.x = node.cadX;
@@ -1102,7 +1153,6 @@
       }
       borData.forEach(n => syncNodeData(n));
 
-      // 3. Ẩn màn hình Layout CAD và Resizer, đưa màn hình Main về toàn màn hình
       const paneCad = document.getElementById("pane-cad");
       const resizerDual = document.getElementById("resizer-dual");
       const paneOriginal = document.getElementById("pane-original");
@@ -1112,10 +1162,8 @@
       paneOriginal.style.flex = "1";
       resizeCanvases();
 
-      // 4. Tính toán và log ma trận khoảng cách di chuyển (Delta X + Delta Y) giữa các Workstation
       let fromToData = calculateWorkstationDistanceMatrix(borData);
 
-      // 5. Đóng gói Dictionary dữ liệu BOR hoàn chỉnh
       let borDataDictionary = {
         timestamp: new Date().toISOString(),
         nodes: borData,
@@ -1150,7 +1198,6 @@
       drawCadCanvas();
     }
 
-    // --- IMPORT FILE: TỰ ĐỘNG BẬT MÀN HÌNH CAD KHI IMPORT ---
     function importCadFile(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1162,7 +1209,6 @@
           loadedCadImage = img;
           document.getElementById("cad-empty-state").classList.add("hidden");
           
-          // Mở màn hình CAD và Resizer khi người dùng thực hiện import file
           const paneCad = document.getElementById("pane-cad");
           const resizerDual = document.getElementById("resizer-dual");
           const paneOriginal = document.getElementById("pane-original");
@@ -1180,12 +1226,33 @@
       reader.readAsDataURL(file);
     }
 
+    // --- QUẢN LÝ DỤNG CỤ (TOOLS) TRONG MODAL ---
+    function addToolInputRow(toolName = "", toolCode = "") {
+      const container = document.getElementById("tools-input-container");
+      const rowId = "tool-row-" + Date.now() + Math.random().toString(36).substr(2, 4);
+      
+      const div = document.createElement("div");
+      div.className = "flex items-center gap-2 tool-row";
+      div.id = rowId;
+      div.innerHTML = `
+        <input type="text" placeholder="Tên dụng cụ (VD: Đồ gá hàn...)" value="${toolName}" class="tool-name-input flex-1 text-xs p-1.5 bg-white border border-slate-300 rounded outline-none focus:ring-1 focus:ring-sky-500">
+        <input type="text" placeholder="Mã code (VD: JIG-01)" value="${toolCode}" class="tool-code-input w-28 text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-mono focus:ring-1 focus:ring-sky-500">
+        <button onclick="document.getElementById('${rowId}').remove()" class="p-1.5 px-2 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded text-xs" title="Xóa tool"><i class="fa-solid fa-trash"></i></button>
+      `;
+      container.appendChild(div);
+    }
+
     function openAddNodeModal() {
       editingNode = null;
-      document.getElementById("modal-title").innerText = "Thêm Resource Mới & Thuộc tính";
+      document.getElementById("modal-title").innerText = "Thêm Resource Mới & Dụng cụ (Tools)";
       document.getElementById("input-node-name").value = "";
       document.getElementById("input-node-stdtime").value = "5.0s";
       document.getElementById("input-node-formula").value = "CycleTime * 1.0";
+      
+      // Reset danh sách tool trong modal
+      document.getElementById("tools-input-container").innerHTML = "";
+      addToolInputRow(); // Thêm sẵn 1 dòng trống
+
       renderParentTreeSelect();
       document.getElementById("modal-node").classList.remove("hidden");
     }
@@ -1206,8 +1273,16 @@
       document.getElementById("input-node-w").value = node.w || 120;
       document.getElementById("input-node-h").value = node.h || 80;
 
+      // Nạp danh sách tool hiện tại vào modal
+      const toolsContainer = document.getElementById("tools-input-container");
+      toolsContainer.innerHTML = "";
+      if (node.tools && node.tools.length > 0) {
+        node.tools.forEach(t => addToolInputRow(t.name, t.code));
+      } else {
+        addToolInputRow(); // Mặc định 1 dòng nếu chưa có
+      }
+
       renderParentTreeSelect();
-      document.getElementById("modal-node").classList.add("hidden"); // fixed minor bug
       document.getElementById("modal-node").classList.remove("hidden");
     }
 
@@ -1270,6 +1345,16 @@
         return;
       }
 
+      // Thu thập danh sách Tool từ modal
+      let toolsList = [];
+      document.querySelectorAll("#tools-input-container .tool-row").forEach(row => {
+        let tName = row.querySelector(".tool-name-input").value.trim();
+        let tCode = row.querySelector(".tool-code-input").value.trim();
+        if (tName) {
+          toolsList.push({ name: tName, code: tCode });
+        }
+      });
+
       if (editingNode) {
         editingNode.name = name;
         editingNode.type = type;
@@ -1277,6 +1362,7 @@
         editingNode.taskType = taskType;
         editingNode.formula = formula;
         editingNode.x = x; editingNode.y = y; editingNode.w = w; editingNode.h = h;
+        editingNode.tools = toolsList;
       } else {
         const newNode = {
           id: "RES-" + Date.now().toString().slice(-4),
@@ -1291,6 +1377,7 @@
           cadX: null, cadY: null, cadW: null, cadH: null,
           hasMainRegion: true,
           hasCadRegion: false,
+          tools: toolsList,
           children: []
         };
 
