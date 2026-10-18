@@ -58,7 +58,7 @@
     
     <div class="flex items-center space-x-2">
       <button onclick="saveAndSyncToMain()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow" title="Lưu dữ liệu, chuyển hình SVG và tất cả tọa độ sang Main, ẩn CAD">
-        <i class="fa-solid fa-floppy-disk"></i> Save (Chuyển CAD/SVG -> Main)
+        <i class="fa-solid fa-floppy-disk"></i> Save (Chuyển CAD/SVG -> Main & Log From-To)
       </button>
       <span class="text-xs text-slate-400 ml-2"><i class="fa-solid fa-circle-info text-blue-400"></i> Quản lý vị trí nhà máy</span>
     </div>
@@ -128,7 +128,7 @@
 
         <div class="flex items-center gap-1.5 flex-wrap">
           <label class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer flex items-center gap-1" title="Import file CAD / SVG / Ảnh cập nhật">
-            <i class="fa-solid fa-file-arrow-up"></i> Import CAD / SVG (Màn Hình Phải)
+            <i class="fa-solid fa-file-arrow-up"></i> Import CAD / SVG (Mở Layout CAD)
             <input type="file" id="cad-file-input" accept=".svg,.png,.jpg,.jpeg,.json,.dxf,.txt" class="hidden" onchange="importCadFile(event)">
           </label>
 
@@ -158,7 +158,7 @@
       <div class="flex-1 flex overflow-hidden relative" id="dual-viewports-container">
         
         <!-- MÀN HÌNH TRÁI: LAYOUT GỐC NHÀ MÁY -->
-        <div id="pane-original" class="flex-1 flex flex-col relative bg-slate-900 border-r border-slate-700 overflow-hidden" style="flex: 0 0 50%;">
+        <div id="pane-original" class="flex-1 flex flex-col relative bg-slate-900 border-r border-slate-700 overflow-hidden" style="flex: 1;">
           <div class="bg-slate-800/90 text-emerald-400 px-3 py-1.5 text-xs font-bold border-b border-slate-700 flex items-center justify-between shrink-0">
             <span class="flex items-center gap-2"><i class="fa-solid fa-map"></i> 1. Layout Gốc Nhà Máy (Resources)</span>
             <div class="flex items-center gap-2">
@@ -173,11 +173,11 @@
           </div>
         </div>
 
-        <!-- RESIZER DỌC -->
-        <div id="resizer-dual" class="resizer-v" title="Kéo để thay đổi tỷ lệ 2 màn hình"></div>
+        <!-- RESIZER DỌC (Ẩn mặc định khi CAD ẩn) -->
+        <div id="resizer-dual" class="resizer-v hidden" title="Kéo để thay đổi tỷ lệ 2 màn hình"></div>
 
-        <!-- MÀN HÌNH PHẢI: BẢN VẼ CAD / SVG CẬP NHẬT -->
-        <div id="pane-cad" class="flex-1 flex flex-col relative bg-slate-900 overflow-hidden">
+        <!-- MÀN HÌNH PHẢI: BẢN VẼ CAD / SVG CẬP NHẬT (Ẩn mặc định khi khởi động) -->
+        <div id="pane-cad" class="flex-1 flex flex-col relative bg-slate-900 overflow-hidden hidden" style="flex: 0 0 50%;">
           <div class="bg-slate-800/90 text-sky-400 px-3 py-1.5 text-xs font-bold border-b border-slate-700 flex items-center justify-between shrink-0">
             <span class="flex items-center gap-2"><i class="fa-solid fa-file-code"></i> 2. Bản Vẽ CAD / SVG Cập Nhật</span>
             <div class="flex items-center gap-2">
@@ -324,6 +324,18 @@
                 children: []
               },
               {
+                id: "WS-102",
+                name: "WS-ASSEMBLY STATION #2",
+                type: "WORKSTATION",
+                locked: false,
+                expanded: true,
+                x: 100, y: 200, w: 180, h: 50,
+                hasMainRegion: true,
+                cadX: null, cadY: null, cadW: null, cadH: null,
+                hasCadRegion: false,
+                children: []
+              },
+              {
                 id: "OP-201",
                 name: "PL-017563/aa-STA110 LOAD & WELD",
                 type: "OPERATION",
@@ -352,7 +364,7 @@
     let activeDrawingPane = "main"; 
     let showAllRegionsMode = false;
 
-    // Lưu hình nền CAD/SVG import và trạng thái ẩn hiện hình nền (Hide Image)
+    // Lưu hình nền CAD/SVG import và trạng thái ẩn hiện hình nền
     let loadedCadImage = null; 
     let loadedMainImage = null; 
     let hideMainImage = false;
@@ -840,7 +852,7 @@
       drawCadCanvas();
     }
 
-    // --- NÚT SHOW TẤT CẢ NGUỒN LỰC (PLANT, WORKCENTER, WORKSTATION...) ---
+    // --- NÚT SHOW TẤT CẢ NGUỒN LỰC ---
     function toggleShowAllRegions() {
       showAllRegionsMode = !showAllRegionsMode;
       const btn = document.getElementById("show-all-btn");
@@ -864,13 +876,11 @@
       ctx.translate(panX, panY);
       ctx.scale(zoomLevel, zoomLevel);
 
-      // Hiển thị hình ảnh SVG/CAD nền nếu có và không bị ẩn bởi nút Hide Image
       if (loadedMainImage && !hideMainImage) {
         ctx.drawImage(loadedMainImage, 0, 0);
       }
 
       if (showAllRegionsMode) {
-        // ĐANG BẬT SHOW: Vẽ TẤT CẢ các nguồn lực từ Plant, WorkCenter, WorkStation...
         function drawAllNodesRecursively(nodes) {
           nodes.forEach(n => {
             if (n.x !== null && n.y !== null && n.x !== undefined) {
@@ -883,7 +893,6 @@
         }
         drawAllNodesRecursively(borData);
       } else {
-        // ĐANG TẮT SHOW: CHỈ HIGHLIGHT DUY NHẤT NGUỒN LỰC ĐƯỢC CHỌN
         let selectedNode = findNodeById(borData, selectedNodeId);
         if (selectedNode) {
           drawNodeRectAndText(selectedNode, ctx, 'main');
@@ -1024,7 +1033,56 @@
       context.restore();
     }
 
-    // --- NÚT SAVE: ĐỒNG BỘ CAD -> MAIN (BAO GỒM CẢ FILE HÌNH NỀN SVG/CAD CỦA CAD SANG MAIN) ---
+    // --- HÀM TÍNH TOÁN MA TRẬN KHOẢNG CÁCH DI CHUYỂN GIỮA CÁC WORKSTATION ---
+    function calculateWorkstationDistanceMatrix(nodes) {
+      // Thu thập tất cả các node có type là WORKSTATION
+      let workstations = [];
+      function collectWorkstations(list) {
+        list.forEach(n => {
+          if (n.type === "WORKSTATION" && n.x !== null && n.y !== null) {
+            workstations.push(n);
+          }
+          if (n.children) collectWorkstations(n.children);
+        });
+      }
+      collectWorkstations(nodes);
+
+      let distanceMatrix = {};
+      let pixelMatrixSummary = {};
+
+      workstations.forEach(ws1 => {
+        distanceMatrix[ws1.id] = {};
+        pixelMatrixSummary[ws1.id] = {};
+        workstations.forEach(ws2 => {
+          // Tính tâm tọa độ (Center X, Center Y) của mỗi workstation để đo khoảng cách chính xác hơn
+          let cx1 = (ws1.x || 0) + (ws1.w || 0) / 2;
+          let cy1 = (ws1.y || 0) + (ws1.h || 0) / 2;
+          let cx2 = (ws2.x || 0) + (ws2.w || 0) / 2;
+          let cy2 = (ws2.y || 0) + (ws2.h || 0) / 2;
+
+          let deltaX = Math.abs(cx2 - cx1);
+          let deltaY = Math.abs(cy2 - cy1);
+          let manhattanDistance = deltaX + deltaY; // delta x + delta y
+
+          distanceMatrix[ws1.id][ws2.id] = {
+            from: ws1.name,
+            to: ws2.name,
+            deltaX: Math.round(deltaX),
+            deltaY: Math.round(deltaY),
+            pixelDistance: Math.round(manhattanDistance)
+          };
+          pixelMatrixSummary[ws1.id][ws2.id] = Math.round(manhattanDistance);
+        });
+      });
+
+      console.log("=== [FROM-TO MATRIX] MA TRẬN KHOẢNG CÁCH PIXEL (WORKSTATION) ===");
+      console.table(pixelMatrixSummary);
+      console.log("=== CHI TIẾT DELTA X + DELTA Y GIỮA CÁC TRẠM ===", distanceMatrix);
+
+      return { workstations, distanceMatrix };
+    }
+
+    // --- NÚT SAVE: ĐỒNG BỘ CAD -> MAIN, ẨN CAD VÀ LOG MA TRẬN KHOẢNG CÁCH ---
     function saveAndSyncToMain() {
       // 1. Sao chép hình nền CAD/SVG đã import sang Màn hình Main
       if (loadedCadImage) {
@@ -1044,7 +1102,7 @@
       }
       borData.forEach(n => syncNodeData(n));
 
-      // 3. Ẩn màn hình Layout CAD đi (màn hình Main chiếm toàn bộ giao diện)
+      // 3. Ẩn màn hình Layout CAD và Resizer, đưa màn hình Main về toàn màn hình
       const paneCad = document.getElementById("pane-cad");
       const resizerDual = document.getElementById("resizer-dual");
       const paneOriginal = document.getElementById("pane-original");
@@ -1054,15 +1112,19 @@
       paneOriginal.style.flex = "1";
       resizeCanvases();
 
-      // 4. Tạo Dictionary hoàn chỉnh dữ liệu chuẩn bị cho kết nối Supabase sau này
+      // 4. Tính toán và log ma trận khoảng cách di chuyển (Delta X + Delta Y) giữa các Workstation
+      let fromToData = calculateWorkstationDistanceMatrix(borData);
+
+      // 5. Đóng gói Dictionary dữ liệu BOR hoàn chỉnh
       let borDataDictionary = {
         timestamp: new Date().toISOString(),
         nodes: borData,
-        hasSvgImage: loadedMainImage ? true : false
+        hasSvgImage: loadedMainImage ? true : false,
+        workstationFromToMatrix: fromToData.distanceMatrix
       };
 
       console.log("=== DICTIONARY DỮ LIỆU ĐÃ LƯU ===", borDataDictionary);
-      alert("Đã đồng bộ toàn bộ file SVG/CAD và tất cả tọa độ sang màn hình Main, ẩn màn hình CAD thành công!");
+      alert("Đã đồng bộ CAD sang Main, ẩn màn hình CAD và log ma trận khoảng cách From-To (Workstation) thành công! Mời bạn mở Console (F12) để xem chi tiết.");
 
       drawCanvas();
     }
@@ -1088,6 +1150,7 @@
       drawCadCanvas();
     }
 
+    // --- IMPORT FILE: TỰ ĐỘNG BẬT MÀN HÌNH CAD KHI IMPORT ---
     function importCadFile(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1098,8 +1161,19 @@
         img.onload = function() {
           loadedCadImage = img;
           document.getElementById("cad-empty-state").classList.add("hidden");
+          
+          // Mở màn hình CAD và Resizer khi người dùng thực hiện import file
+          const paneCad = document.getElementById("pane-cad");
+          const resizerDual = document.getElementById("resizer-dual");
+          const paneOriginal = document.getElementById("pane-original");
+
+          paneCad.classList.remove("hidden");
+          resizerDual.classList.remove("hidden");
+          paneOriginal.style.flex = "0 0 50%";
+          paneCad.style.flex = "1";
+
           resizeCanvases();
-          alert(`Đã import thành công file CAD/SVG [${file.name}] vào màn hình CAD!`);
+          alert(`Đã import thành công file CAD/SVG [${file.name}] và bật màn hình CAD!`);
         };
         img.src = evt.target.result;
       };
@@ -1133,6 +1207,7 @@
       document.getElementById("input-node-h").value = node.h || 80;
 
       renderParentTreeSelect();
+      document.getElementById("modal-node").classList.add("hidden"); // fixed minor bug
       document.getElementById("modal-node").classList.remove("hidden");
     }
 
