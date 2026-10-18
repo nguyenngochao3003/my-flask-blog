@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siemens Teamcenter PLM - BOR (Bill of Resources) & Dual Layout Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; user-select: none; }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .resizer-h { cursor: col-resize; width: 6px; background: #cbd5e1; transition: background 0.2s; shrink: 0; }
+    .resizer-h:hover, .resizer-h.active { background: #2563eb; }
+
+    .resizer-v { cursor: col-resize; width: 6px; background: #334155; transition: background 0.2s; shrink: 0; position: relative; z-index: 20; }
+    .resizer-v:hover, .resizer-v.active { background: #38bdf8; }
+
+    .canvas-bg {
+      background-color: #0f172a;
+      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .prop-panel-content {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    .prop-panel-content.collapsed {
+      max-height: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      opacity: 0;
+    }
+
+    .tree-node-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-100 text-slate-800">
+
+  <!-- ================= HEADER ================= -->
+  <header class="bg-slate-900 text-white h-12 px-4 flex items-center justify-between border-b border-slate-700 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs tracking-wider flex items-center gap-1.5">
+        <i class="fa-solid fa-cubes"></i> TEAMCENTER
+      </div>
+      <span class="text-sm font-semibold text-slate-200">Bill of Resources (BOR) & Dual Layout Comparison</span>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <span class="text-xs text-slate-400"><i class="fa-solid fa-circle-info text-blue-400"></i> Chỉ hiển thị và highlight đúng phần nhánh đang được chọn</span>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- CỘT TRÁI: BOR TREE & PROPERTIES PANEL -->
+    <div id="left-bor-container" class="w-[420px] min-w-[280px] max-w-[65%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+      
+      <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-diagram-project text-emerald-600 text-sm"></i>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Resource Tree</h2>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="openAddNodeModal()" title="Thêm Resource Mới" class="px-2 py-1 bg-emerald-600 text-white rounded text-[11px] hover:bg-emerald-700 font-medium flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> Tạo mới
+          </button>
+          <button onclick="moveSelectedNodeOrder(-1)" title="Di chuyển lên trên" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
+          <button onclick="moveSelectedNodeOrder(1)" title="Di chuyển xuống dưới" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+          <button onclick="deleteSelectedNode()" title="Xóa node đang chọn" class="p-1 px-1.5 bg-rose-100 hover:bg-rose-200 rounded text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+          <button onclick="expandAllTree()" title="Mở rộng tất cả" class="p-1 hover:bg-slate-200 rounded text-slate-600 text-xs"><i class="fa-solid fa-folder-open"></i></button>
+          <button onclick="collapseAllTree()" title="Thu gọn tất cả" class="p-1 hover:bg-slate-200 rounded text-slate-600 text-xs"><i class="fa-solid fa-folder"></i></button>
+        </div>
+      </div>
+
+      <!-- CÂY NGUỒN LỰC -->
+      <div class="flex-1 overflow-auto p-2 relative bg-white border-l border-dashed border-slate-200" id="bor-tree-root"></div>
+
+      <!-- THUỘC TÍNH NGUỒN LỰC -->
+      <div id="prop-panel-wrapper" class="bg-slate-50 border-t border-slate-200 flex flex-col shrink-0">
+        <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="togglePropPanel()">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-blue-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-700">Resource Properties & Full Results</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="event.stopPropagation(); editSelectedNode();" class="px-2 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700"><i class="fa-solid fa-pen"></i> Sửa</button>
+            <button id="prop-toggle-btn" class="p-1 text-slate-500 hover:text-slate-700 text-xs transition-transform duration-200">
+              <i class="fa-solid fa-chevron-up"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[260px]">
+          <div id="prop-panel-details" class="space-y-3">
+            <p class="text-slate-400 italic">Chọn một node trên cây BOR để xem thông tin chi tiết...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RESIZER NGANG -->
+    <div id="resizer-bor-layout" class="resizer-h"></div>
+
+    <!-- CỘT PHẢI: DUAL SCREEN VIEWPORT -->
+    <div class="flex-1 flex flex-col bg-slate-900 relative overflow-hidden">
+      
+      <!-- TOOLBAR CHUNG -->
+      <div id="layout-toolbar" class="p-2 bg-slate-800 text-slate-200 border-b border-slate-700 flex items-center justify-between shrink-0 z-10 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span id="selected-layout-label" class="text-[11px] bg-slate-700 text-blue-300 px-2 py-0.5 rounded">Chọn: Tất cả</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <label class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer flex items-center gap-1" title="Import file CAD / SVG / Ảnh cập nhật">
+            <i class="fa-solid fa-file-arrow-up"></i> Import CAD / SVG (Màn Hình Phải)
+            <input type="file" id="cad-file-input" accept=".svg,.png,.jpg,.jpeg,.json,.dxf,.txt" class="hidden" onchange="importCadFile(event)">
+          </label>
+
+          <button id="tool-select-btn" onclick="setCadTool('SELECT')" class="px-2 py-1 bg-blue-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Quét chọn vùng vị trí">
+            <i class="fa-solid fa-vector-square"></i> Quét chọn
+          </button>
+          
+          <button id="tool-pan-btn" onclick="setCadTool('PAN')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Bật/Tắt chế độ Pan">
+            <i class="fa-solid fa-hand"></i> Pan
+          </button>
+
+          <button id="save-region-btn" onclick="saveSelectedRegion()" class="hidden px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-semibold flex items-center gap-1" title="Lưu vị trí vừa quét cho nhánh đang chọn">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu vị trí
+          </button>
+
+          <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
+
+          <button onclick="resetZoomLayout()" class="p-1 px-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs" title="Reset Zoom tất cả"><i class="fa-solid fa-rotate-left"></i> Reset View</button>
+        </div>
+      </div>
+
+      <!-- KHUNG CHIA ĐÔI SONG SONG -->
+      <div class="flex-1 flex overflow-hidden relative" id="dual-viewports-container">
+        
+        <!-- MÀN HÌNH TRÁI: LAYOUT GỐC NHÀ MÁY -->
+        <div id="pane-original" class="flex-1 flex flex-col relative bg-slate-900 border-r border-slate-700 overflow-hidden" style="flex: 0 0 50%;">
+          <div class="bg-slate-800/90 text-emerald-400 px-3 py-1.5 text-xs font-bold border-b border-slate-700 flex items-center justify-between shrink-0">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-map"></i> 1. Layout Gốc Nhà Máy (Resources)</span>
+            <span class="text-[10px] text-slate-400 font-normal">Zoom: <span id="main-zoom-text">100%</span></span>
+          </div>
+          <div class="flex-1 relative canvas-bg overflow-hidden cursor-crosshair">
+            <canvas id="factory-canvas" class="absolute left-0 top-0"></canvas>
+          </div>
+        </div>
+
+        <!-- RESIZER DỌC -->
+        <div id="resizer-dual" class="resizer-v" title="Kéo để thay đổi tỷ lệ 2 màn hình"></div>
+
+        <!-- MÀN HÌNH PHẢI: BẢN VẼ CAD / SVG CẬP NHẬT -->
+        <div id="pane-cad" class="flex-1 flex flex-col relative bg-slate-900 overflow-hidden">
+          <div class="bg-slate-800/90 text-sky-400 px-3 py-1.5 text-xs font-bold border-b border-slate-700 flex items-center justify-between shrink-0">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-file-code"></i> 2. Bản Vẽ CAD / SVG Cập Nhật</span>
+            <span class="text-[10px] text-slate-400 font-normal">Zoom: <span id="cad-zoom-text">100%</span></span>
+          </div>
+          <div class="flex-1 relative canvas-bg overflow-hidden cursor-crosshair">
+            <div id="cad-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center text-slate-500 space-y-3 z-10 pointer-events-none">
+              <i class="fa-solid fa-file-circle-plus text-4xl text-slate-600"></i>
+              <p class="text-xs">Chưa có file CAD / SVG nào được import vào màn hình này.</p>
+            </div>
+            <canvas id="cad-file-canvas" class="absolute left-0 top-0"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ================= MODAL: THÊM / CHỈNH SỬA RESOURCE ================= -->
+  <div id="modal-node" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-[520px] max-w-[90vw] overflow-hidden flex flex-col border border-slate-300">
+      <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
+        <h3 id="modal-title" class="text-sm font-bold flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-blue-400"></i> <span>Chỉnh sửa Resource & Thuộc tính</span>
+        </h3>
+        <button onclick="closeModalNode()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="p-4 space-y-3 overflow-auto max-h-[75vh]">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Parent Resource (Chọn Node cha):</label>
+          <input type="text" id="parent-search-input" oninput="filterParentTree()" placeholder="🔍 Gõ để lọc danh sách parent..." 
+                 class="w-full text-xs p-2 border border-slate-300 rounded mb-2 focus:ring-2 focus:ring-blue-500 outline-none">
+          <div class="border border-slate-200 rounded max-h-[140px] overflow-auto p-2 bg-slate-50 text-xs border-l border-dashed border-slate-300" id="parent-tree-select-container"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Loại Nguồn lực (Type):</label>
+            <select id="input-node-type" class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="PLANT">PLANT - Nhà máy / Phân xưởng</option>
+              <option value="WORKCENTER">WORKCENTER - Trạm/Khu vực sản xuất</option>
+              <option value="WORKSTATION">WORKSTATION - Thiết bị / Trạm máy</option>
+              <option value="OPERATION">OPERATION - Thao tác / Công việc</option>
+              <option value="TASK">TASK - Bước chi tiết (Sub-operation)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tên Resource (Name):</label>
+            <input type="text" id="input-node-name" class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nhập tên...">
+          </div>
+        </div>
+
+        <div class="p-3 bg-purple-50 border border-purple-200 rounded space-y-2.5">
+          <div class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-gears text-purple-600"></i> Thuộc tính Operation / Task:
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Standard Time (Thời gian chuẩn):</label>
+            <input type="text" id="input-node-stdtime" class="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none" placeholder="VD: 12.5s">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Operation Type:</label>
+            <select id="input-node-tasktype" class="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none">
+              <option value="Setup">Setup (Chuẩn bị)</option>
+              <option value="Run">Run (Gia công)</option>
+              <option value="Check">Check (Kiểm tra)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Công thức tính toán (Formula):</label>
+            <input type="text" id="input-node-formula" class="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:ring-2 focus:ring-purple-500 outline-none font-mono" placeholder="VD: CycleTime * Qty">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Tọa độ X:</label>
+            <input type="number" id="input-node-x" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" value="50">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Tọa độ Y:</label>
+            <input type="number" id="input-node-y" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" value="50">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Rộng W:</label>
+            <input type="number" id="input-node-w" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" value="120">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Cao H:</label>
+            <input type="number" id="input-node-h" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" value="80">
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end space-x-2">
+        <button onclick="closeModalNode()" class="px-3 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400">Hủy</button>
+        <button onclick="saveNodeModal()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT APP LOGIC ================= -->
+  <script>
+    let borData = [
+      {
+        id: "PLANT-01",
+        name: "PL-005871/aa-PLANT MAIN SHOP",
+        type: "PLANT",
+        locked: false,
+        expanded: true,
+        x: 40, y: 40, w: 520, h: 340,
+        hasMainRegion: true,
+        cadX: null, cadY: null, cadW: null, cadH: null,
+        hasCadRegion: false,
+        children: [
+          {
+            id: "WC-101",
+            name: "PL-008605/aa-UNDERBODY WORKCENTER",
+            type: "WORKCENTER",
+            locked: false,
+            expanded: true,
+            x: 70, y: 80, w: 220, h: 260,
+            hasMainRegion: true,
+            cadX: null, cadY: null, cadW: null, cadH: null,
+            hasCadRegion: false,
+            children: [
+              {
+                id: "WS-101",
+                name: "WS-WELDING ROBOT CELL #1",
+                type: "WORKSTATION",
+                locked: false,
+                expanded: true,
+                x: 90, y: 110, w: 180, h: 50,
+                hasMainRegion: true,
+                cadX: null, cadY: null, cadW: null, cadH: null,
+                hasCadRegion: false,
+                children: []
+              },
+              {
+                id: "OP-201",
+                name: "PL-017563/aa-STA110 LOAD & WELD",
+                type: "OPERATION",
+                locked: false,
+                expanded: true,
+                x: 90, y: 170, w: 180, h: 80,
+                stdTime: "4.2s", taskType: "Setup", formula: "BaseTime * 1.0",
+                hasMainRegion: true,
+                cadX: null, cadY: null, cadW: null, cadH: null,
+                hasCadRegion: false,
+                children: [
+                  { id: "TSK-301", name: "Step 1: Place component into fixture", type: "TASK", locked: false, stdTime: "4.2s", taskType: "Setup", formula: "BaseTime * 1.0" },
+                  { id: "TSK-302", name: "Step 2: Automatic spot welding sequence", type: "TASK", locked: false, stdTime: "8.3s", taskType: "Run", formula: "WeldTime * Spots" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let selectedNodeId = "PLANT-01";
+    let editingNode = null;
+    let selectedParentId = null;
+    let activeCadTool = "SELECT"; 
+    let activeDrawingPane = "main"; 
+
+    // Canvas 1 (Layout Gốc - Trái)
+    let zoomLevel = 1.0;
+    let panX = 0;
+    let panY = 0;
+    let isPanning = false;
+    let startPanX = 0;
+    let startPanY = 0;
+    let isDraggingBox = false;
+    let boxStartX = 0, boxStartY = 0, boxEndX = 0, boxEndY = 0;
+    let tempRegion = null;
+
+    // Canvas 2 (CAD / SVG - Phải)
+    let cadZoomLevel = 1.0;
+    let cadPanX = 0;
+    let cadPanY = 0;
+    let cadIsPanning = false;
+    let cadStartPanX = 0;
+    let cadStartPanY = 0;
+    let loadedCadImage = null;
+    let cadIsDraggingBox = false;
+    let cadBoxStartX = 0, cadBoxStartY = 0, cadBoxEndX = 0, cadBoxEndY = 0;
+    let cadTempRegion = null;
+
+    window.addEventListener("DOMContentLoaded", () => {
+      updateTreeOnly();
+      initLayoutCanvas();
+      initCadCanvas();
+      setupResizers();
+      drawCanvas();
+      drawCadCanvas();
+    });
+
+    function getNodeIconHTML(type, isSelected = false) {
+      let iconHTML = "";
+      if (type === "PLANT") iconHTML = `<i class="fa-solid fa-industry text-emerald-500"></i>`;
+      else if (type === "WORKCENTER") iconHTML = `<i class="fa-solid fa-gear text-amber-500"></i>`;
+      else if (type === "WORKSTATION") iconHTML = `<i class="fa-solid fa-desktop text-sky-500"></i>`;
+      else if (type === "OPERATION") iconHTML = `<i class="fa-solid fa-gears text-purple-500"></i>`;
+      else iconHTML = `<i class="fa-solid fa-list-check text-blue-500"></i>`;
+
+      if (isSelected) iconHTML = iconHTML.replace(/text-[a-z]+-500/g, "text-white");
+      return iconHTML;
+    }
+
+    function findNodeById(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) {
+          let found = findNodeById(n.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function findParentAndIndex(nodes, id, parent = null) {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) {
+          return { parentArray: nodes, index: i, parentNode: parent };
+        }
+        if (nodes[i].children) {
+          let res = findParentAndIndex(nodes[i].children, id, nodes[i]);
+          if (res) return res;
+        }
+      }
+      return null;
+    }
+
+    function updateTreeOnly() {
+      const container = document.getElementById("bor-tree-root");
+      container.innerHTML = "";
+      borData.forEach(node => {
+        container.appendChild(createTreeNodeElement(node, 0));
+      });
+      updatePropertiesPanel();
+    }
+
+    function createTreeNodeElement(node, level) {
+      const div = document.createElement("div");
+      div.className = "relative select-none";
+
+      const isSelected = node.id === selectedNodeId;
+      const bgClass = isSelected ? "bg-blue-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
+
+      let iconHTML = getNodeIconHTML(node.type, isSelected);
+      const hasChildren = node.children && node.children.length > 0;
+      const linkBadge = (node.hasMainRegion || node.hasCadRegion) ? `<span class="text-[11px] text-amber-400 font-bold ml-1" title="Đã có vị trí">📍</span>` : '';
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between p-1 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
+             style="padding-left: ${level * 16 + 4}px;"
+             onclick="selectBorNode('${node.id}')"
+             title="${node.name}">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            <button onclick="event.stopPropagation(); toggleLockNode('${node.id}')" class="p-0.5 text-[10px] opacity-70 hover:opacity-100" title="Khóa/Mở khóa">
+              <i class="fa-solid ${node.locked ? 'fa-lock text-rose-500' : 'fa-lock-open text-slate-400'}"></i>
+            </button>
+            
+            ${hasChildren ? `
+              <button onclick="event.stopPropagation(); toggleExpandNode('${node.id}')" class="w-4 h-4 flex items-center justify-center text-[10px] text-slate-400 hover:text-slate-600">
+                <i class="fa-solid ${node.expanded ? 'fa-minus' : 'fa-plus'}"></i>
+              </button>
+            ` : `<span class="w-4"></span>`}
+
+            <span class="text-xs">${iconHTML}</span>
+            <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+            ${linkBadge}
+          </div>
+        </div>
+      `;
+
+      if (hasChildren && node.expanded) {
+        const childContainer = document.createElement("div");
+        childContainer.className = "relative border-l border-dashed border-slate-200 ml-3";
+        node.children.forEach(child => {
+          childContainer.appendChild(createTreeNodeElement(child, level + 1));
+        });
+        div.appendChild(childContainer);
+      }
+
+      return div;
+    }
+
+    function selectBorNode(id) {
+      selectedNodeId = id;
+      // Khi bấm chọn nhánh khác, xóa khung quét tạm thời (tempRegion) của cả 2 màn hình
+      tempRegion = null;
+      cadTempRegion = null;
+      document.getElementById("save-region-btn").classList.add("hidden");
+
+      updateTreeOnly();
+      drawCanvas();
+      drawCadCanvas();
+    }
+
+    function toggleLockNode(id) {
+      const node = findNodeById(borData, id);
+      if (node) {
+        node.locked = !node.locked;
+        updateTreeOnly();
+      }
+    }
+
+    function toggleExpandNode(id) {
+      const node = findNodeById(borData, id);
+      if (node) {
+        node.expanded = !node.expanded;
+        updateTreeOnly();
+      }
+    }
+
+    function moveSelectedNodeOrder(direction) {
+      if (!selectedNodeId) return;
+      const res = findParentAndIndex(borData, selectedNodeId);
+      if (!res) return;
+      const { parentArray, index } = res;
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= parentArray.length) return;
+
+      const temp = parentArray[index];
+      parentArray[index] = parentArray[targetIndex];
+      parentArray[targetIndex] = temp;
+      updateTreeOnly();
+    }
+
+    function deleteSelectedNode() {
+      if (!selectedNodeId) return;
+      const node = findNodeById(borData, selectedNodeId);
+      if (node && node.locked) {
+        alert("Node này đã bị khóa, không thể xóa!");
+        return;
+      }
+      if (!confirm(`Bạn có chắc muốn xóa node "${node ? node.name : selectedNodeId}"?`)) return;
+
+      const res = findParentAndIndex(borData, selectedNodeId);
+      if (res) {
+        res.parentArray.splice(res.index, 1);
+        selectedNodeId = borData.length > 0 ? borData[0].id : null;
+        updateTreeOnly();
+        drawCanvas();
+        drawCadCanvas();
+      }
+    }
+
+    function expandAllTree() {
+      function exp(nodes) { nodes.forEach(n => { n.expanded = true; if(n.children) exp(n.children); }); }
+      exp(borData);
+      updateTreeOnly();
+    }
+
+    function collapseAllTree() {
+      function col(nodes) { nodes.forEach(n => { n.expanded = false; if(n.children) col(n.children); }); }
+      col(borData);
+      updateTreeOnly();
+    }
+
+    function updatePropertiesPanel() {
+      const panel = document.getElementById("prop-panel-details");
+      const label = document.getElementById("selected-layout-label");
+      const node = findNodeById(borData, selectedNodeId);
+
+      if (!node) {
+        panel.innerHTML = `<p class="text-slate-400 italic">Không tìm thấy dữ liệu.</p>`;
+        label.innerText = `Chọn: Tất cả`;
+        return;
+      }
+
+      label.innerText = `Chọn: ${node.name}`;
+
+      let tasksHtml = "";
+      if (node.type === "OPERATION" && node.children && node.children.length > 0) {
+        let rows = node.children.map(t => `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="py-2 px-3 flex items-center gap-1.5 text-slate-800 font-medium">
+              <i class="fa-solid fa-gears text-purple-500 text-xs"></i> <span>${t.name}</span>
+            </td>
+            <td class="py-2 px-2 text-slate-600">${t.stdTime || "4.0s"}</td>
+            <td class="py-2 px-2"><span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-700">${t.taskType || "Run"}</span></td>
+            <td class="py-2 px-3 text-slate-600 font-mono text-[11px]">${t.formula || "BaseTime * 1.0"}</td>
+          </tr>
+        `).join('');
+
+        tasksHtml = `
+          <div class="mt-3 pt-3 border-t border-slate-200">
+            <b class="text-slate-800 block mb-2">Full Results (Thao tác / Steps):</b>
+            <div class="overflow-x-auto bg-white rounded border border-slate-200">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 border-b">
+                    <th class="py-2 px-3">Task Name / Step</th>
+                    <th class="py-2 px-2">Std Time</th>
+                    <th class="py-2 px-2">Type</th>
+                    <th class="py-2 px-3">Formula</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      panel.innerHTML = `
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-slate-600">
+          <div><b class="text-slate-800">Node ID:</b> ${node.id}</div>
+          <div><b class="text-slate-800">Type:</b> <span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-mono text-[10px]">${node.type}</span></div>
+          <div class="col-span-2"><b class="text-slate-800">Tên Resource:</b> ${node.name}</div>
+          <div><b class="text-slate-800">Std Time:</b> ${node.stdTime || 'N/A'}</div>
+          <div><b class="text-slate-800">Op Type:</b> ${node.taskType || 'N/A'}</div>
+          <div class="col-span-2"><b class="text-slate-800">Formula:</b> <span class="font-mono text-purple-700">${node.formula || 'N/A'}</span></div>
+          <div><b class="text-slate-800">Tọa độ Màn 1:</b> X=${node.x || 0}, Y=${node.y || 0}</div>
+          <div><b class="text-slate-800">Tọa độ Màn 2:</b> ${node.cadX !== null ? `X=${node.cadX}, Y=${node.cadY}` : 'Chưa thiết lập'}</div>
+        </div>
+        ${tasksHtml}
+      `;
+    }
+
+    function togglePropPanel() {
+      const content = document.getElementById("prop-panel-content");
+      const icon = document.querySelector("#prop-toggle-btn i");
+      if (content.classList.contains("collapsed")) {
+        content.classList.remove("collapsed");
+        icon.className = "fa-solid fa-chevron-up";
+      } else {
+        content.classList.add("collapsed");
+        icon.className = "fa-solid fa-chevron-down";
+      }
+    }
+
+    function setCadTool(tool) {
+      activeCadTool = tool;
+      document.getElementById("tool-select-btn").className = tool === 'SELECT' ? "px-2 py-1 bg-blue-600 text-white rounded text-[11px] font-medium flex items-center gap-1" : "px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+      document.getElementById("tool-pan-btn").className = tool === 'PAN' ? "px-2 py-1 bg-amber-600 text-white rounded text-[11px] font-medium flex items-center gap-1" : "px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+    }
+
+    let canvas, ctx;
+    function initLayoutCanvas() {
+      const wrapper = document.querySelector("#pane-original .canvas-bg");
+      canvas = document.getElementById("factory-canvas");
+      ctx = canvas.getContext("2d");
+
+      resizeCanvases();
+      window.addEventListener("resize", resizeCanvases);
+
+      wrapper.addEventListener("mousedown", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left - panX) / zoomLevel;
+        const mouseY = (e.clientY - rect.top - panY) / zoomLevel;
+
+        if (e.button === 0 && activeCadTool === 'PAN') {
+          isPanning = true;
+          startPanX = e.clientX - panX;
+          startPanY = e.clientY - panY;
+          wrapper.style.cursor = "grabbing";
+        } else if (e.button === 0 && activeCadTool === 'SELECT') {
+          activeDrawingPane = 'main';
+          isDraggingBox = true;
+          boxStartX = mouseX; boxStartY = mouseY;
+          boxEndX = mouseX; boxEndY = mouseY;
+        }
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (isPanning) {
+          panX = e.clientX - startPanX;
+          panY = e.clientY - startPanY;
+          drawCanvas();
+        } else if (isDraggingBox) {
+          const rect = canvas.getBoundingClientRect();
+          boxEndX = (e.clientX - rect.left - panX) / zoomLevel;
+          boxEndY = (e.clientY - rect.top - panY) / zoomLevel;
+          drawCanvas();
+        }
+      });
+
+      window.addEventListener("mouseup", (e) => {
+        if (isPanning) {
+          isPanning = false;
+          wrapper.style.cursor = "crosshair";
+        }
+        if (isDraggingBox) {
+          isDraggingBox = false;
+          let minX = Math.min(boxStartX, boxEndX), maxX = Math.max(boxStartX, boxEndX);
+          let minY = Math.min(boxStartY, boxEndY), maxY = Math.max(boxStartY, boxEndY);
+          let w = Math.abs(maxX - minX);
+          let h = Math.abs(maxY - minY);
+
+          if (w > 15 && h > 15) {
+            tempRegion = { x: Math.round(minX), y: Math.round(minY), w: Math.round(w), h: Math.round(h) };
+            document.getElementById("save-region-btn").classList.remove("hidden");
+          }
+          drawCanvas();
+        }
+      });
+
+      wrapper.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        zoomLayout('main', e.deltaY < 0 ? 1.05 : 0.95);
+      });
+    }
+
+    let cadCanvas, cadCtx;
+    function initCadCanvas() {
+      const wrapper = document.querySelector("#pane-cad .canvas-bg");
+      cadCanvas = document.getElementById("cad-file-canvas");
+      cadCtx = cadCanvas.getContext("2d");
+
+      resizeCanvases();
+
+      wrapper.addEventListener("mousedown", (e) => {
+        const rect = cadCanvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left - cadPanX) / cadZoomLevel;
+        const mouseY = (e.clientY - rect.top - cadPanY) / cadZoomLevel;
+
+        if (e.button === 0 && activeCadTool === 'PAN') {
+          cadIsPanning = true;
+          cadStartPanX = e.clientX - cadPanX;
+          cadStartPanY = e.clientY - cadPanY;
+          wrapper.style.cursor = "grabbing";
+        } else if (e.button === 0 && activeCadTool === 'SELECT') {
+          activeDrawingPane = 'cad';
+          cadIsDraggingBox = true;
+          cadBoxStartX = mouseX; cadBoxStartY = mouseY;
+          cadBoxEndX = mouseX; cadBoxEndY = mouseY;
+        }
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (cadIsPanning) {
+          cadPanX = e.clientX - cadStartPanX;
+          cadPanY = e.clientY - cadStartPanY;
+          drawCadCanvas();
+        } else if (cadIsDraggingBox) {
+          const rect = cadCanvas.getBoundingClientRect();
+          cadBoxEndX = (e.clientX - rect.left - cadPanX) / cadZoomLevel;
+          cadBoxEndY = (e.clientY - rect.top - cadPanY) / cadZoomLevel;
+          drawCadCanvas();
+        }
+      });
+
+      window.addEventListener("mouseup", (e) => {
+        if (cadIsPanning) {
+          cadIsPanning = false;
+          wrapper.style.cursor = "crosshair";
+        }
+        if (cadIsDraggingBox) {
+          cadIsDraggingBox = false;
+          let minX = Math.min(cadBoxStartX, cadBoxEndX), maxX = Math.max(cadBoxStartX, cadBoxEndX);
+          let minY = Math.min(cadBoxStartY, cadBoxEndY), maxY = Math.max(cadBoxStartY, cadBoxEndY);
+          let w = Math.abs(maxX - minX);
+          let h = Math.abs(maxY - minY);
+
+          if (w > 15 && h > 15) {
+            cadTempRegion = { x: Math.round(minX), y: Math.round(minY), w: Math.round(w), h: Math.round(h) };
+            document.getElementById("save-region-btn").classList.remove("hidden");
+          }
+          drawCadCanvas();
+        }
+      });
+
+      wrapper.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        zoomLayout('cad', e.deltaY < 0 ? 1.05 : 0.95);
+      });
+    }
+
+    function resizeCanvases() {
+      const wrapMain = document.querySelector("#pane-original .canvas-bg");
+      if (wrapMain && canvas) {
+        canvas.width = wrapMain.clientWidth;
+        canvas.height = wrapMain.clientHeight;
+        drawCanvas();
+      }
+
+      const wrapCad = document.querySelector("#pane-cad .canvas-bg");
+      if (wrapCad && cadCanvas) {
+        cadCanvas.width = wrapCad.clientWidth;
+        cadCanvas.height = wrapCad.clientHeight;
+        drawCadCanvas();
+      }
+    }
+
+    function saveSelectedRegion() {
+      let activeRegion = activeDrawingPane === 'main' ? tempRegion : cadTempRegion;
+      if (!activeRegion) return;
+
+      let selectedNode = findNodeById(borData, selectedNodeId);
+      if (!selectedNode) {
+        alert("Vui lòng chọn một nhánh trên Cây nguồn lực trước!");
+        return;
+      }
+
+      if (activeDrawingPane === 'main') {
+        selectedNode.x = activeRegion.x;
+        selectedNode.y = activeRegion.y;
+        selectedNode.w = activeRegion.w;
+        selectedNode.h = activeRegion.h;
+        selectedNode.hasMainRegion = true;
+        tempRegion = null;
+      } else {
+        selectedNode.cadX = activeRegion.x;
+        selectedNode.cadY = activeRegion.y;
+        selectedNode.cadW = activeRegion.w;
+        selectedNode.cadH = activeRegion.h;
+        selectedNode.hasCadRegion = true;
+        cadTempRegion = null;
+      }
+
+      document.getElementById("save-region-btn").classList.add("hidden");
+      
+      updateTreeOnly();
+      drawCanvas();
+      drawCadCanvas();
+
+      alert(`Đã lưu vùng vị trí quét cho màn hình [${activeDrawingPane === 'main' ? 'Layout Gốc' : 'Bản Vẽ CAD'}] thành công!`);
+    }
+
+    // --- CHỈ VẼ DUY NHẤT NODE ĐANG ĐƯỢC CHỌN (HIGHLIGHT) ---
+    function drawCanvas() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(panX, panY);
+      ctx.scale(zoomLevel, zoomLevel);
+
+      let selectedNode = findNodeById(borData, selectedNodeId);
+      if (selectedNode) {
+        drawSelectedNodeOnly(selectedNode, ctx, 'main');
+      }
+
+      if (isDraggingBox) {
+        ctx.save();
+        ctx.strokeStyle = "#3b82f6";
+        ctx.lineWidth = 1.5;
+        ctx.fillStyle = "rgba(59, 130, 246, 0.25)";
+        let bw = boxEndX - boxStartX;
+        let bh = boxEndY - boxStartY;
+        ctx.fillRect(boxStartX, boxStartY, bw, bh);
+        ctx.strokeRect(boxStartX, boxStartY, bw, bh);
+        ctx.restore();
+      }
+
+      if (tempRegion) {
+        ctx.save();
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
+        ctx.fillRect(tempRegion.x, tempRegion.y, tempRegion.w, tempRegion.h);
+        ctx.strokeRect(tempRegion.x, tempRegion.y, tempRegion.w, tempRegion.h);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function drawCadCanvas() {
+      if (!cadCtx || !cadCanvas) return;
+      cadCtx.clearRect(0, 0, cadCanvas.width, cadCanvas.height);
+
+      cadCtx.save();
+      cadCtx.translate(cadPanX, cadPanY);
+      cadCtx.scale(cadZoomLevel, cadZoomLevel);
+
+      if (loadedCadImage) {
+        cadCtx.drawImage(loadedCadImage, 0, 0);
+      }
+
+      let selectedNode = findNodeById(borData, selectedNodeId);
+      if (selectedNode) {
+        drawSelectedNodeOnly(selectedNode, cadCtx, 'cad');
+      }
+
+      if (cadIsDraggingBox) {
+        cadCtx.save();
+        cadCtx.strokeStyle = "#3b82f6";
+        cadCtx.lineWidth = 1.5;
+        cadCtx.fillStyle = "rgba(59, 130, 246, 0.25)";
+        let bw = cadBoxEndX - cadBoxStartX;
+        let bh = cadBoxEndY - cadBoxStartY;
+        cadCtx.fillRect(cadBoxStartX, cadBoxStartY, bw, bh);
+        cadCtx.strokeRect(cadBoxStartX, cadBoxStartY, bw, bh);
+        cadCtx.restore();
+      }
+
+      if (cadTempRegion) {
+        cadCtx.save();
+        cadCtx.strokeStyle = "#f59e0b";
+        cadCtx.lineWidth = 2;
+        cadCtx.setLineDash([4, 4]);
+        cadCtx.fillStyle = "rgba(245, 158, 11, 0.2)";
+        cadCtx.fillRect(cadTempRegion.x, cadTempRegion.y, cadTempRegion.w, cadTempRegion.h);
+        cadCtx.strokeRect(cadTempRegion.x, cadTempRegion.y, cadTempRegion.w, cadTempRegion.h);
+        cadCtx.restore();
+      }
+
+      cadCtx.restore();
+    }
+
+    function drawSelectedNodeOnly(node, context, paneType) {
+      let nx = paneType === 'main' ? node.x : node.cadX;
+      let ny = paneType === 'main' ? node.y : node.cadY;
+      let nw = paneType === 'main' ? node.w : node.cadW;
+      let nh = paneType === 'main' ? node.h : node.cadH;
+
+      if (nx === null || ny === null || nx === undefined || ny === undefined) return;
+
+      context.save();
+      if (node.type === "PLANT") {
+        context.strokeStyle = "#3b82f6";
+        context.lineWidth = 3;
+        context.fillStyle = "rgba(59, 130, 246, 0.25)";
+        context.strokeRect(nx, ny, nw, nh);
+        context.fillRect(nx, ny, nw, nh);
+        context.fillStyle = "#94a3b8";
+        context.font = "bold 11px sans-serif";
+        context.fillText(node.name, nx + 8, ny + 18);
+      } else if (node.type === "WORKCENTER") {
+        context.strokeStyle = "#f59e0b";
+        context.lineWidth = 3;
+        context.fillStyle = "rgba(245, 158, 11, 0.35)";
+        context.strokeRect(nx, ny, nw, nh);
+        context.fillRect(nx, ny, nw, nh);
+        context.fillStyle = "#f59e0b";
+        context.font = "10px sans-serif";
+        context.fillText(node.name, nx + 6, ny + 14);
+      } else {
+        context.strokeStyle = "#a855f7";
+        context.lineWidth = 3;
+        context.fillStyle = "rgba(168, 85, 247, 0.4)";
+        context.fillRect(nx, ny, nw, nh);
+        context.strokeRect(nx, ny, nw, nh);
+        context.fillStyle = "#e9d5ff";
+        context.font = "9px sans-serif";
+        context.fillText(node.name, nx + 5, ny + 15);
+      }
+
+      // Viền sáng highlight mạnh
+      context.shadowColor = "#3b82f6";
+      context.shadowBlur = 20;
+      context.strokeStyle = "#60a5fa";
+      context.lineWidth = 3;
+      context.strokeRect(nx - 3, ny - 3, nw + 6, nh + 6);
+      context.restore();
+    }
+
+    function zoomLayout(pane, factor) {
+      if (pane === 'main') {
+        zoomLevel = Math.max(0.3, Math.min(3.0, zoomLevel * factor));
+        document.getElementById("main-zoom-text").innerText = `${Math.round(zoomLevel * 100)}%`;
+        drawCanvas();
+      } else {
+        cadZoomLevel = Math.max(0.3, Math.min(3.0, cadZoomLevel * factor));
+        document.getElementById("cad-zoom-text").innerText = `${Math.round(cadZoomLevel * 100)}%`;
+        drawCadCanvas();
+      }
+    }
+
+    function resetZoomLayout() {
+      zoomLevel = 1.0; panX = 0; panY = 0;
+      cadZoomLevel = 1.0; cadPanX = 0; cadPanY = 0;
+      document.getElementById("main-zoom-text").innerText = "100%";
+      document.getElementById("cad-zoom-text").innerText = "100%";
+      drawCanvas();
+      drawCadCanvas();
+    }
+
+    function importCadFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          loadedCadImage = img;
+          document.getElementById("cad-empty-state").classList.add("hidden");
+          resizeCanvases();
+          alert(`Đã import và hiển thị file CAD/SVG [${file.name}] trên màn hình phải!`);
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openAddNodeModal() {
+      editingNode = null;
+      document.getElementById("modal-title").innerText = "Thêm Resource Mới & Thuộc tính";
+      document.getElementById("input-node-name").value = "";
+      document.getElementById("input-node-stdtime").value = "5.0s";
+      document.getElementById("input-node-formula").value = "CycleTime * 1.0";
+      renderParentTreeSelect();
+      document.getElementById("modal-node").classList.remove("hidden");
+    }
+
+    function editSelectedNode() {
+      const node = findNodeById(borData, selectedNodeId);
+      if (!node) return;
+
+      editingNode = node;
+      document.getElementById("modal-title").innerText = `Chỉnh sửa Resource: ${node.id}`;
+      document.getElementById("input-node-name").value = node.name;
+      document.getElementById("input-node-type").value = node.type;
+      document.getElementById("input-node-stdtime").value = node.stdTime || "4.2s";
+      document.getElementById("input-node-tasktype").value = node.taskType || "Run";
+      document.getElementById("input-node-formula").value = node.formula || "BaseTime * 1.0";
+      document.getElementById("input-node-x").value = node.x || 50;
+      document.getElementById("input-node-y").value = node.y || 50;
+      document.getElementById("input-node-w").value = node.w || 120;
+      document.getElementById("input-node-h").value = node.h || 80;
+
+      renderParentTreeSelect();
+      document.getElementById("modal-node").classList.remove("hidden");
+    }
+
+    function closeModalNode() {
+      document.getElementById("modal-node").classList.add("hidden");
+    }
+
+    function renderParentTreeSelect(filterText = "") {
+      const container = document.getElementById("parent-tree-select-container");
+      container.innerHTML = "";
+
+      const rootOption = document.createElement("div");
+      rootOption.className = `p-1.5 hover:bg-blue-50 rounded cursor-pointer flex items-center gap-2 ${selectedParentId === null ? 'bg-blue-100 font-bold text-blue-700' : 'text-slate-700'}`;
+      rootOption.innerHTML = `<i class="fa-solid fa-folder-open text-amber-500"></i> <span>-- Gốc (Root / Plant mới) --</span>`;
+      rootOption.onclick = () => selectParentNodeOption(null);
+      container.appendChild(rootOption);
+
+      function renderParentNode(node, level) {
+        if (filterText && !node.name.toLowerCase().includes(filterText.toLowerCase())) {
+          if (node.children) node.children.forEach(c => renderParentNode(c, level + 1));
+          return;
+        }
+
+        const isSelected = selectedParentId === node.id;
+        const div = document.createElement("div");
+        div.className = `p-1.5 hover:bg-blue-50 rounded cursor-pointer my-0.5 flex items-center gap-2 ${isSelected ? 'bg-blue-100 text-blue-700 font-bold' : 'text-slate-700'}`;
+        div.style.paddingLeft = `${level * 16 + 8}px`;
+
+        div.innerHTML = `<span class="w-4"></span> ${getNodeIconHTML(node.type)} <span class="truncate">${node.name}</span>`;
+        div.onclick = () => selectParentNodeOption(node.id);
+        container.appendChild(div);
+
+        if (node.children) node.children.forEach(c => renderParentNode(c, level + 1));
+      }
+      borData.forEach(n => renderParentNode(n, 0));
+    }
+
+    function filterParentTree() {
+      renderParentTreeSelect(document.getElementById("parent-search-input").value);
+    }
+
+    function selectParentNodeOption(id) {
+      selectedParentId = id;
+      filterParentTree();
+    }
+
+    function saveNodeModal() {
+      const name = document.getElementById("input-node-name").value;
+      const type = document.getElementById("input-node-type").value;
+      const stdTime = document.getElementById("input-node-stdtime").value;
+      const taskType = document.getElementById("input-node-tasktype").value;
+      const formula = document.getElementById("input-node-formula").value;
+      const x = parseInt(document.getElementById("input-node-x").value) || 50;
+      const y = parseInt(document.getElementById("input-node-y").value) || 50;
+      const w = parseInt(document.getElementById("input-node-w").value) || 120;
+      const h = parseInt(document.getElementById("input-node-h").value) || 80;
+
+      if (!name) {
+        alert("Vui lòng nhập tên Resource!");
+        return;
+      }
+
+      if (editingNode) {
+        editingNode.name = name;
+        editingNode.type = type;
+        editingNode.stdTime = stdTime;
+        editingNode.taskType = taskType;
+        editingNode.formula = formula;
+        editingNode.x = x; editingNode.y = y; editingNode.w = w; editingNode.h = h;
+      } else {
+        const newNode = {
+          id: "RES-" + Date.now().toString().slice(-4),
+          name: name,
+          type: type,
+          locked: false,
+          expanded: true,
+          stdTime: stdTime,
+          taskType: taskType,
+          formula: formula,
+          x: x, y: y, w: w, h: h,
+          cadX: null, cadY: null, cadW: null, cadH: null,
+          hasMainRegion: true,
+          hasCadRegion: false,
+          children: []
+        };
+
+        if (selectedParentId) {
+          const parent = findNodeById(borData, selectedParentId);
+          if (parent) {
+            if (!parent.children) parent.children = [];
+            parent.children.push(newNode);
+          }
+        } else {
+          borData.push(newNode);
+        }
+      }
+
+      closeModalNode();
+      updateTreeOnly();
+      drawCanvas();
+      drawCadCanvas();
+    }
+
+    function setupResizers() {
+      const resizerH = document.getElementById("resizer-bor-layout");
+      const leftContainer = document.getElementById("left-bor-container");
+      let isDraggingH = false;
+
+      resizerH.addEventListener("mousedown", () => { isDraggingH = true; resizerH.classList.add("active"); });
+      window.addEventListener("mousemove", (e) => {
+        if (isDraggingH && e.clientX > 280 && e.clientX < window.innerWidth * 0.7) {
+          leftContainer.style.width = `${e.clientX}px`;
+          resizeCanvases();
+        }
+      });
+      window.addEventListener("mouseup", () => { isDraggingH = false; resizerH.classList.remove("active"); });
+
+      const resizerDual = document.getElementById("resizer-dual");
+      const paneOriginal = document.getElementById("pane-original");
+      let isDraggingDual = false;
+
+      resizerDual.addEventListener("mousedown", () => { isDraggingDual = true; resizerDual.classList.add("active"); });
+      window.addEventListener("mousemove", (e) => {
+        if (isDraggingDual) {
+          const containerRect = document.getElementById("dual-viewports-container").getBoundingClientRect();
+          let pointerX = e.clientX - containerRect.left;
+          let percent = (pointerX / containerRect.width) * 100;
+          if (percent > 20 && percent < 80) {
+            paneOriginal.style.flex = `0 0 ${percent}%`;
+            resizeCanvases();
+          }
+        }
+      });
+      window.addEventListener("mouseup", () => { isDraggingDual = false; resizerDual.classList.remove("active"); });
+    }
+  </script>
+</body>
+</html>

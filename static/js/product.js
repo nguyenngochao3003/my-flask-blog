@@ -642,32 +642,4 @@ document.addEventListener("DOMContentLoaded", ()=>{
         throw error;
     }
 }
-window.fetch_func_from_flask = async function fetch_func_from_flask(funcTxt, startTime, endTime, schema='public') {
-        // đọc dữ liệu từ bảng với table và schema
-        console.log('schemaxxxx', schema);
-        try {
-            // Sử dụng fetch gửi tên bảng lên Flask
-            const response = await fetch('/api/run-function', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ funct_txt: funcTxt, startTime: startTime, endTime: endTime, schema: schema})
-            });
-            
-            const result = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(result.error || 'Lỗi kết nối server');
-            }
-
-            if (result.length === 0) { console.log(`funct_txt{funcTxt} chưa tạo rls trong bảng permission`)}
-            console.log(`fetch_data_from_flask funct_txt-${funcTxt} data: `, result)
-            return result;
-            
-        } catch (error) {
-            console.error("Error:", error);
-            return null; // Trả về null nếu lỗi để tránh crash code bên dưới
-        }
-    }
 
