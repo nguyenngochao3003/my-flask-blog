@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siemens Teamcenter PLM - BOP & BOR Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; user-select: none; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .resizer-h { cursor: col-resize; width: 6px; background: #cbd5e1; transition: background 0.2s; shrink: 0; }
+    .resizer-h:hover, .resizer-h.active { background: #2563eb; }
+    .canvas-bg {
+      background-color: #0f172a;
+      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .prop-panel-content { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+    .prop-panel-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; opacity: 0; }
+    .tree-node-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-100 text-slate-800" oncontextmenu="return false;">
+
+  <!-- ================= HEADER ================= -->
+  <header class="bg-slate-900 text-white h-12 px-4 flex items-center justify-between border-b border-slate-700 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs tracking-wider flex items-center gap-1.5">
+        <i class="fa-solid fa-network-wired"></i> TEAMCENTER PLM
+      </div>
+      <span class="text-sm font-semibold text-slate-200">Bill of Process (BOP) & BOR Manager</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button onclick="openFromToModal()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow">
+        <i class="fa-solid fa-table-cells"></i> Ma Trận From-To (Chỉ Xem)
+      </button>
+      <span class="text-xs text-slate-400 ml-2"><i class="fa-solid fa-circle-info text-blue-400"></i> Quản lý quy trình sản xuất & điều phối</span>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- CỘT 1: BOP TREE & PROPERTIES -->
+    <div id="left-bop-container" class="w-[380px] min-w-[260px] max-w-[50%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+      <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sitemap text-blue-600 text-sm"></i>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOP TREE (QUY TRÌNH)</h2>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="openAddBopModal()" title="Thêm nhánh quy trình sản xuất" class="px-2.5 py-1 bg-blue-600 text-white rounded text-[11px] hover:bg-blue-700 font-medium flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> Tạo mới Process
+          </button>
+          <button onclick="moveBopNodeOrder(-1)" title="Lên trên" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
+          <button onclick="moveBopNodeOrder(1)" title="Xuống dưới" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+          <button onclick="deleteBopNode()" title="Xóa nhánh" class="p-1 px-1.5 bg-rose-100 hover:bg-rose-200 rounded text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+
+      <!-- CÂY QUY TRÌNH BOP -->
+      <div class="flex-1 overflow-auto p-2 relative bg-white border-l border-dashed border-slate-200" id="bop-tree-root" ondragover="event.preventDefault()" ondrop="dropToBopTree(event, 'BOP-ROOT')"></div>
+
+      <!-- THUỘC TÍNH BOP PROPERTY -->
+      <div id="bop-prop-panel-wrapper" class="bg-slate-50 border-t border-slate-200 flex flex-col shrink-0">
+        <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="toggleBopPropPanel()">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-pen-to-square text-blue-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-700">Properties & Details</span>
+          </div>
+          <button id="bop-prop-toggle-btn" class="p-1 text-slate-500 hover:text-slate-700 text-xs">
+            <i class="fa-solid fa-chevron-up"></i>
+          </button>
+        </div>
+        <div id="bop-prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[220px]">
+          <div id="bop-prop-panel-details" class="space-y-2.5">
+            <p class="text-slate-400 italic">Chọn một nhánh BOP để xem thông tin...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESIZER NGANG 1 -->
+    <div id="resizer-bop-bor" class="resizer-h"></div>
+
+    <!-- CỘT 2: BOR TREE -->
+    <div id="mid-bor-container" class="w-[380px] min-w-[260px] max-w-[50%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+      <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-cubes text-emerald-600 text-sm"></i>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOR TREE (RESOURCE - NGUỒN LỰC)</h2>
+        </div>
+        <span class="text-[10px] text-slate-500 italic">Kéo thả hoặc Copy</span>
+      </div>
+
+      <!-- CÂY BOR -->
+      <div class="flex-1 overflow-auto p-2 relative bg-white" id="bor-tree-root"></div>
+
+      <!-- THUỘC TÍNH BOR PROPERTY -->
+      <div class="bg-slate-50 border-t border-slate-200 flex flex-col shrink-0">
+        <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-blue-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-700">Resource Properties & Details</span>
+          </div>
+        </div>
+        <div class="p-3 text-xs overflow-auto max-h-[185px]" id="bor-prop-panel-details">
+          <p class="text-slate-400 italic">Chọn node BOR để xem thông tin...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESIZER NGANG 2 -->
+    <div id="resizer-bor-layout" class="resizer-h"></div>
+
+    <!-- CỘT 3: LAYOUT & VIEWPORT -->
+    <div class="flex-1 flex flex-col bg-slate-900 relative overflow-hidden">
+      <div class="p-2 bg-slate-800 text-slate-200 border-b border-slate-700 flex items-center justify-between shrink-0 z-10 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span id="selected-layout-label" class="text-[11px] bg-slate-700 text-blue-300 px-2 py-0.5 rounded">Layout: Tổng thể nhà máy</span>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button id="tool-pan-btn" onclick="togglePanTool()" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1">
+            <i class="fa-solid fa-hand"></i> Pan
+          </button>
+          <button id="show-all-btn" onclick="toggleShowAllRegions()" class="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-eye"></i> Show All: Bật
+          </button>
+          <button id="hide-main-img-btn" onclick="toggleHideMainImage()" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-image"></i> Hide Image: Hiện
+          </button>
+          <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
+          <button onclick="resetZoomLayout()" class="p-1 px-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs"><i class="fa-solid fa-rotate-left"></i> Reset View</button>
+        </div>
+      </div>
+
+      <div class="flex-1 relative canvas-bg overflow-hidden cursor-crosshair">
+        <canvas id="factory-canvas" class="absolute left-0 top-0"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= MODAL: THÊM NHÁNH QUY TRÌNH BOP ================= -->
+  <div id="modal-bop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-[520px] max-w-[90vw] overflow-hidden flex flex-col border border-slate-300">
+      <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <i class="fa-solid fa-sitemap text-blue-400"></i> <span>Thêm Nhánh Quy Trình Sản Xuất (BOP)</span>
+        </h3>
+        <button onclick="closeBopModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Chọn Nhánh Cha (Parent Process):</label>
+          <div id="bop-parent-tree-select" class="border border-slate-300 rounded max-h-[140px] overflow-auto p-2 bg-slate-50 text-xs"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tên Quy Trình / Process Name:</label>
+          <input type="text" id="input-bop-name" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="VD: Lắp ráp khung gầm...">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Mô tả quy trình (Description):</label>
+          <textarea id="input-bop-desc" rows="3" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="Nhập mô tả chi tiết công đoạn..."></textarea>
+        </div>
+      </div>
+      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end space-x-2">
+        <button onclick="closeBopModal()" class="px-3 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400">Hủy</button>
+        <button onclick="saveBopModal()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Tạo mới</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: MA TRẬN FROM-TO ================= -->
+  <div id="modal-fromto" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] h-[85vh] overflow-hidden flex flex-col border border-slate-300">
+      <div class="p-3.5 bg-slate-800 text-white flex items-center justify-between border-b border-slate-700 shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-table-cells text-purple-400 text-lg"></i>
+          <h3 class="text-sm font-bold">Ma Trận Khoảng Cách & Định Mức (Chỉ Xem)</h3>
+        </div>
+        <button onclick="closeFromToModal()" class="text-slate-400 hover:text-white text-xl leading-none"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto p-4 bg-slate-50">
+        <div id="fromto-matrix-table-container" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto"></div>
+      </div>
+      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end shrink-0">
+        <button onclick="closeFromToModal()" class="px-4 py-1.5 bg-slate-700 text-white font-semibold rounded hover:bg-slate-800 text-xs">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT MENU BOR -->
+  <div id="bor-context-menu" class="hidden fixed bg-white shadow-xl border border-slate-300 rounded py-1 z-50 text-xs">
+    <div onclick="copySelectedBorNodes()" class="px-3 py-1.5 hover:bg-blue-50 text-slate-700 cursor-pointer flex items-center gap-2">
+      <i class="fa-solid fa-copy text-blue-600"></i> Copy các nhánh đã chọn
+    </div>
+  </div>
+
+  <script>
+    let borData = [
+      {
+        id: "PLANT-01",
+        name: "PL-005871/aa-PLANT MAIN SHOP",
+        type: "PLANT",
+        x: 40, y: 40, w: 520, h: 340,
+        visible: true,
+        resourcesList: [{ type: "MACHINE", name: "Khuôn dập thủy lực 200T", quantity: 1 }],
+        operationProps: { stdTime: "10.0s", opType: "Setup (Chuẩn bị)", formula: "CycleTime * 1.0" },
+        children: [
+          {
+            id: "WC-101",
+            name: "PL-008605/aa-UNDERBODY WORKCENTER",
+            type: "WORKCENTER",
+            x: 70, y: 80, w: 220, h: 260,
+            visible: true,
+            resourcesList: [{ type: "MACHINE", name: "Băng tải tự động PVC", quantity: 1 }],
+            operationProps: { stdTime: "8.0s", opType: "Processing", formula: "CycleTime * 1.0" },
+            children: [
+              {
+                id: "WS-101",
+                name: "WS-WELDING ROBOT CELL #1",
+                type: "WORKSTATION",
+                x: 90, y: 110, w: 180, h: 50,
+                visible: true,
+                resourcesList: [
+                  { type: "MACHINE", name: "Robot hàn tự động Panasonic", quantity: 2 },
+                  { type: "HUMAN", name: "Thợ vận hành máy bậc 3/7", quantity: 1 }
+                ],
+                operationProps: { stdTime: "5.0s", opType: "Processing", formula: "CycleTime * 1.0" },
+                children: []
+              },
+              {
+                id: "WS-102",
+                name: "WS-ASSEMBLY STATION #2",
+                type: "WORKSTATION",
+                x: 100, y: 220, w: 180, h: 50,
+                visible: true,
+                resourcesList: [{ type: "HUMAN", name: "Công nhân kiểm tra KCS", quantity: 4 }],
+                operationProps: { stdTime: "3.5s", opType: "Inspection", formula: "CycleTime * 1.0" },
+                children: []
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let bopData = [
+      {
+        id: "BOP-ROOT",
+        name: "Quy trình tổng thể sản xuất xe hơi",
+        description: "Quy trình chính toàn nhà máy",
+        isCustomProcess: true,
+        locked: true,
+        expanded: true,
+        children: [
+          {
+            id: "BOP-01",
+            name: "Công đoạn 1: Dập và Hàn Khung",
+            description: "Thực hiện dập các tấm thép và hàn robot tự động",
+            isCustomProcess: true,
+            locked: false,
+            expanded: true,
+            children: []
+          }
+        ]
+      }
+    ];
+
+    let selectedBopId = "BOP-01";
+    let selectedBorId = "PLANT-01";
+    let modalSelectedParentBopId = "BOP-ROOT";
+    let checkedBorIds = new Set();
+    let copiedBorNodes = [];
+    let isPanActive = false;
+    let showAllRegions = true;
+    let hideMainImage = false;
+    let zoomLevel = 1.0, panX = 0, panY = 0;
+    let isDragging = false, startX = 0, startY = 0;
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderBopTree();
+      renderBorTree();
+      initCanvas();
+      setupResizers();
+    });
+
+    // --- RENDER CÂY BOP ---
+    function renderBopTree() {
+      const container = document.getElementById("bop-tree-root");
+      container.innerHTML = "";
+      bopData.forEach(node => {
+        container.appendChild(createBopTreeNodeElement(node, 0));
+      });
+      updateBopPropertiesPanel();
+    }
+
+    function createBopTreeNodeElement(node, level) {
+      const div = document.createElement("div");
+      div.className = "relative select-none";
+      const isSelected = node.id === selectedBopId;
+      const bgClass = isSelected ? "bg-blue-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
+
+      let iconHtml = `<i class="fa-solid fa-sitemap text-blue-400"></i>`;
+      if (!node.isCustomProcess) {
+        if (node.type === 'PLANT') iconHtml = `<i class="fa-solid fa-industry text-emerald-500"></i>`;
+        else if (node.type === 'WORKCENTER') iconHtml = `<i class="fa-solid fa-gear text-amber-500"></i>`;
+        else iconHtml = `<i class="fa-solid fa-desktop text-sky-500"></i>`;
+      }
+
+      let lockIcon = node.locked ? `<i class="fa-solid fa-lock text-rose-500 text-[10px]" title="Đang khóa"></i>` : `<i class="fa-solid fa-lock-open text-slate-400 text-[10px]" title="Đang mở"></i>`;
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
+             style="padding-left: ${level * 16 + 4}px;"
+             onclick="selectBopNode('${node.id}')"
+             oncontextmenu="handleBopContextMenu(event, '${node.id}')"
+             ondragover="event.preventDefault()"
+             ondrop="dropToBopTree(event, '${node.id}')"
+             title="${node.name}">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            <button onclick="event.stopPropagation(); toggleLockBopNode('${node.id}')" class="p-0.5" title="Khóa/Mở khóa">${lockIcon}</button>
+            ${iconHtml}
+            <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+          </div>
+        </div>
+      `;
+
+      if (node.children && node.children.length > 0) {
+        const childContainer = document.createElement("div");
+        childContainer.className = "relative border-l border-dashed border-slate-200 ml-3";
+        node.children.forEach(child => {
+          childContainer.appendChild(createBopTreeNodeElement(child, level + 1));
+        });
+        div.appendChild(childContainer);
+      }
+      return div;
+    }
+
+    function selectBopNode(id) {
+      selectedBopId = id;
+      renderBopTree();
+    }
+
+    function toggleLockBopNode(id) {
+      let node = findBopNodeById(bopData, id);
+      if (node) {
+        node.locked = !node.locked;
+        renderBopTree();
+      }
+    }
+
+    // --- RENDER CÂY BOR (KÉO THẢ & CHECKBOX) ---
+    function renderBorTree() {
+      const container = document.getElementById("bor-tree-root");
+      container.innerHTML = "";
+      borData.forEach(node => {
+        container.appendChild(createBorTreeNodeElement(node, 0));
+      });
+      updateBorPropertiesPanel();
+    }
+
+    function createBorTreeNodeElement(node, level) {
+      const div = document.createElement("div");
+      div.className = "relative select-none";
+      const isSelected = node.id === selectedBorId;
+      const isChecked = checkedBorIds.has(node.id);
+      const bgClass = isSelected ? "bg-emerald-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
+
+      let iconHTML = `<i class="fa-solid ${node.type === 'PLANT' ? 'fa-industry text-emerald-500' : (node.type === 'WORKCENTER' ? 'fa-gear text-amber-500' : 'fa-desktop text-sky-500')}"></i>`;
+      if (isSelected) iconHTML = iconHTML.replace(/text-[a-z]+-500/g, "text-white");
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
+             style="padding-left: ${level * 16 + 4}px;"
+             onclick="selectBorNode('${node.id}')"
+             oncontextmenu="openBorContextMenu(event, '${node.id}')"
+             draggable="true"
+             ondragstart="dragBorNodeStart(event, '${node.id}')"
+             title="${node.name}">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBorNode('${node.id}')" class="rounded accent-emerald-600">
+            ${iconHTML}
+            <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+          </div>
+        </div>
+      `;
+
+      if (node.children && node.children.length > 0) {
+        const childContainer = document.createElement("div");
+        childContainer.className = "relative border-l border-dashed border-slate-200 ml-3";
+        node.children.forEach(child => {
+          childContainer.appendChild(createBorTreeNodeElement(child, level + 1));
+        });
+        div.appendChild(childContainer);
+      }
+      return div;
+    }
+
+    function selectBorNode(id) {
+      selectedBorId = id;
+      renderBorTree();
+      drawCanvas();
+    }
+
+    function toggleCheckBorNode(id) {
+      if (checkedBorIds.has(id)) checkedBorIds.delete(id);
+      else checkedBorIds.add(id);
+    }
+
+    // --- KÉO THẢ TỪ BOR SANG BOP (ÁP DỤNG QUY TẮC CẤP ĐỘ) ---
+    let draggedBorId = null;
+    function dragBorNodeStart(e, id) {
+      draggedBorId = id;
+    }
+
+    function dropToBopTree(e, targetBopId) {
+      e.preventDefault();
+      if (!draggedBorId) return;
+
+      let sourceNode = findBorNodeById(borData, draggedBorId);
+      if (!sourceNode) return;
+
+      let processedNode = processNodeByLevel(sourceNode);
+      let targetBop = findBopNodeById(bopData, targetBopId);
+      if (targetBop) {
+        if (!targetBop.children) targetBop.children = [];
+        targetBop.children.push(processedNode);
+        renderBopTree();
+        alert("Kéo thả nhánh resource sang BOP thành công!");
+      }
+      draggedBorId = null;
+    }
+
+    function processNodeByLevel(node) {
+      // Mặc định khóa toàn bộ nhánh kéo/copy từ BOR sang BOP
+      let cloned = JSON.parse(JSON.stringify(node));
+      cloned.locked = true; // Mặc định khóa
+
+      if (cloned.type === 'PLANT' || cloned.type === 'WORKSHOP') {
+        cloned.children = []; // Chỉ giữ lại đúng 1 dòng, bỏ các nhánh con
+      } else if (cloned.type === 'WORKCENTER') {
+        // Giữ nguyên các dòng con bên trong
+      }
+      return cloned;
+    }
+
+    // --- QUẢN LÝ PROPERTIES & DETAILS (CHỈ XEM NẾU KHÓA) ---
+    function updateBopPropertiesPanel() {
+      const panel = document.getElementById("bop-prop-panel-details");
+      const node = findBopNodeById(bopData, selectedBopId);
+      if (!node) {
+        panel.innerHTML = `<p class="text-slate-400 italic">Chưa chọn nhánh BOP nào...</p>`;
+        return;
+      }
+
+      let lockStatusBadge = node.locked ? `<span class="text-rose-500 font-bold"><i class="fa-solid fa-lock"></i> Đã khóa (Chỉ xem)</span>` : `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-lock-open"></i> Đang mở</span>`;
+
+      if (node.isCustomProcess) {
+        if (node.locked) {
+          panel.innerHTML = `
+            <div class="space-y-2">
+              <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatusBadge}</div>
+              <div><b>Tên Process:</b> <span class="text-blue-700 font-semibold">${node.name}</span></div>
+              <div><b>Mô tả:</b> <span class="text-slate-600">${node.description || 'Không có mô tả'}</span></div>
+              <p class="text-[10px] text-amber-600 italic">🔒 Nhánh này đang bị khóa, không thể chỉnh sửa.</p>
+            </div>
+          `;
+        } else {
+          panel.innerHTML = `
+            <div class="space-y-2">
+              <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatusBadge}</div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Tên Process:</label>
+                <input type="text" id="edit-bop-name" value="${node.name}" oninput="updateBopNameLive(this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded font-semibold text-blue-700 outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Mô tả quy trình:</label>
+                <textarea id="edit-bop-desc" rows="2" oninput="updateBopDescLive(this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none">${node.description || ''}</textarea>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        let resHtml = "";
+        if (node.resourcesList) {
+          resHtml = node.resourcesList.map(r => `
+            <div class="flex items-center justify-between bg-purple-50 border border-purple-200 px-2 py-1 rounded text-xs mb-1">
+              <span><i class="fa-solid fa-robot text-sky-600 mr-1"></i> ${r.name} <span class="text-[10px] text-slate-500">(${r.type})</span></span>
+              <span class="font-bold bg-white px-1.5 py-0.5 border border-purple-200 rounded text-purple-700">SL: ${r.quantity}</span>
+            </div>
+          `).join('');
+        }
+
+        panel.innerHTML = `
+          <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200 mb-1"><span>Trạng thái:</span> ${lockStatusBadge}</div>
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
+            <div><b>Node ID:</b> ${node.id}</div>
+            <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded">${node.type}</span></div>
+            <div class="col-span-2"><b>Tên:</b> ${node.name}</div>
+            <div><b>Tọa độ:</b> X=${node.x}, Y=${node.y}</div>
+          </div>
+          ${resHtml ? `<div class="mt-2 pt-1 border-t border-slate-200"><b class="text-slate-800 text-[11px]">Nguồn lực:</b>${resHtml}</div>` : ''}
+          <p class="text-[10px] text-amber-600 italic mt-1">🔒 Nhánh Resource kế thừa từ BOR luôn ở chế độ chỉ xem.</p>
+        `;
+      }
+    }
+
+    function updateBopNameLive(val) {
+      let node = findBopNodeById(bopData, selectedBopId);
+      if (node && !node.locked) { node.name = val; renderBopTree(); }
+    }
+
+    function updateBopDescLive(val) {
+      let node = findBopNodeById(bopData, selectedBopId);
+      if (node && !node.locked) { node.description = val; }
+    }
+
+    function toggleBopPropPanel() {
+      const content = document.getElementById("bop-prop-panel-content");
+      const icon = document.querySelector("#bop-prop-toggle-btn i");
+      if (content.classList.contains("collapsed")) {
+        content.classList.remove("collapsed");
+        icon.className = "fa-solid fa-chevron-up";
+      } else {
+        content.classList.add("collapsed");
+        icon.className = "fa-solid fa-chevron-down";
+      }
+    }
+
+    function updateBorPropertiesPanel() {
+      const panel = document.getElementById("bor-prop-panel-details");
+      const node = findBorNodeById(borData, selectedBorId);
+      if (!node) { panel.innerHTML = `<p class="text-slate-400 italic">Chọn node BOR để xem...</p>`; return; }
+
+      let resHtml = "";
+      if (node.resourcesList) {
+        resHtml = node.resourcesList.map(r => `
+          <div class="flex items-center justify-between bg-purple-50 border border-purple-200 px-2 py-1 rounded text-xs mb-1">
+            <span><i class="fa-solid fa-robot text-sky-600 mr-1"></i> ${r.name} <span class="text-[10px] text-slate-500">(${r.type})</span></span>
+            <span class="font-bold bg-white px-1.5 py-0.5 border border-purple-200 rounded text-purple-700">SL: ${r.quantity}</span>
+          </div>
+        `).join('');
+      }
+
+      panel.innerHTML = `
+        <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
+          <div><b>Node ID:</b> ${node.id}</div>
+          <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded">${node.type}</span></div>
+          <div class="col-span-2"><b>Tên:</b> ${node.name}</div>
+          <div><b>Tọa độ:</b> X=${node.x}, Y=${node.y}</div>
+        </div>
+        ${resHtml ? `<div class="mt-2 pt-1 border-t border-slate-200"><b class="text-slate-800 text-[11px]">Nguồn lực (${node.resourcesList.length}):</b>${resHtml}</div>` : ''}
+      `;
+    }
+
+    // --- COPY & PASTE ---
+    function openBorContextMenu(e, id) {
+      e.preventDefault();
+      selectedBorId = id;
+      if (!checkedBorIds.has(id)) checkedBorIds.add(id);
+      renderBorTree();
+      const menu = document.getElementById("bor-context-menu");
+      menu.style.left = `${e.clientX}px`;
+      menu.style.top = `${e.clientY}px`;
+      menu.classList.remove("hidden");
+      window.addEventListener("click", () => menu.classList.add("hidden"), { once: true });
+    }
+
+    function copySelectedBorNodes() {
+      copiedBorNodes = [];
+      checkedBorIds.forEach(borId => {
+        let node = findBorNodeById(borData, borId);
+        if (node) copiedBorNodes.push(processNodeByLevel(node));
+      });
+      alert(`Đã copy ${copiedBorNodes.length} nhánh resource! Hãy click vào nhánh BOP để dán (Paste).`);
+    }
+
+    function handleBopContextMenu(e, bopId) {
+      e.preventDefault();
+      if (copiedBorNodes.length === 0) return;
+      selectBopNode(bopId);
+
+      if (confirm(`Dán ${copiedBorNodes.length} nhánh resource đã chọn vào nhánh BOP này?`)) {
+        let parentBop = findBopNodeById(bopData, bopId);
+        if (parentBop) {
+          if (!parentBop.children) parentBop.children = [];
+          copiedBorNodes.forEach(n => parentBop.children.push(n));
+          renderBopTree();
+          alert("Dán thành công vào cây BOP!");
+        }
+      }
+    }
+
+    // --- MODAL THÊM BOP (TREEVIEW CHỌN NHÁNH CHA TRỰC QUAN CÓ ICON) ---
+    function openAddBopModal() {
+      renderModalParentTreeView();
+      document.getElementById("input-bop-name").value = "";
+      document.getElementById("input-bop-desc").value = "";
+      document.getElementById("modal-bop").classList.remove("hidden");
+    }
+
+    function renderModalParentTreeView() {
+      const container = document.getElementById("bop-parent-tree-select");
+      container.innerHTML = "";
+
+      function renderNode(node, level) {
+        const isSelected = modalSelectedParentBopId === node.id;
+        let icon = node.isCustomProcess ? `<i class="fa-solid fa-sitemap text-blue-400 mr-1"></i>` : `<i class="fa-solid fa-desktop text-sky-500 mr-1"></i>`;
+        
+        const div = document.createElement("div");
+        div.className = `p-1 rounded cursor-pointer text-xs flex items-center ${isSelected ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-50 text-slate-700'}`;
+        div.style.paddingLeft = `${level * 16 + 6}px`;
+        div.innerHTML = `${icon} <span>${node.name}</span>`;
+        div.onclick = (e) => {
+          e.stopPropagation();
+          modalSelectedParentBopId = node.id;
+          renderModalParentTreeView();
+        };
+        container.appendChild(div);
+
+        if (node.children) {
+          node.children.forEach(c => renderNode(c, level + 1));
+        }
+      }
+      bopData.forEach(n => renderNode(n, 0));
+    }
+
+    function closeBopModal() {
+      document.getElementById("modal-bop").classList.add("hidden");
+    }
+
+    function saveBopModal() {
+      const name = document.getElementById("input-bop-name").value.trim();
+      const desc = document.getElementById("input-bop-desc").value.trim();
+
+      if (!name) { alert("Vui lòng nhập tên quy trình!"); return; }
+
+      let parentNode = findBopNodeById(bopData, modalSelectedParentBopId);
+      if (parentNode) {
+        if (!parentNode.children) parentNode.children = [];
+        parentNode.children.push({
+          id: "BOP-" + Date.now().toString().slice(-4),
+          name: name,
+          description: desc,
+          isCustomProcess: true,
+          locked: false,
+          children: []
+        });
+        renderBopTree();
+        closeBopModal();
+      }
+    }
+
+    function deleteBopNode() {
+      let node = findBopNodeById(bopData, selectedBopId);
+      if (selectedBopId === "BOP-ROOT") { alert("Không thể xóa nhánh gốc!"); return; }
+      if (node && node.locked) { alert("Nhánh này đang bị khóa, không thể xóa!"); return; }
+      if (!confirm("Bạn có chắc muốn xóa nhánh quy trình này?")) return;
+
+      function removeNode(nodes, id) {
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].id === id) { nodes.splice(i, 1); return true; }
+          if (nodes[i].children && removeNode(nodes[i].children, id)) return true;
+        }
+        return false;
+      }
+      removeNode(bopData, selectedBopId);
+      selectedBopId = "BOP-ROOT";
+      renderBopTree();
+    }
+
+    function moveBopNodeOrder(dir) {
+      if (selectedBopId === "BOP-ROOT") return;
+      function move(nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+          let idx = nodes[i].children.findIndex(c => c.id === selectedBopId);
+          if (idx !== -1) {
+            let target = idx + dir;
+            if (target >= 0 && target < nodes[i].children.length) {
+              let temp = nodes[i].children[idx];
+              nodes[i].children[idx] = nodes[i].children[target];
+              nodes[i].children[target] = temp;
+              return true;
+            }
+          }
+          if (nodes[i].children && move(nodes[i].children)) return true;
+        }
+        return false;
+      }
+      move(bopData);
+      renderBopTree();
+    }
+
+    function findBopNodeById(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) { let f = findBopNodeById(n.children, id); if (f) return f; }
+      }
+      return null;
+    }
+
+    function findBorNodeById(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) { let f = findBorNodeById(n.children, id); if (f) return f; }
+      }
+      return null;
+    }
+
+    // --- CANVAS & VIEWPORT ---
+    let canvas, ctx;
+    function initCanvas() {
+      canvas = document.getElementById("factory-canvas");
+      ctx = canvas.getContext("2d");
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+
+      canvas.addEventListener("mousedown", (e) => {
+        if (isPanActive) { isDragging = true; startX = e.clientX - panX; startY = e.clientY - panY; }
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (isDragging) { panX = e.clientX - startX; panY = e.clientY - startY; drawCanvas(); }
+      });
+      window.addEventListener("mouseup", () => isDragging = false);
+      canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        zoomLevel = Math.max(0.3, Math.min(3.0, zoomLevel * (e.deltaY < 0 ? 1.05 : 0.95)));
+        drawCanvas();
+      });
+      drawCanvas();
+    }
+
+    function resizeCanvas() {
+      const wrap = canvas.parentElement;
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      drawCanvas();
+    }
+
+    function togglePanTool() {
+      isPanActive = !isPanActive;
+      const btn = document.getElementById("tool-pan-btn");
+      btn.className = isPanActive ? "px-2 py-1 bg-amber-600 text-white rounded text-[11px] font-medium flex items-center gap-1" : "px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+    }
+
+    function toggleShowAllRegions() {
+      showAllRegions = !showAllRegions;
+      const btn = document.getElementById("show-all-btn");
+      btn.innerHTML = `<i class="fa-solid fa-eye"></i> Show All: ${showAllRegions ? 'Bật' : 'Tắt'}`;
+      drawCanvas();
+    }
+
+    function toggleHideMainImage() {
+      hideMainImage = !hideMainImage;
+      drawCanvas();
+    }
+
+    function resetZoomLayout() {
+      zoomLevel = 1.0; panX = 0; panY = 0;
+      drawCanvas();
+    }
+
+    function drawCanvas() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(panX, panY);
+      ctx.scale(zoomLevel, zoomLevel);
+
+      function drawNodes(nodes) {
+        nodes.forEach(n => {
+          if (showAllRegions && n.x !== undefined) {
+            const isSelected = n.id === selectedBorId;
+            ctx.save();
+            ctx.strokeStyle = isSelected ? "#3b82f6" : "#64748b";
+            ctx.lineWidth = isSelected ? 3 : 1.5;
+            ctx.fillStyle = isSelected ? "rgba(59, 130, 246, 0.25)" : "rgba(30, 41, 59, 0.4)";
+            ctx.strokeRect(n.x, n.y, n.w, n.h);
+            ctx.fillRect(n.x, n.y, n.w, n.h);
+            ctx.fillStyle = "#cbd5e1";
+            ctx.font = "bold 11px sans-serif";
+            ctx.fillText(n.name, n.x + 8, n.y + 18);
+            ctx.restore();
+          }
+          if (n.children) drawNodes(n.children);
+        });
+      }
+      drawNodes(borData);
+      ctx.restore();
+    }
+
+    function openFromToModal() {
+      document.getElementById("modal-fromto").classList.remove("hidden");
+      const container = document.getElementById("fromto-matrix-table-container");
+      
+      let tableHTML = `<table class="w-full text-center border-collapse text-xs">`;
+      tableHTML += `<thead><tr class="bg-slate-800 text-white font-bold"><th class="p-2 border border-slate-700 text-left">From \\ To</th>`;
+      borData.forEach(n => tableHTML += `<th class="p-2 border border-slate-700">${n.name}</th>`);
+      tableHTML += `</tr></thead><tbody>`;
+
+      borData.forEach(n1 => {
+        tableHTML += `<tr><td class="p-2 border border-slate-200 bg-slate-100 font-bold text-left">${n1.name}</td>`;
+        borData.forEach(n2 => {
+          let dist = n1.id === n2.id ? "-" : Math.round(Math.abs((n2.x||0) - (n1.x||0)) + Math.abs((n2.y||0) - (n1.y||0))) + " px";
+          tableHTML += `<td class="p-2 border border-slate-200 font-mono text-blue-700">${dist}</td>`;
+        });
+        tableHTML += `</tr>`;
+      });
+      tableHTML += `</tbody></table>`;
+      container.innerHTML = tableHTML;
+    }
+
+    function closeFromToModal() {
+      document.getElementById("modal-fromto").classList.add("hidden");
+    }
+
+    function setupResizers() {
+      const res1 = document.getElementById("resizer-bop-bor");
+      const left1 = document.getElementById("left-bop-container");
+      let d1 = false;
+      res1.addEventListener("mousedown", () => d1 = true);
+      window.addEventListener("mousemove", (e) => { if(d1 && e.clientX > 250 && e.clientX < window.innerWidth*0.6) left1.style.width = `${e.clientX}px`; });
+      window.addEventListener("mouseup", () => d1 = false);
+
+      const res2 = document.getElementById("resizer-bor-layout");
+      const left2 = document.getElementById("mid-bor-container");
+      let d2 = false;
+      res2.addEventListener("mousedown", () => d2 = true);
+      window.addEventListener("mousemove", (e) => { if(d2) left2.style.width = `${e.clientX - left1.offsetWidth}px`; });
+      window.addEventListener("mouseup", () => d2 = false);
+    }
+  </script>
+</body>
+</html>
