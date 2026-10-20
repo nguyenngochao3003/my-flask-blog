@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siemens Teamcenter PLM - Bill of Materials (BOM) Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; user-select: none; }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .resizer-h { cursor: col-resize; width: 6px; background: #cbd5e1; transition: background 0.2s; shrink: 0; }
+    .resizer-h:hover, .resizer-h.active { background: #2563eb; }
+
+    .canvas-bg {
+      background-color: #0f172a;
+      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .prop-panel-content {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    .prop-panel-content.collapsed {
+      max-height: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      opacity: 0;
+    }
+
+    .tree-node-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .csv-hover-container {
+      position: relative;
+    }
+    .csv-preview-tooltip {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 6px;
+      width: 380px;
+      background: white;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+      padding: 10px;
+      z-index: 100;
+    }
+    .csv-hover-container:hover .csv-preview-tooltip {
+      display: block;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-100 text-slate-800" oncontextmenu="return false;">
+
+  <!-- ================= HEADER ================= -->
+  <header class="bg-slate-900 text-white h-12 px-4 flex items-center justify-between border-b border-slate-700 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs tracking-wider flex items-center gap-1.5">
+        <i class="fa-solid fa-boxes-packing"></i> TEAMCENTER PLM
+      </div>
+      <span class="text-sm font-semibold text-slate-200">Bill of Materials (BOM) & Layout Manager</span>
+    </div>
+    
+    <div class="csv-hover-container">
+      <label class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
+        <i class="fa-solid fa-file-csv"></i> Import CSV
+        <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleCsvFileSelect(event)">
+      </label>
+
+      <div class="csv-preview-tooltip text-xs space-y-2">
+        <div class="font-bold text-purple-900 border-b pb-1 flex items-center justify-between">
+          <span><i class="fa-solid fa-table-columns"></i> Cấu trúc định dạng File CSV chuẩn</span>
+          <span class="text-[10px] bg-purple-100 px-1.5 py-0.5 rounded text-purple-700 font-mono">.csv</span>
+        </div>
+        <p class="text-[11px] text-slate-500">File CSV cần bao gồm đúng thứ tự các cột dữ liệu như bên dưới:</p>
+        <div class="overflow-x-auto border border-slate-200 rounded">
+          <table class="w-full text-[10px] text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 font-bold text-slate-700">
+                <th class="p-1 border-b">Name</th>
+                <th class="p-1 border-b">Version</th>
+                <th class="p-1 border-b">Type</th>
+                <th class="p-1 border-b">L</th>
+                <th class="p-1 border-b">W</th>
+                <th class="p-1 border-b">H</th>
+              </tr>
+            </thead>
+            <tbody class="font-mono text-slate-600">
+              <tr class="border-b">
+                <td class="p-1">Khung sàn</td>
+                <td class="p-1">v1.0.1</td>
+                <td class="p-1">Part</td>
+                <td class="p-1">1200</td>
+                <td class="p-1">800</td>
+                <td class="p-1">50</td>
+              </tr>
+              <tr>
+                <td class="p-1">Tấm kim loại</td>
+                <td class="p-1">v1.0.2</td>
+                <td class="p-1">Sub-part</td>
+                <td class="p-1">600</td>
+                <td class="p-1">400</td>
+                <td class="p-1">20</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- CỘT TRÁI: BOM TREE TABLE & PROPERTIES PANEL -->
+    <div id="left-bom-container" class="w-[520px] min-w-[360px] max-w-[70%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+      
+      <div class="p-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0 flex-wrap gap-1">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sitemap text-blue-600 text-sm"></i>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOM Structure Tree</h2>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="openAddNodeModal()" title="Thêm Nhánh / Part mới" class="px-2 py-1 bg-blue-600 text-white rounded text-[11px] hover:bg-blue-700 font-medium flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-plus"></i> Tạo mới
+          </button>
+          <button onclick="moveSelectedNodeOrder(-1)" title="Di chuyển lên trên" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
+          <button onclick="moveSelectedNodeOrder(1)" title="Di chuyển xuống dưới" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+          <button onclick="deleteSelectedNode()" title="Xóa nhánh đang chọn" class="p-1 px-1.5 bg-rose-100 hover:bg-rose-200 rounded text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+          <div class="h-4 w-[1px] bg-slate-300 mx-0.5"></div>
+          
+          <button onclick="expandAllTree()" title="Mở tất cả nhánh" class="p-1.5 hover:bg-slate-200 rounded text-slate-600 text-xs">
+            <i class="fa-solid fa-folder-open text-amber-500"></i>
+          </button>
+          <button onclick="collapseAllTree()" title="Đóng tất cả nhánh" class="p-1.5 hover:bg-slate-200 rounded text-slate-600 text-xs">
+            <i class="fa-solid fa-folder text-amber-600"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold text-slate-600 flex items-center px-2 py-1.5 shrink-0">
+        <div class="flex-1 min-w-0 pr-2">Cấu trúc Nhánh / Phiên bản</div>
+        <div class="w-16 text-left shrink-0">Version</div>
+        <div class="w-16 text-center shrink-0">Type</div>
+        <div class="w-16 text-center shrink-0">DxRxC</div>
+      </div>
+
+      <div class="flex-1 overflow-auto p-1 relative bg-white border-l border-dashed border-slate-200" id="bom-tree-root"></div>
+
+      <!-- PROPERTY PANEL -->
+      <div id="prop-panel-wrapper" class="bg-slate-50 border-t border-slate-200 flex flex-col shrink-0">
+        <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="togglePropPanel()">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-blue-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-700">Material, Version & ECN/ECR Properties</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="event.stopPropagation(); editSelectedNode();" class="px-2 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 font-medium flex items-center gap-1"><i class="fa-solid fa-pen"></i> Sửa</button>
+            <button id="prop-toggle-btn" class="p-1 text-slate-500 hover:text-slate-700 text-xs transition-transform duration-200">
+              <i class="fa-solid fa-chevron-up"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[240px]">
+          <div id="prop-panel-details" class="space-y-2">
+            <p class="text-slate-400 italic">Chọn một nhánh trên cây BOM để xem thông tin thuộc tính...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="resizer-bom-layout" class="resizer-h"></div>
+
+    <!-- CỘT PHẢI: SVG & CAD VIEWPORT -->
+    <div class="flex-1 flex flex-col bg-slate-900 relative overflow-hidden">
+      
+      <div id="layout-toolbar" class="p-2 bg-slate-800 text-slate-200 border-b border-slate-700 flex items-center justify-between shrink-0 z-10 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span id="selected-layout-label" class="text-[11px] bg-slate-700 text-blue-300 px-2 py-0.5 rounded font-semibold">Layout: Chưa chọn</span>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <!-- Nút Text Toggle -->
+          <button id="tool-text-btn" onclick="toggleTool('TEXT')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Chèn văn bản trực tiếp">
+            <i class="fa-solid fa-font text-amber-400"></i> Text
+          </button>
+
+          <!-- Nút Move Toggle -->
+          <button id="tool-move-btn" onclick="toggleTool('MOVE')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Di chuyển đối tượng (Move)">
+            <i class="fa-solid fa-arrows-up-down-left-right text-sky-400"></i> Move
+          </button>
+
+          <!-- Nút Xóa Text -->
+          <button id="tool-delete-btn" onclick="toggleTool('DELETE')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Xóa Text Note">
+            <i class="fa-solid fa-trash-can text-rose-400"></i> Xóa Text
+          </button>
+
+          <label class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer flex items-center gap-1 shadow-sm" title="Import file SVG / Ảnh cho nhánh đang chọn">
+            <i class="fa-solid fa-file-arrow-up"></i> Mở file CAD / SVG
+            <input type="file" id="cad-file-input" accept=".svg,.png,.jpg,.jpeg" class="hidden" onchange="importCadSvgFile(event)">
+          </label>
+
+          <button id="tool-pan-btn" onclick="toggleTool('PAN')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Bật/Tắt chế độ Pan góc nhìn">
+            <i class="fa-solid fa-hand"></i> Pan
+          </button>
+
+          <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
+
+          <button onclick="resetZoomLayout()" class="p-1 px-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs flex items-center gap-1" title="Reset Zoom"><i class="fa-solid fa-rotate-left"></i> Reset View</button>
+        </div>
+      </div>
+
+      <div class="flex-1 relative canvas-bg overflow-hidden flex items-center justify-center" id="canvas-wrapper">
+        <div id="empty-svg-state" class="absolute flex flex-col items-center justify-center text-slate-500 space-y-3 z-10 pointer-events-none">
+          <i class="fa-solid fa-file-image text-5xl text-slate-700"></i>
+          <p class="text-xs">Chưa có file SVG / CAD được import cho nhánh này.</p>
+        </div>
+        <canvas id="bom-svg-canvas" class="absolute left-0 top-0"></canvas>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL THÊM / SỬA BOM NODE -->
+  <div id="modal-node" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-[560px] max-w-[95vw] overflow-hidden flex flex-col border border-slate-300">
+      <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
+        <h3 id="modal-title" class="text-sm font-bold flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-blue-400"></i> <span>Thêm / Chỉnh Sửa Chi Tiết BOM</span>
+        </h3>
+        <button onclick="closeModalNode()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="p-4 space-y-3 overflow-auto max-h-[80vh]">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Chọn Nhánh Cha (Parent Assembly):</label>
+          <div id="parent-tree-select-container" class="border border-slate-300 rounded max-h-[120px] overflow-auto p-2 bg-slate-50 text-xs border-l border-dashed border-slate-300"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tên Nhánh / Part / Version Name:</label>
+            <input type="text" id="input-node-name" class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="VD: Khung gầm chính...">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Mã / Version Code (VD: v1.0.0):</label>
+            <input type="text" id="input-material-code" class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none font-mono" placeholder="VD: v1.0.0">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Loại Nhánh (Type):</label>
+            <select id="input-node-type" class="w-full text-xs p-2 border border-slate-300 rounded font-semibold text-blue-700 outline-none">
+              <option value="BOM Version">BOM Version</option>
+              <option value="Assembly">Assembly</option>
+              <option value="Part">Part</option>
+              <option value="Sub-part">Sub-part</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tên Sản Phẩm (Product Name):</label>
+            <input type="text" id="input-product-name" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="VD: Xe hơi điện VinFast">
+          </div>
+        </div>
+
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded space-y-2">
+          <label class="block text-xs font-bold text-blue-900">Kích thước sản phẩm tiêu chuẩn (mm):</label>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600">Dài (L):</label>
+              <input type="number" id="input-dim-l" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-bold text-blue-700" value="100">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600">Rộng (W):</label>
+              <input type="number" id="input-dim-w" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-bold text-blue-700" value="50">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600">Cao (H):</label>
+              <input type="number" id="input-dim-h" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-bold text-blue-700" value="30">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end space-x-2">
+        <button onclick="closeModalNode()" class="px-3 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400">Hủy</button>
+        <button onclick="saveNodeModal()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL IMPORT CSV -->
+  <div id="modal-csv-validation" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl w-[720px] max-w-[95vw] h-[80vh] overflow-hidden flex flex-col border border-slate-300">
+      <div class="p-3.5 bg-slate-800 text-white flex items-center justify-between border-b border-slate-700 shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-file-csv text-purple-400 text-lg"></i>
+          <h3 class="text-sm font-bold">Kiểm Duyệt Dữ Liệu Import CSV</h3>
+        </div>
+        <button onclick="closeCsvModal()" class="text-slate-400 hover:text-white text-xl leading-none"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="p-3 bg-slate-100 border-b border-slate-200 text-xs flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2" id="csv-status-summary"></div>
+        <span class="text-[11px] text-slate-500 italic">* Yêu cầu kiểm tra: tất cả các dòng phải hợp lệ mới được load dữ liệu.</span>
+      </div>
+
+      <div class="flex-1 overflow-auto p-4 bg-slate-50">
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-800 text-white font-bold">
+                <th class="p-2 border border-slate-700 text-center w-12">STT</th>
+                <th class="p-2 border border-slate-700 text-center w-16">Trạng thái</th>
+                <th class="p-2 border border-slate-700">Tên Chi Tiết (Name)</th>
+                <th class="p-2 border border-slate-700">Version</th>
+                <th class="p-2 border border-slate-700">Type</th>
+                <th class="p-2 border border-slate-700">DxRxC (mm)</th>
+                <th class="p-2 border border-slate-700">Ghi chú lỗi</th>
+              </tr>
+            </thead>
+            <tbody id="csv-validation-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+        <button onclick="closeCsvModal()" class="px-4 py-1.5 bg-slate-300 text-slate-700 rounded font-medium text-xs hover:bg-slate-400">Hủy bỏ</button>
+        <button id="btn-confirm-load-csv" onclick="confirmLoadCsvData()" class="px-4 py-1.5 bg-purple-600 text-white font-bold rounded text-xs hover:bg-purple-700 shadow disabled:opacity-50 disabled:cursor-not-allowed">
+          Xác nhận Load vào Tree BOM
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let bomData = [
+      {
+        id: "BOM-ROOT",
+        name: "Quy trình tổng thể sản xuất xe hơi",
+        code: "v1.0.0",
+        productName: "Xe hơi điện VinFast",
+        type: "BOM Version",
+        dimL: 4500, dimW: 1800, dimH: 1450,
+        locked: true,
+        expanded: true,
+        svgImage: null,
+        showNote: true,
+        noteText: "Ghi chú gốc: Kiểm tra dung sai toàn bộ cụm lắp ráp.",
+        noteX: 80, noteY: 80,
+        children: [
+          {
+            id: "BOM-01",
+            name: "Công đoạn 1: Dập và Hàn Khung",
+            code: "v1.1.0",
+            productName: "Cụm khung gầm dập",
+            type: "Assembly",
+            dimL: 3200, dimW: 1500, dimH: 1100,
+            locked: false,
+            expanded: true,
+            svgImage: null,
+            showNote: true,
+            noteText: "Lưu ý kiểm tra mối hàn laser.",
+            noteX: 150, noteY: 180,
+            children: []
+          }
+        ]
+      }
+    ];
+
+    let selectedNodeId = "BOM-ROOT";
+    let editingNode = null;
+    let modalSelectedParentId = "BOM-ROOT";
+    
+    // Toggle Tool state: null | 'PAN' | 'TEXT' | 'MOVE' | 'DELETE'
+    let activeTool = null;
+    let lastTool = 'PAN';
+
+    let zoomLevel = 1.0, panX = 0, panY = 0;
+    let isDragging = false, startX = 0, startY = 0;
+    let canvas, ctx;
+
+    // Trạng thái nhập/sửa/di chuyển trực tiếp trên canvas
+    let inlineEditingText = null;
+    let moveTargetObj = null;
+    let isWaitingForMoveTargetSelect = false;
+    let isDraggingMovingObj = false;
+
+    let parsedCsvRows = [];
+    let isCsvValidOverall = false;
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderBomTree();
+      initCanvas();
+      setupResizers();
+    });
+
+    function renderBomTree() {
+      const container = document.getElementById("bom-tree-root");
+      container.innerHTML = "";
+      bomData.forEach(node => {
+        container.appendChild(createBomTreeNodeElement(node, 0));
+      });
+      updatePropertiesPanel();
+      drawSvgCanvas();
+    }
+
+    function createBomTreeNodeElement(node, level) {
+      const div = document.createElement("div");
+      div.className = "relative select-none";
+      const isSelected = node.id === selectedNodeId;
+      const bgClass = isSelected ? "bg-blue-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
+
+      let iconHtml = `<i class="fa-solid fa-code-branch text-emerald-500"></i>`;
+      if (node.type === "Assembly") iconHtml = `<i class="fa-solid fa-sitemap text-blue-400"></i>`;
+      else if (node.type === "Part") iconHtml = `<i class="fa-solid fa-cube text-sky-500"></i>`;
+      else if (node.type === "Sub-part") iconHtml = `<i class="fa-solid fa-gears text-amber-500"></i>`;
+
+      if (isSelected) iconHtml = iconHtml.replace(/text-[a-z]+-[0-9]+/g, "text-white");
+
+      const hasChildren = node.children && node.children.length > 0;
+      let lockIcon = node.locked ? `<i class="fa-solid fa-lock text-rose-500 text-[10px]" title="Đang khóa"></i>` : `<i class="fa-solid fa-lock-open text-slate-400 text-[10px]" title="Đang mở"></i>`;
+      let noteEyeIcon = node.showNote ? `<i class="fa-solid fa-eye text-emerald-500 text-[10px] ml-1" title="Note đang bật"></i>` : `<i class="fa-solid fa-eye-slash text-slate-400 text-[10px] ml-1" title="Note đang ẩn"></i>`;
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between p-1 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
+             onclick="selectBomNode('${node.id}')"
+             title="${node.name}">
+          
+          <div class="flex-1 min-w-0 flex items-center gap-1.5 pr-2" style="padding-left: ${level * 16 + 4}px;">
+            <button onclick="event.stopPropagation(); toggleLockNode('${node.id}')" class="p-0.5">${lockIcon}</button>
+            <button onclick="event.stopPropagation(); toggleNoteVisibility('${node.id}')" class="p-0.5">${noteEyeIcon}</button>
+            
+            ${hasChildren ? `
+              <button onclick="event.stopPropagation(); toggleExpandNode('${node.id}')" class="w-4 h-4 flex items-center justify-center text-[10px] opacity-70">
+                <i class="fa-solid ${node.expanded ? 'fa-minus' : 'fa-plus'}"></i>
+              </button>
+            ` : `<span class="w-4"></span>`}
+
+            ${iconHtml}
+            <span class="tree-node-text tracking-tight font-semibold" title="${node.name}">${node.name}</span>
+          </div>
+
+          <div class="w-16 text-left font-mono text-[11px] opacity-90 truncate shrink-0">${node.code || 'N/A'}</div>
+          <div class="w-16 text-center shrink-0"><span class="px-1 py-0.5 rounded text-[9px] ${isSelected ? 'bg-blue-800 text-white' : 'bg-slate-200 text-slate-700'}">${node.type || 'Part'}</span></div>
+          <div class="w-16 text-center font-mono text-[10px] opacity-90 shrink-0">${node.dimL || 0}x${node.dimW || 0}</div>
+        </div>
+      `;
+
+      if (hasChildren && node.expanded) {
+        const childContainer = document.createElement("div");
+        childContainer.className = "relative border-l border-dashed border-slate-200 ml-3";
+        node.children.forEach(child => {
+          childContainer.appendChild(createBomTreeNodeElement(child, level + 1));
+        });
+        div.appendChild(childContainer);
+      }
+      return div;
+    }
+
+    function selectBomNode(id) {
+      selectedNodeId = id;
+      renderBomTree();
+    }
+
+    function toggleLockNode(id) {
+      let node = findBomNodeById(bomData, id);
+      if (node) { node.locked = !node.locked; renderBomTree(); }
+    }
+
+    function toggleNoteVisibility(id) {
+      let node = findBomNodeById(bomData, id);
+      if (node) { node.showNote = !node.showNote; renderBomTree(); }
+    }
+
+    function toggleExpandNode(id) {
+      let node = findBomNodeById(bomData, id);
+      if (node) { node.expanded = !node.expanded; renderBomTree(); }
+    }
+
+    function expandAllTree() {
+      function exp(nodes) { nodes.forEach(n => { n.expanded = true; if(n.children) exp(n.children); }); }
+      exp(bomData); renderBomTree();
+    }
+
+    function collapseAllTree() {
+      function col(nodes) { nodes.forEach(n => { n.expanded = false; if(n.children) col(n.children); }); }
+      col(bomData); renderBomTree();
+    }
+
+    function updatePropertiesPanel() {
+      const panel = document.getElementById("prop-panel-details");
+      const label = document.getElementById("selected-layout-label");
+      const node = findBomNodeById(bomData, selectedNodeId);
+
+      if (!node) {
+        panel.innerHTML = `<p class="text-slate-400 italic">Chọn một nhánh trên cây BOM...</p>`;
+        label.innerText = `Layout: Chưa chọn`;
+        return;
+      }
+
+      label.innerText = `Layout: ${node.name} (${node.code})`;
+      let lockBadge = node.locked ? `<span class="text-rose-500 font-bold"><i class="fa-solid fa-lock"></i> Đã khóa</span>` : `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-lock-open"></i> Đang mở</span>`;
+
+      panel.innerHTML = `
+        <div class="flex items-center justify-between text-[11px] pb-1 border-b border-slate-200">
+          <span><b>Tên Sản Phẩm:</b> <span class="text-blue-700 font-bold">${node.productName || 'N/A'}</span></span>
+          <div>${lockBadge}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
+          <div><b>BOM Version:</b> <span class="font-mono text-emerald-700 font-bold">${node.code || 'N/A'}</span></div>
+          <div><b>Loại:</b> <span class="text-slate-800 font-medium">${node.type}</span></div>
+          <div class="col-span-2"><b>Kích thước (DxRxC):</b> <span class="font-mono text-blue-800 font-bold">${node.dimL} x ${node.dimW} x ${node.dimH} mm</span></div>
+        </div>
+      `;
+    }
+
+    function togglePropPanel() {
+      const content = document.getElementById("prop-panel-content");
+      const icon = document.querySelector("#prop-toggle-btn i");
+      if (content.classList.contains("collapsed")) {
+        content.classList.remove("collapsed");
+        icon.className = "fa-solid fa-chevron-up";
+      } else {
+        content.classList.add("collapsed");
+        icon.className = "fa-solid fa-chevron-down";
+      }
+    }
+
+    function openAddNodeModal() {
+      editingNode = null;
+      document.getElementById("modal-title").innerText = "Thêm Nhánh / Version Mới (BOM)";
+      document.getElementById("input-node-name").value = "";
+      document.getElementById("input-material-code").value = "v1.1.0";
+      document.getElementById("input-product-name").value = "";
+      document.getElementById("input-dim-l").value = 100;
+      document.getElementById("input-dim-w").value = 50;
+      document.getElementById("input-dim-h").value = 30;
+      modalSelectedParentId = selectedNodeId || "BOM-ROOT";
+      renderModalParentTreeView();
+      document.getElementById("modal-node").classList.remove("hidden");
+    }
+
+    function editSelectedNode() {
+      let node = findBomNodeById(bomData, selectedNodeId);
+      if (!node) return;
+
+      editingNode = node;
+      document.getElementById("modal-title").innerText = `Chỉnh sửa Nhánh: ${node.name}`;
+      document.getElementById("input-node-name").value = node.name;
+      document.getElementById("input-material-code").value = node.code || "";
+      document.getElementById("input-node-type").value = node.type || "Part";
+      document.getElementById("input-product-name").value = node.productName || "";
+      document.getElementById("input-dim-l").value = node.dimL || 0;
+      document.getElementById("input-dim-w").value = node.dimW || 0;
+      document.getElementById("input-dim-h").value = node.dimH || 0;
+
+      let res = findParentAndIndex(bomData, selectedNodeId);
+      modalSelectedParentId = res && res.parentNode ? res.parentNode.id : "BOM-ROOT";
+      renderModalParentTreeView();
+      document.getElementById("modal-node").classList.remove("hidden");
+    }
+
+    function renderModalParentTreeView() {
+      const container = document.getElementById("parent-tree-select-container");
+      container.innerHTML = "";
+
+      function renderNode(node, level) {
+        if (editingNode && (node.id === editingNode.id || isDescendant(editingNode, node.id))) return;
+        const isSelected = modalSelectedParentId === node.id;
+        
+        const div = document.createElement("div");
+        div.className = `p-1 rounded cursor-pointer text-xs flex items-center my-0.5 ${isSelected ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-50 text-slate-700'}`;
+        div.style.paddingLeft = `${level * 16 + 6}px`;
+        div.innerHTML = `<i class="fa-solid fa-code-branch text-emerald-500 mr-1.5"></i> <span>${node.name} (${node.code})</span>`;
+        div.onclick = (e) => {
+          e.stopPropagation();
+          modalSelectedParentId = node.id;
+          renderModalParentTreeView();
+        };
+        container.appendChild(div);
+
+        if (node.children) node.children.forEach(c => renderNode(c, level + 1));
+      }
+      bomData.forEach(n => renderNode(n, 0));
+    }
+
+    function closeModalNode() {
+      document.getElementById("modal-node").classList.add("hidden");
+    }
+
+    function saveNodeModal() {
+      const name = document.getElementById("input-node-name").value.trim();
+      const code = document.getElementById("input-material-code").value.trim();
+      const type = document.getElementById("input-node-type").value;
+      const productName = document.getElementById("input-product-name").value.trim();
+      const dimL = parseFloat(document.getElementById("input-dim-l").value) || 0;
+      const dimW = parseFloat(document.getElementById("input-dim-w").value) || 0;
+      const dimH = parseFloat(document.getElementById("input-dim-h").value) || 0;
+
+      if (!name) { alert("Vui lòng nhập tên nhánh!"); return; }
+
+      if (editingNode) {
+        editingNode.name = name;
+        editingNode.code = code;
+        editingNode.type = type;
+        editingNode.productName = productName;
+        editingNode.dimL = dimL; editingNode.dimW = dimW; editingNode.dimH = dimH;
+      } else {
+        let parent = findBomNodeById(bomData, modalSelectedParentId);
+        if (parent) {
+          if (!parent.children) parent.children = [];
+          parent.children.push({
+            id: "BOM-" + Date.now().toString().slice(-4),
+            name: name,
+            code: code,
+            type: type,
+            productName: productName,
+            dimL: dimL, dimW: dimW, dimH: dimH,
+            locked: false,
+            expanded: true,
+            svgImage: null,
+            showNote: true,
+            noteText: `Note: ${name}`,
+            noteX: 120, noteY: 120,
+            children: []
+          });
+        }
+      }
+
+      closeModalNode();
+      renderBomTree();
+    }
+
+    function deleteSelectedNode() {
+      let node = findBomNodeById(bomData, selectedNodeId);
+      if (selectedNodeId === "BOM-ROOT") { alert("Không thể xóa nhánh gốc!"); return; }
+      if (node && node.locked) { alert("Nhánh này đang bị khóa, không thể xóa!"); return; }
+      if (!confirm("Bạn có chắc muốn xóa nhánh này?")) return;
+
+      function removeNode(nodes, id) {
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].id === id) { nodes.splice(i, 1); return true; }
+          if (nodes[i].children && removeNode(nodes[i].children, id)) return true;
+        }
+        return false;
+      }
+      removeNode(bomData, selectedNodeId);
+      selectedNodeId = "BOM-ROOT";
+      renderBomTree();
+    }
+
+    function moveSelectedNodeOrder(dir) {
+      if (selectedNodeId === "BOM-ROOT") return;
+      function move(nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+          let idx = nodes[i].children.findIndex(c => c.id === selectedNodeId);
+          if (idx !== -1) {
+            let target = idx + dir;
+            if (target >= 0 && target < nodes[i].children.length) {
+              let temp = nodes[i].children[idx];
+              nodes[i].children[idx] = nodes[i].children[target];
+              nodes[i].children[target] = temp;
+              return true;
+            }
+          }
+          if (nodes[i].children && move(nodes[i].children)) return true;
+        }
+        return false;
+      }
+      move(bomData);
+      renderBomTree();
+    }
+
+    function handleCsvFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const lines = evt.target.result.split('\n');
+        parsedCsvRows = [];
+        let validCount = 0, invalidCount = 0;
+
+        lines.forEach((line, idx) => {
+          if (idx === 0 || !line.trim()) return;
+          const cols = line.split(',');
+          let name = cols[0] ? cols[0].trim() : "";
+          let code = cols[1] ? cols[1].trim() : "";
+          let type = cols[2] ? cols[2].trim() : "";
+          let dimL = parseFloat(cols[3]);
+          let dimW = parseFloat(cols[4]);
+          let dimH = parseFloat(cols[5]);
+
+          let isValid = true;
+          let errorMsg = "";
+          if (!name) { isValid = false; errorMsg += "Thiếu Tên; "; }
+          if (!code) { isValid = false; errorMsg += "Thiếu Version; "; }
+          if (isNaN(dimL) || isNaN(dimW) || isNaN(dimH)) { isValid = false; errorMsg += "DxRxC sai số; "; }
+
+          if (isValid) validCount++; else invalidCount++;
+          parsedCsvRows.push({ name, code, type: type || 'Part', dimL: dimL||0, dimW: dimW||0, dimH: dimH||0, isValid, errorMsg: errorMsg || 'Hợp lệ' });
+        });
+
+        isCsvValidOverall = (invalidCount === 0 && parsedCsvRows.length > 0);
+        renderCsvValidationModal(validCount, invalidCount);
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    }
+
+    function renderCsvValidationModal(validCount, invalidCount) {
+      const tbody = document.getElementById("csv-validation-tbody");
+      const summary = document.getElementById("csv-status-summary");
+      const confirmBtn = document.getElementById("btn-confirm-load-csv");
+
+      tbody.innerHTML = "";
+      parsedCsvRows.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.className = row.isValid ? "border-b hover:bg-slate-50" : "border-b bg-rose-50 hover:bg-rose-100";
+        tr.innerHTML = `
+          <td class="p-2 border border-slate-200 text-center font-mono">${i + 1}</td>
+          <td class="p-2 border border-slate-200 text-center">
+            ${row.isValid ? '<i class="fa-solid fa-circle-check text-emerald-500 text-base" title="Đúng"></i>' : '<i class="fa-solid fa-circle-xmark text-rose-500 text-base" title="Sai"></i>'}
+          </td>
+          <td class="p-2 border border-slate-200 font-medium">${row.name || '<span class="text-rose-500 italic">Trống</span>'}</td>
+          <td class="p-2 border border-slate-200 font-mono">${row.code || '<span class="text-rose-500 italic">Trống</span>'}</td>
+          <td class="p-2 border border-slate-200">${row.type}</td>
+          <td class="p-2 border border-slate-200 font-mono">${row.dimL}x${row.dimW}x${row.dimH}</td>
+          <td class="p-2 border border-slate-200 text-[11px] ${row.isValid ? 'text-emerald-700' : 'text-rose-600 font-bold'}">${row.errorMsg}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (isCsvValidOverall) {
+        summary.innerHTML = `<span class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> Tất cả ${validCount} dòng hợp lệ 100%!</span>`;
+        confirmBtn.disabled = false;
+      } else {
+        summary.innerHTML = `<span class="px-2 py-1 bg-rose-100 text-rose-800 rounded font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Phát hiện ${invalidCount} dòng lỗi.</span>`;
+        confirmBtn.disabled = true;
+      }
+      document.getElementById("modal-csv-validation").classList.remove("hidden");
+    }
+
+    function closeCsvModal() {
+      document.getElementById("modal-csv-validation").classList.add("hidden");
+    }
+
+    function confirmLoadCsvData() {
+      if (!isCsvValidOverall) return;
+      let parentNode = findBomNodeById(bomData, selectedNodeId) || bomData[0];
+      if (!parentNode.children) parentNode.children = [];
+
+      parsedCsvRows.forEach((row, idx) => {
+        parentNode.children.push({
+          id: "CSV-" + Date.now().toString().slice(-4) + idx,
+          name: row.name,
+          code: row.code,
+          type: row.type,
+          productName: "Sản phẩm CSV",
+          dimL: row.dimL, dimW: row.dimW, dimH: row.dimH,
+          locked: false,
+          expanded: true,
+          svgImage: null,
+          showNote: true,
+          noteText: `Note: ${row.name}`,
+          noteX: 100 + idx * 15, noteY: 100 + idx * 15,
+          children: []
+        });
+      });
+      renderBomTree();
+      closeCsvModal();
+    }
+
+    // --- CANVAS & CAD TOOLS (TOGGLE, ENTER WORKFLOW, INLINE EDIT/MOVE/DELETE) ---
+    function initCanvas() {
+      canvas = document.getElementById("bom-svg-canvas");
+      ctx = canvas.getContext("2d");
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+
+      // Mouse Down
+      canvas.addEventListener("mousedown", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left - panX) / zoomLevel;
+        const clickY = (e.clientY - rect.top - panY) / zoomLevel;
+
+        if (activeTool === 'PAN') {
+          isDragging = true;
+          startX = e.clientX - panX;
+          startY = e.clientY - panY;
+          document.getElementById("canvas-wrapper").style.cursor = "grabbing";
+        } 
+        else if (activeTool === 'TEXT') {
+          // Nhập trực tiếp text ngay trên layout tại vị trí click chuột
+          let textInput = prompt("Nhập nội dung Text Note trực tiếp trên layout:", "Note mới");
+          if (textInput && textInput.trim()) {
+            let targetNode = findBomNodeById(bomData, selectedNodeId);
+            if (targetNode) {
+              targetNode.noteText = textInput.trim();
+              targetNode.noteX = Math.round(clickX);
+              targetNode.noteY = Math.round(clickY);
+              targetNode.showNote = true;
+              drawSvgCanvas();
+            }
+          }
+        } 
+        else if (activeTool === 'MOVE') {
+          if (isWaitingForMoveTargetSelect) {
+            // Click chọn đối tượng (text note hoặc ảnh)
+            let targetNode = findBomNodeById(bomData, selectedNodeId);
+            if (targetNode && isClickOnNote(clickX, clickY, targetNode)) {
+              moveTargetObj = targetNode;
+              isWaitingForMoveTargetSelect = false;
+              alert("Đã chọn đối tượng. Hãy di chuyển chuột tới vị trí mới và bấm ENTER để kết thúc lệnh.");
+            } else {
+              alert("Vui lòng click chính xác vào vùng Note của nhánh đang chọn!");
+            }
+          } else if (moveTargetObj) {
+            isDraggingMovingObj = true;
+          }
+        }
+        else if (activeTool === 'DELETE') {
+          // Xóa Text Note
+          let targetNode = findBomNodeById(bomData, selectedNodeId);
+          if (targetNode && targetNode.showNote && isClickOnNote(clickX, clickY, targetNode)) {
+            if (confirm("Bạn có muốn xóa đoạn text này hay không?")) {
+              targetNode.noteText = "";
+              targetNode.showNote = false;
+              drawSvgCanvas();
+            }
+          }
+        }
+      });
+
+      // Mouse Move
+      canvas.addEventListener("mousemove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left - panX) / zoomLevel;
+        const mouseY = (e.clientY - rect.top - panY) / zoomLevel;
+
+        if (isDragging && activeTool === 'PAN') {
+          panX = e.clientX - startX;
+          panY = e.clientY - startY;
+          drawSvgCanvas();
+        } else if (isDraggingMovingObj && moveTargetObj) {
+          moveTargetObj.noteX = Math.round(mouseX);
+          moveTargetObj.noteY = Math.round(mouseY);
+          drawSvgCanvas();
+        }
+      });
+
+      // Mouse Up
+      canvas.addEventListener("mouseup", () => {
+        isDragging = false;
+        isDraggingMovingObj = false;
+        if (activeTool === 'PAN') {
+          document.getElementById("canvas-wrapper").style.cursor = "grab";
+        }
+      });
+
+      // Double click để edit trực tiếp text note trên màn hình (giống CAD)
+      canvas.addEventListener("dblclick", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left - panX) / zoomLevel;
+        const clickY = (e.clientY - rect.top - panY) / zoomLevel;
+
+        let targetNode = findBomNodeById(bomData, selectedNodeId);
+        if (targetNode && targetNode.showNote && isClickOnNote(clickX, clickY, targetNode)) {
+          let newText = prompt("Chỉnh sửa nội dung Text trực tiếp:", targetNode.noteText);
+          if (newText !== null) {
+            targetNode.noteText = newText.trim();
+            drawSvgCanvas();
+          }
+        }
+      });
+
+      // Bấm ENTER để lấy lại lệnh hoặc xác nhận kết thúc Move
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          if (activeTool === 'MOVE') {
+            if (!moveTargetObj && !isWaitingForMoveTargetSelect) {
+              // Bấm enter lần đầu tiên để kích hoạt chọn đối tượng Move
+              isWaitingForMoveTargetSelect = true;
+              alert("Chế độ Move: Vui lòng click chọn đối tượng (Text note) cần di chuyển.");
+            } else if (moveTargetObj) {
+              // Bấm enter lần nữa để kết thúc lệnh Move
+              moveTargetObj = null;
+              isWaitingForMoveTargetSelect = false;
+              alert("Đã hoàn tất lệnh Move.");
+            }
+          } else if (!activeTool && lastTool) {
+            // Lấy lại lệnh cũ vừa sử dụng khi không có tool nào active và nhấn Enter
+            toggleTool(lastTool);
+          }
+        }
+      });
+
+      canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        zoomLevel = Math.max(0.2, Math.min(4.0, zoomLevel * (e.deltaY < 0 ? 1.08 : 0.92)));
+        drawSvgCanvas();
+      });
+
+      drawSvgCanvas();
+    }
+
+    function isClickOnNote(x, y, node) {
+      if (!node.showNote) return false;
+      let nx = node.noteX || 80;
+      let ny = node.noteY || 80;
+      return (x >= nx && x <= nx + 160 && y >= ny && y <= ny + 55);
+    }
+
+    function resizeCanvas() {
+      const wrap = canvas.parentElement;
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      drawSvgCanvas();
+    }
+
+    // Toggle Tool (Bấm vào bật, bấm vào lần nữa sẽ tắt)
+    function toggleTool(toolName) {
+      if (activeTool === toolName) {
+        // Tắt tool hiện tại
+        lastTool = activeTool;
+        activeTool = null;
+      } else {
+        // Bật tool mới
+        activeTool = toolName;
+        lastTool = toolName;
+        if (toolName === 'MOVE') {
+          isWaitingForMoveTargetSelect = true;
+          moveTargetObj = null;
+          alert("Lệnh MOVE đã bật: Click chọn đối tượng, sau đó bấm ENTER để di chuyển.");
+        }
+      }
+      updateToolbarUI();
+    }
+
+    function updateToolbarUI() {
+      const btnPan = document.getElementById("tool-pan-btn");
+      const btnMove = document.getElementById("tool-move-btn");
+      const btnText = document.getElementById("tool-text-btn");
+      const btnDelete = document.getElementById("tool-delete-btn");
+      const wrapper = document.getElementById("canvas-wrapper");
+
+      btnPan.className = "px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+      btnMove.className = "px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+      btnText.className = "px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+      btnDelete.className = "px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+
+      if (activeTool === 'PAN') {
+        btnPan.className = "px-2.5 py-1 bg-amber-600 text-white rounded text-[11px] font-medium flex items-center gap-1 shadow";
+        wrapper.style.cursor = "grab";
+      } else if (activeTool === 'MOVE') {
+        btnMove.className = "px-2.5 py-1 bg-sky-600 text-white rounded text-[11px] font-medium flex items-center gap-1 shadow";
+        wrapper.style.cursor = "move";
+      } else if (activeTool === 'TEXT') {
+        btnText.className = "px-2.5 py-1 bg-purple-600 text-white rounded text-[11px] font-medium flex items-center gap-1 shadow";
+        wrapper.style.cursor = "text";
+      } else if (activeTool === 'DELETE') {
+        btnDelete.className = "px-2.5 py-1 bg-rose-600 text-white rounded text-[11px] font-medium flex items-center gap-1 shadow";
+        wrapper.style.cursor = "pointer";
+      } else {
+        wrapper.style.cursor = "default";
+      }
+    }
+
+    function resetZoomLayout() {
+      zoomLevel = 1.0; panX = 0; panY = 0;
+      drawSvgCanvas();
+    }
+
+    function importCadSvgFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      let targetNode = findBomNodeById(bomData, selectedNodeId);
+      if (!targetNode) { alert("Vui lòng chọn nhánh BOM trước!"); return; }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          targetNode.svgImage = img;
+          drawSvgCanvas();
+          alert(`Đã gán file CAD/SVG thành công cho nhánh: ${targetNode.name}`);
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function drawSvgCanvas() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      let targetNode = findBomNodeById(bomData, selectedNodeId);
+      const emptyState = document.getElementById("empty-svg-state");
+
+      if (targetNode && targetNode.svgImage) {
+        emptyState.classList.add("hidden");
+        ctx.save();
+        ctx.translate(panX, panY);
+        ctx.scale(zoomLevel, zoomLevel);
+
+        let img = targetNode.svgImage;
+        let x = (canvas.width / 2) - (img.width / 2);
+        let y = (canvas.height / 2) - (img.height / 2);
+        ctx.drawImage(img, x, y);
+        ctx.restore();
+      } else {
+        emptyState.classList.remove("hidden");
+      }
+
+      if (targetNode && targetNode.showNote && targetNode.noteText) {
+        ctx.save();
+        ctx.translate(panX, panY);
+        ctx.scale(zoomLevel, zoomLevel);
+
+        let nx = targetNode.noteX || 80;
+        let ny = targetNode.noteY || 80;
+
+        ctx.fillStyle = "rgba(254, 240, 138, 0.9)";
+        ctx.strokeStyle = (moveTargetObj === targetNode) ? "#0284c7" : "#ca8a04";
+        ctx.lineWidth = (moveTargetObj === targetNode) ? 2 : 1;
+        ctx.fillRect(nx, ny, 160, 55);
+        ctx.strokeRect(nx, ny, 160, 55);
+
+        ctx.fillStyle = "#1e293b";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText("📌 Note AutoCAD:", nx + 8, ny + 18);
+        ctx.font = "10px sans-serif";
+        ctx.fillText(targetNode.noteText, nx + 8, ny + 36);
+
+        ctx.restore();
+      }
+    }
+
+    function findBomNodeById(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) { let f = findBomNodeById(n.children, id); if (f) return f; }
+      }
+      return null;
+    }
+
+    function findParentAndIndex(nodes, id, parent = null) {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) return { parentArray: nodes, index: i, parentNode: parent };
+        if (nodes[i].children) {
+          let res = findParentAndIndex(nodes[i].children, id, nodes[i]);
+          if (res) return res;
+        }
+      }
+      return null;
+    }
+
+    function isDescendant(node, targetId) {
+      if (!node.children) return false;
+      for (let c of node.children) {
+        if (c.id === targetId || isDescendant(c, targetId)) return true;
+      }
+      return false;
+    }
+
+    function setupResizers() {
+      const res = document.getElementById("resizer-bom-layout");
+      const left = document.getElementById("left-bom-container");
+      let dragging = false;
+      res.addEventListener("mousedown", () => dragging = true);
+      window.addEventListener("mousemove", (e) => {
+        if (dragging && e.clientX > 320 && e.clientX < window.innerWidth * 0.75) {
+          left.style.width = `${e.clientX}px`;
+          resizeCanvas();
+        }
+      });
+      window.addEventListener("mouseup", () => dragging = false);
+    }
+  </script>
+</body>
+</html>
