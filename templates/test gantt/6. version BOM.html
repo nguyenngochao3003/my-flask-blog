@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Siemens Teamcenter PLM - Product & BOM Version Manager</title>
+  <title>Siemens Teamcenter PLM - Product, BOM & Routine Version Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -33,25 +33,27 @@
       <div class="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs tracking-wider flex items-center gap-1.5">
         <i class="fa-solid fa-code-branch"></i> TEAMCENTER PLM
       </div>
-      <span class="text-sm font-semibold text-slate-200">Product & BOM Version Manager</span>
+      <span class="text-sm font-semibold text-slate-200">Product, BOM & Routine Version Manager</span>
     </div>
-    <div class="text-xs text-slate-400">Quản lý phiên bản sản phẩm & ECN/ECR</div>
+    <div class="text-xs text-slate-400">Quản lý 3 Cấp: Sản phẩm -> BOM Version -> Routine Version</div>
   </header>
 
   <!-- ================= MAIN CONTAINER ================= -->
   <div class="flex-1 flex overflow-hidden">
     
-    <!-- CỘT TRÁI: PRODUCT & VERSION TREE + PROPERTIES -->
-    <div id="left-tree-container" class="w-[480px] min-w-[340px] max-w-[70%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+    <!-- CỘT TRÁI: PRODUCT & 3-LEVEL VERSION TREE + PROPERTIES -->
+    <div id="left-tree-container" class="w-[500px] min-w-[360px] max-w-[70%] flex flex-col bg-white border-r border-slate-200 shrink-0">
       
-      <!-- TOOLBAR CÂY: Tích hợp nút tạo version mới (icon Git + dấu cộng) -->
-      <div class="p-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-sitemap text-blue-600 text-sm"></i>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Product & Version Tree</h2>
+      <!-- TOOLBAR: CHỌN SẢN PHẨM LÀM NHÁNH GỐC & TẠO VERSION -->
+      <div class="p-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-1.5 flex-1 min-w-0">
+          <i class="fa-solid fa-boxes-packing text-indigo-600 text-xs shrink-0" title="Chọn sản phẩm gốc"></i>
+          <select id="product-root-select" onchange="changeRootProduct(this.value)" class="text-xs font-semibold bg-white border border-slate-300 rounded p-1.5 flex-1 outline-none text-slate-800 cursor-pointer shadow-sm">
+            <!-- Render options dynamically -->
+          </select>
         </div>
-        <div class="flex items-center gap-1">
-          <button onclick="openAddVersionModal()" title="Tạo Version BOM mới" class="p-1.5 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 shadow-sm font-medium">
+        <div class="flex items-center gap-1 shrink-0">
+          <button onclick="openAddVersionModal()" title="Tạo Nhánh / Version mới" class="p-1.5 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 shadow-sm font-medium">
             <i class="fa-solid fa-code-branch text-emerald-300"></i><i class="fa-solid fa-plus text-[10px]"></i>
           </button>
           <div class="h-4 w-[1px] bg-slate-300 mx-0.5"></div>
@@ -66,12 +68,12 @@
 
       <!-- HEADER BẢNG -->
       <div class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold text-slate-600 flex items-center px-2 py-1.5 shrink-0">
-        <div class="flex-1 min-w-0 pr-2">Tên sản phẩm / Version BOM</div>
-        <div class="w-20 text-left shrink-0">Version</div>
+        <div class="flex-1 min-w-0 pr-2">Cấu trúc 3 Cấp (Sản phẩm / BOM / Routine)</div>
+        <div class="w-20 text-left shrink-0">Mã Code</div>
         <div class="w-20 text-center shrink-0">Trạng thái</div>
       </div>
 
-      <!-- CÂY HIỂN THỊ -->
+      <!-- CÂY HIỂN THỊ 3 CẤP -->
       <div class="flex-1 overflow-auto p-1 relative bg-white border-l border-dashed border-slate-200" id="version-tree-root"></div>
 
       <!-- PROPERTY PANEL -->
@@ -79,11 +81,11 @@
         <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="togglePropPanel()">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-circle-info text-blue-600 text-xs"></i>
-            <span class="text-xs font-bold text-slate-700">Version, Product, ECN & ECR Properties</span>
+            <span class="text-xs font-bold text-slate-700">Properties & ECN/ECR Details</span>
           </div>
           <div class="flex items-center gap-2">
-            <button onclick="event.stopPropagation(); editSelectedVersion();" class="px-2 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 font-medium flex items-center gap-1">
-              <i class="fa-solid fa-pen"></i> Sửa Version
+            <button onclick="event.stopPropagation(); editSelectedNode();" class="px-2 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 font-medium flex items-center gap-1">
+              <i class="fa-solid fa-pen"></i> Chỉnh sửa
             </button>
             <button id="prop-toggle-btn" class="p-1 text-slate-500 hover:text-slate-700 text-xs">
               <i class="fa-solid fa-chevron-up"></i>
@@ -91,9 +93,9 @@
           </div>
         </div>
 
-        <div id="prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[220px]">
+        <div id="prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[200px]">
           <div id="prop-panel-details" class="space-y-2">
-            <p class="text-slate-400 italic">Chọn một version trên cây để xem thông tin thuộc tính...</p>
+            <p class="text-slate-400 italic">Chọn một nhánh trên cây để xem thông tin thuộc tính...</p>
           </div>
         </div>
       </div>
@@ -139,7 +141,7 @@
       <div class="flex-1 relative canvas-bg overflow-hidden flex items-center justify-center" id="canvas-wrapper">
         <div id="empty-svg-state" class="absolute flex flex-col items-center justify-center text-slate-500 space-y-3 z-10 pointer-events-none">
           <i class="fa-solid fa-file-image text-5xl text-slate-700"></i>
-          <p class="text-xs">Chưa có bản vẽ được đính kèm cho version này.</p>
+          <p class="text-xs">Chưa có bản vẽ được đính kèm cho nhánh này.</p>
         </div>
         <canvas id="version-svg-canvas" class="absolute left-0 top-0"></canvas>
       </div>
@@ -148,39 +150,47 @@
 
   </div>
 
-  <!-- ================= MODAL: TẠO / SỬA VERSION BOM ================= -->
+  <!-- ================= MODAL: TẠO / SỬA VERSION ================= -->
   <div id="modal-version" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl w-[580px] max-w-[95vw] overflow-hidden flex flex-col border border-slate-300">
+    <div class="bg-white rounded-lg shadow-xl w-[620px] max-w-[95vw] overflow-hidden flex flex-col border border-slate-300">
       <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
         <h3 id="modal-version-title" class="text-sm font-bold flex items-center gap-2">
-          <i class="fa-solid fa-code-branch text-blue-400"></i> <span>Tạo Version BOM Mới</span>
+          <i class="fa-solid fa-code-branch text-blue-400"></i> <span>Tạo Nhánh / Version Mới</span>
         </h3>
         <button onclick="closeAddVersionModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="p-4 space-y-3 overflow-auto max-h-[80vh]">
         <div id="parent-selector-wrapper">
-          <label class="block text-xs font-bold text-slate-700 mb-1">Chọn Nhánh / Sản phẩm cha:</label>
-          <div id="modal-parent-select-list" class="border border-slate-300 rounded max-h-[110px] overflow-auto p-2 bg-slate-50 text-xs"></div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Chọn Nhánh / Sản phẩm cha (Chọn [Null] để tạo Sản phẩm chính mới):</label>
+          <div id="modal-parent-select-list" class="border border-slate-300 rounded max-h-[120px] overflow-auto p-2 bg-slate-50 text-xs"></div>
+        </div>
+
+        <!-- KHU VỰC HIỂN THỊ DANH SÁCH SẢN PHẨM (HÌNH ẢNH + TÊN) KHI CHỌN NULL -->
+        <div id="product-template-selector" class="p-3 bg-indigo-50 border border-indigo-200 rounded space-y-2 hidden">
+          <label class="block text-xs font-bold text-indigo-900">Chọn mẫu sản phẩm gốc (Hình ảnh & Tên):</label>
+          <div id="product-template-list" class="grid grid-cols-3 gap-2">
+            <!-- Render dynamic product templates -->
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Tên Version / Nhánh:</label>
-            <input type="text" id="input-new-ver-name" class="w-full text-xs p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-500" placeholder="VD: Cụm truyền động...">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tên Version / Nhánh / Sản phẩm:</label>
+            <input type="text" id="input-new-ver-name" class="w-full text-xs p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-blue-500" placeholder="VD: Xe hơi điện VF7...">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Mã Version (Tự động sinh):</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Mã Code (Tự động sinh):</label>
             <input type="text" id="input-new-ver-code" readonly class="w-full text-xs p-2 bg-slate-100 border border-slate-300 rounded outline-none font-mono text-blue-700 font-bold" placeholder="Tự sinh...">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Mô tả chi tiết Version:</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Mô tả chi tiết:</label>
           <textarea id="input-new-ver-desc" rows="2" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="Nhập mô tả thay đổi cấu trúc, vật liệu..."></textarea>
         </div>
 
-        <!-- SEARCH ECN & ECR GẦN NHẤT -->
+        <!-- SEARCH ECN & ECR -->
         <div class="grid grid-cols-2 gap-3 bg-purple-50 p-2.5 border border-purple-200 rounded">
           <div>
             <label class="block text-[10px] font-bold text-purple-900 mb-1">Chọn ECR:</label>
@@ -207,120 +217,67 @@
 
       <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end space-x-2">
         <button onclick="closeAddVersionModal()" class="px-3 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400">Hủy</button>
-        <button id="modal-submit-btn" onclick="saveNewVersionNode()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Tạo Version</button>
+        <button id="modal-submit-btn" onclick="saveNewVersionNode()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Tạo Mới</button>
       </div>
     </div>
   </div>
 
   <!-- ================= LOGIC JAVASCRIPT ================= -->
   <script>
-    let versionTreeData = [
+    let availableProductTemplates = [
+      { id: "tmpl-suv", name: "Xe điện SUV (VF8/VF9)", image: "https://images.unsplash.com/photo-1553440569-bcc63803a83d?w=100&auto=format&fit=crop&q=60" },
+      { id: "tmpl-sedan", name: "Xe điện Sedan (VF e34)", image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=100&auto=format&fit=crop&q=60" },
+      { id: "tmpl-truck", name: "Xe tải điện vận chuyển", image: "https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=100&auto=format&fit=crop&q=60" }
+    ];
+
+    let productsList = [
       {
         id: "PROD-01",
-        name: "Quy trình tổng thể sản xuất xe hơi điện",
-        code: "CAR-MAIN-00",
-        productName: "Xe hơi điện VinFast VF8",
+        name: "Xe hơi điện VinFast VF8",
+        code: "CAR-VF8-00",
         type: "Product",
-        locked: true,
-        expanded: true,
+        description: "Dòng xe SUV điện thông minh phân khúc D",
         approved: true,
+        expanded: true,
         ecr: "ECR-2026-001",
         ecn: "ECN-2026-101",
-        description: "Sản phẩm chủ lực dây chuyền chính",
         svgImage: null,
         showNote: true,
-        noteText: "Kiểm tra dung sai toàn bộ cụm.",
+        noteText: "Note: VF8 Main",
         noteX: 80, noteY: 80,
         children: [
           {
-            id: "VER-01",
-            name: "Phiên bản gốc phát hành dây chuyền",
-            code: "v0",
-            productName: "Xe hơi điện VinFast VF8",
+            id: "VER-BOM-01",
+            name: "Phiên bản BOM Khung gầm v1.0",
+            code: "BOM-v1.0",
             type: "BOM Version",
+            approved: true,
             locked: true,
             expanded: true,
-            approved: true,
             ecr: "ECR-2026-001",
             ecn: "ECN-2026-101",
-            description: "Nhánh version đầu tiên.",
+            description: "BOM cấu trúc khung gầm và hệ thống treo chính.",
             svgImage: null,
             showNote: true,
-            noteText: "Note: v0",
+            noteText: "Note: BOM v1.0",
             noteX: 120, noteY: 100,
-            children: []
-          },
-          {
-            id: "VER-02",
-            name: "Phiên bản cải tiến khung gầm",
-            code: "v1",
-            productName: "Xe hơi điện VinFast VF8",
-            type: "BOM Version",
-            locked: false,
-            expanded: true,
-            approved: false,
-            ecr: "ECR-2026-002",
-            ecn: "ECN-2026-102",
-            description: "Nhánh thứ hai cùng cấp với v0.",
-            svgImage: null,
-            showNote: true,
-            noteText: "Note: v1",
-            noteX: 150, noteY: 150,
             children: [
               {
-                id: "VER-02-1",
-                name: "Cụm nhánh con cấp 1",
-                code: "v1.1",
-                productName: "Xe hơi điện VinFast VF8",
-                type: "BOM Version",
+                id: "VER-ROUT-01",
+                name: "Quy trình hàn robot khung gầm v1",
+                code: "ROUT-v1.0",
+                type: "Routine Version",
+                approved: true,
                 locked: false,
                 expanded: true,
-                approved: false,
-                ecr: "ECR-2026-002",
-                ecn: "ECN-2026-102",
-                description: "Nhánh con của v1.",
+                ecr: "ECR-2026-001",
+                ecn: "ECN-2026-101",
+                description: "Routine hàn điểm tự động bằng robot KUKA dây chuyền A.",
                 svgImage: null,
                 showNote: true,
-                noteText: "Note: v1.1",
-                noteX: 180, noteY: 180,
-                children: [
-                  {
-                    id: "VER-02-1-1",
-                    name: "Nhánh con đầu tiên của v1.1",
-                    code: "v1.1.0",
-                    productName: "Xe hơi điện VinFast VF8",
-                    type: "BOM Version",
-                    locked: false,
-                    expanded: true,
-                    approved: false,
-                    ecr: "ECR-2026-002",
-                    ecn: "ECN-2026-102",
-                    description: "Nhánh con của v1.1.",
-                    svgImage: null,
-                    showNote: true,
-                    noteText: "Note: v1.1.0",
-                    noteX: 210, noteY: 210,
-                    children: []
-                  },
-                  {
-                    id: "VER-02-1-2",
-                    name: "Nhánh con tiếp theo cùng cấp với v1.1.0",
-                    code: "v1.1.1",
-                    productName: "Xe hơi điện VinFast VF8",
-                    type: "BOM Version",
-                    locked: false,
-                    expanded: true,
-                    approved: false,
-                    ecr: "ECR-2026-002",
-                    ecn: "ECN-2026-102",
-                    description: "Nhánh con tiếp theo cùng cấp với v1.1.0.",
-                    svgImage: null,
-                    showNote: true,
-                    noteText: "Note: v1.1.1",
-                    noteX: 240, noteY: 240,
-                    children: []
-                  }
-                ]
+                noteText: "Note: Routine v1.0",
+                noteX: 160, noteY: 140,
+                children: []
               }
             ]
           }
@@ -328,8 +285,10 @@
       }
     ];
 
-    let selectedNodeId = "VER-01";
+    let selectedProductId = "PROD-01";
+    let selectedNodeId = "VER-BOM-01";
     let modalSelectedParentId = "PROD-01";
+    let selectedProductTemplateId = "tmpl-suv";
     let isEditingMode = false;
     let activeTool = null;
     let lastTool = 'PAN';
@@ -343,96 +302,62 @@
     let isDraggingMovingObj = false;
 
     window.addEventListener("DOMContentLoaded", () => {
+      initProductSelector();
       renderVersionTree();
       initCanvas();
       setupResizers();
     });
 
-    // --- HỆ THỐNG QUY TẮC SINH MÃ VERSION TỰ ĐỘNG ---
-    function generateAutoVersionCode(parentNode) {
-      if (!parentNode) return "v0";
+    function initProductSelector() {
+      const select = document.getElementById("product-root-select");
+      select.innerHTML = "";
+      productsList.forEach(p => {
+        let opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `${p.name} (${p.code})`;
+        if (p.id === selectedProductId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
 
-      // Nếu cha là Product hoặc node chưa có con nào
-      if (parentNode.type === 'Product' || !parentNode.children || parentNode.children.length === 0) {
-        if (!parentNode.children || parentNode.children.length === 0) {
-          if (parentNode.type === 'Product') return "v0";
-          return parentNode.code + ".1";
-        }
-      }
-
-      let children = parentNode.children;
-      let lastChild = children[children.length - 1];
-      let lastCode = lastChild.code || "v0";
-
-      // Nếu đang tạo con cấp mới dưới một node (VD: từ v1 tạo con -> v1.1)
-      if (parentNode.type === 'BOM Version' && children.length === 1 && lastCode === parentNode.code + ".1") {
-        // Kiểm tra xem đã có cấu trúc sâu hơn chưa
-      }
-
-      // Xử lý theo quy tắc yêu cầu:
-      // - Nhánh version đầu tiên: v0, nhánh hai cùng cấp: v1
-      // - Nhánh con của v1: v1.1
-      // - Nhánh con của v1.1: v1.1.0
-      // - Nhánh con tiếp theo cùng cấp với v1.1.0: v1.1.1
-      
-      let cleanCode = lastCode.startsWith('v') ? lastCode.substring(1) : lastCode;
-      let parts = cleanCode.split('.');
-
-      if (parentNode.type === 'Product') {
-        // Cùng cấp với các nhánh con trực tiếp của Product (v0, v1, v2...)
-        let maxNum = 0;
-        children.forEach(c => {
-          let cClean = c.code.startsWith('v') ? c.code.substring(1) : c.code;
-          let cParts = cClean.split('.');
-          if (cParts.length === 1) {
-            let val = parseInt(cParts[0]) || 0;
-            if (val >= maxNum) maxNum = val + 1;
-          }
-        });
-        return `v${maxNum}`;
+    function changeRootProduct(prodId) {
+      selectedProductId = prodId;
+      let prod = productsList.find(p => p.id === prodId);
+      if (prod && prod.children && prod.children.length > 0) {
+        selectedNodeId = prod.children[0].id;
       } else {
-        // Là nhánh con của một node BOM Version khác
-        let parentCodeClean = parentNode.code.startsWith('v') ? parentNode.code.substring(1) : parentNode.code;
-        let parentParts = parentCodeClean.split('.');
+        selectedNodeId = prodId;
+      }
+      renderVersionTree();
+    }
 
-        if (parentParts.length === 1) {
-          // Ví dụ cha là v1 -> con đầu tiên là v1.1, con tiếp theo là v1.2
-          let maxSubNum = 0;
-          children.forEach(c => {
-            let cClean = c.code.startsWith('v') ? c.code.substring(1) : c.code;
-            let cParts = cClean.split('.');
-            if (cParts.length === 2) {
-              let val = parseInt(cParts[1]) || 0;
-              if (val >= maxSubNum) maxSubNum = val + 1;
-            } else if (cParts.length === 1) {
-              maxSubNum = 1;
-            }
-          });
-          if (maxSubNum === 0) maxSubNum = 1;
-          return `v${parentParts[0]}.${maxSubNum}`;
-        } else {
-          // Đã có từ 2 cấp trở lên (VD: v1.1 -> con đầu tiên là v1.1.0, tiếp theo v1.1.1)
-          let maxLeafNum = 0;
-          children.forEach(c => {
-            let cClean = c.code.startsWith('v') ? c.code.substring(1) : c.code;
-            let cParts = cClean.split('.');
-            if (cParts.length === parentParts.length + 1) {
-              let val = parseInt(cParts[cParts.length - 1]) || 0;
-              if (val >= maxLeafNum) maxLeafNum = val + 1;
-            }
-          });
-          return `v${parentCodeClean}.${maxLeafNum}`;
-        }
+    function getCurrentProduct() {
+      return productsList.find(p => p.id === selectedProductId) || productsList[0];
+    }
+
+    function navigateToBOMPage(nodeId, event) {
+      if (event) event.stopPropagation();
+      let node = findNodeById([getCurrentProduct()], nodeId);
+      if (node) {
+        alert(`[Chuyển hướng]: Đang mở trang Tạo / Quản lý BOM cho phiên bản: ${node.name} (${node.code})`);
       }
     }
 
-    // --- RENDER TREE ---
+    function navigateToRoutinePage(nodeId, event) {
+      if (event) event.stopPropagation();
+      let node = findNodeById([getCurrentProduct()], nodeId);
+      if (node) {
+        alert(`[Chuyển hướng]: Đang mở trang Tạo / Quản lý Routine cho version: ${node.name} (${node.code})`);
+      }
+    }
+
     function renderVersionTree() {
       const container = document.getElementById("version-tree-root");
       container.innerHTML = "";
-      versionTreeData.forEach(node => {
-        container.appendChild(createTreeNodeElement(node, 0));
-      });
+      let currentProd = getCurrentProduct();
+      if (currentProd) {
+        container.appendChild(createTreeNodeElement(currentProd, 0));
+      }
       updatePropertiesPanel();
       drawSvgCanvas();
     }
@@ -445,11 +370,19 @@
 
       let iconHtml = `<i class="fa-solid fa-boxes-packing text-indigo-500"></i>`;
       if (node.type === "BOM Version") iconHtml = `<i class="fa-solid fa-code-branch text-emerald-500"></i>`;
+      if (node.type === "Routine Version") iconHtml = `<i class="fa-solid fa-gears text-purple-500"></i>`;
       if (isSelected) iconHtml = iconHtml.replace(/text-[a-z]+-[0-9]+/g, "text-white");
 
       const hasChildren = node.children && node.children.length > 0;
       let lockIcon = node.locked ? `<i class="fa-solid fa-lock text-rose-500 text-[10px]" title="Đang khóa"></i>` : `<i class="fa-solid fa-lock-open text-slate-400 text-[10px]" title="Đang mở"></i>`;
       let approvedBadge = node.approved ? `<i class="fa-solid fa-circle-check text-emerald-500 text-[11px] ml-1" title="Đã được Approve"></i>` : `<span class="text-[10px] text-amber-500 italic ml-1">Chờ duyệt</span>`;
+
+      let actionGitButton = "";
+      if (node.type === "BOM Version") {
+        actionGitButton = `<button onclick="navigateToBOMPage('${node.id}', event)" class="p-1 hover:bg-blue-700/50 rounded text-emerald-300 ml-1" title="Link tới trang tạo BOM"><i class="fa-solid fa-code-branch"></i></button>`;
+      } else if (node.type === "Routine Version") {
+        actionGitButton = `<button onclick="navigateToRoutinePage('${node.id}', event)" class="p-1 hover:bg-purple-700/50 rounded text-purple-300 ml-1" title="Link tới trang tạo Routine"><i class="fa-solid fa-code-branch"></i></button>`;
+      }
 
       div.innerHTML = `
         <div class="flex items-center justify-between p-1 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
@@ -457,7 +390,7 @@
              title="${node.name}">
           
           <div class="flex-1 min-w-0 flex items-center gap-1.5 pr-2" style="padding-left: ${level * 16 + 4}px;">
-            <button onclick="event.stopPropagation(); toggleLockNode('${node.id}')" class="p-0.5">${lockIcon}</button>
+            ${node.type !== 'Product' ? `<button onclick="event.stopPropagation(); toggleLockNode('${node.id}')" class="p-0.5">${lockIcon}</button>` : `<span class="w-3"></span>`}
             
             ${hasChildren ? `
               <button onclick="event.stopPropagation(); toggleExpandNode('${node.id}')" class="w-4 h-4 flex items-center justify-center text-[10px] opacity-70">
@@ -467,6 +400,7 @@
 
             ${iconHtml}
             <span class="tree-node-text tracking-tight font-semibold" title="${node.name}">${node.name}</span>
+            ${actionGitButton}
           </div>
 
           <div class="w-20 text-left font-mono text-[11px] opacity-90 truncate shrink-0">${node.code || 'N/A'}</div>
@@ -491,33 +425,33 @@
     }
 
     function toggleLockNode(id) {
-      let node = findNodeById(versionTreeData, id);
+      let node = findNodeById([getCurrentProduct()], id);
       if (node) { node.locked = !node.locked; renderVersionTree(); }
     }
 
     function toggleExpandNode(id) {
-      let node = findNodeById(versionTreeData, id);
+      let node = findNodeById([getCurrentProduct()], id);
       if (node) { node.expanded = !node.expanded; renderVersionTree(); }
     }
 
     function expandAllTree() {
       function exp(nodes) { nodes.forEach(n => { n.expanded = true; if(n.children) exp(n.children); }); }
-      exp(versionTreeData); renderVersionTree();
+      exp([getCurrentProduct()]); renderVersionTree();
     }
 
     function collapseAllTree() {
       function col(nodes) { nodes.forEach(n => { n.expanded = false; if(n.children) col(n.children); }); }
-      col(versionTreeData); renderVersionTree();
+      col([getCurrentProduct()]); renderVersionTree();
     }
 
-    // --- PROPERTY PANEL & EDIT ---
     function updatePropertiesPanel() {
       const panel = document.getElementById("prop-panel-details");
       const label = document.getElementById("selected-layout-label");
-      const node = findNodeById(versionTreeData, selectedNodeId);
+      let currentProd = getCurrentProduct();
+      const node = findNodeById([currentProd], selectedNodeId);
 
       if (!node) {
-        panel.innerHTML = `<p class="text-slate-400 italic">Chọn một version trên cây...</p>`;
+        panel.innerHTML = `<p class="text-slate-400 italic">Chọn một nhánh trên cây...</p>`;
         label.innerText = `Layout: Chưa chọn`;
         return;
       }
@@ -528,15 +462,15 @@
 
       panel.innerHTML = `
         <div class="flex items-center justify-between text-[11px] pb-1 border-b border-slate-200">
-          <span><b>Tên Sản Phẩm:</b> <span class="text-blue-700 font-bold">${node.productName || node.name}</span></span>
-          <div>${lockBadge}</div>
+          <span><b>Loại Nhánh:</b> <span class="text-indigo-700 font-bold">${node.type}</span></span>
+          <div>${node.type !== 'Product' ? lockBadge : ''}</div>
         </div>
         <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
-          <div><b>Version:</b> <span class="font-mono text-emerald-700 font-bold">${node.code || 'N/A'}</span></div>
+          <div><b>Mã Code:</b> <span class="font-mono text-emerald-700 font-bold">${node.code || 'N/A'}</span></div>
           <div><b>Trạng thái:</b> ${approvedText}</div>
           <div><b>ECR:</b> <span class="font-mono text-purple-700 font-bold">${node.ecr || 'None'}</span></div>
           <div><b>ECN:</b> <span class="font-mono text-purple-700 font-bold">${node.ecn || 'None'}</span></div>
-          <div class="col-span-2"><b>Mô tả Version:</b> <span class="text-slate-700 italic">${node.description || 'Không có mô tả'}</span></div>
+          <div class="col-span-2"><b>Mô tả:</b> <span class="text-slate-700 italic">${node.description || 'Không có mô tả'}</span></div>
         </div>
       `;
     }
@@ -553,33 +487,33 @@
       }
     }
 
-    // --- MODAL TẠO / SỬA VERSION BOM ---
     function openAddVersionModal() {
       isEditingMode = false;
-      document.getElementById("modal-version-title").innerHTML = `<i class="fa-solid fa-code-branch text-blue-400"></i> <span>Tạo Version BOM Mới</span>`;
-      document.getElementById("modal-submit-btn").innerText = "Tạo Version";
+      document.getElementById("modal-version-title").innerHTML = `<i class="fa-solid fa-code-branch text-blue-400"></i> <span>Tạo Nhánh / Version / Sản phẩm Mới</span>`;
+      document.getElementById("modal-submit-btn").innerText = "Tạo Mới";
       document.getElementById("parent-selector-wrapper").style.display = "block";
 
-      document.getElementById("input-new-ver-name").value = "";
-      document.getElementById("input-new-ver-desc").value = "";
-      document.getElementById("input-new-ver-file").value = "";
-
-      modalSelectedParentId = selectedNodeId || "PROD-01";
+      modalSelectedParentId = selectedNodeId || "null";
       renderModalParentSelectTree();
-      updateAutoCodeInModal();
+      
+      // Tự động chèn tên mặc định khi mở modal tùy theo vị trí chọn
+      autoFillNameAndCodeForModal();
 
       document.getElementById("modal-version").classList.remove("hidden");
     }
 
-    function editSelectedVersion() {
-      let node = findNodeById(versionTreeData, selectedNodeId);
+    function editSelectedNode() {
+      let currentProd = getCurrentProduct();
+      let node = findNodeById([currentProd], selectedNodeId);
       if (!node) return;
 
       isEditingMode = true;
-      document.getElementById("modal-version-title").innerHTML = `<i class="fa-solid fa-pen text-blue-400"></i> <span>Chỉnh sửa Version: ${node.code}</span>`;
+      document.getElementById("modal-version-title").innerHTML = `<i class="fa-solid fa-pen text-blue-400"></i> <span>Chỉnh sửa: ${node.code}</span>`;
       document.getElementById("modal-submit-btn").innerText = "Lưu thay đổi";
       document.getElementById("parent-selector-wrapper").style.display = "none";
+      document.getElementById("product-template-selector").classList.add("hidden");
 
+      // Tự động chèn tên hiện tại của sản phẩm/nhánh vào input
       document.getElementById("input-new-ver-name").value = node.name;
       document.getElementById("input-new-ver-code").value = node.code;
       document.getElementById("input-new-ver-desc").value = node.description || "";
@@ -594,28 +528,100 @@
       const container = document.getElementById("modal-parent-select-list");
       container.innerHTML = "";
 
+      const isNullSelected = (modalSelectedParentId === "null" || modalSelectedParentId === null);
+      const nullDiv = document.createElement("div");
+      nullDiv.className = `p-1 rounded cursor-pointer text-xs flex items-center my-0.5 ${isNullSelected ? 'bg-indigo-600 text-white font-bold' : 'hover:bg-indigo-50 text-indigo-700'}`;
+      nullDiv.innerHTML = `<i class="fa-solid fa-circle-plus mr-1.5"></i> <span>[Null] - Tạo mới sản phẩm chính làm nhánh gốc (Root Product)</span>`;
+      nullDiv.onclick = (e) => {
+        e.stopPropagation();
+        modalSelectedParentId = "null";
+        renderModalParentSelectTree();
+        autoFillNameAndCodeForModal();
+      };
+      container.appendChild(nullDiv);
+
+      const hr = document.createElement("hr");
+      hr.className = "my-1 border-slate-200";
+      container.appendChild(hr);
+
       function renderNode(node, level) {
+        if (node.type === 'Routine Version') return;
+
         const isSelected = modalSelectedParentId === node.id;
         const div = document.createElement("div");
         div.className = `p-1 rounded cursor-pointer text-xs flex items-center my-0.5 ${isSelected ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-50 text-slate-700'}`;
         div.style.paddingLeft = `${level * 16 + 6}px`;
-        div.innerHTML = `<i class="fa-solid fa-folder text-amber-400 mr-1.5"></i> <span>${node.name} (${node.code})</span>`;
+        div.innerHTML = `<i class="fa-solid fa-folder text-amber-400 mr-1.5"></i> <span>${node.name} (${node.code}) [${node.type}]</span>`;
         div.onclick = (e) => {
           e.stopPropagation();
           modalSelectedParentId = node.id;
           renderModalParentSelectTree();
-          updateAutoCodeInModal();
+          autoFillNameAndCodeForModal();
         };
         container.appendChild(div);
         if (node.children) node.children.forEach(c => renderNode(c, level + 1));
       }
-      versionTreeData.forEach(n => renderNode(n, 0));
+      productsList.forEach(p => renderNode(p, 0));
+
+      const templateBox = document.getElementById("product-template-selector");
+      if (isNullSelected) {
+        templateBox.classList.remove("hidden");
+        renderProductTemplatesList();
+      } else {
+        templateBox.classList.add("hidden");
+      }
     }
 
-    function updateAutoCodeInModal() {
-      let parentNode = findNodeById(versionTreeData, modalSelectedParentId);
-      if (parentNode) {
-        document.getElementById("input-new-ver-code").value = generateAutoVersionCode(parentNode);
+    function renderProductTemplatesList() {
+      const listContainer = document.getElementById("product-template-list");
+      listContainer.innerHTML = "";
+      availableProductTemplates.forEach(tmpl => {
+        let isSelected = selectedProductTemplateId === tmpl.id;
+        let card = document.createElement("div");
+        card.className = `p-2 rounded border cursor-pointer flex flex-col items-center text-center transition-all ${isSelected ? 'border-indigo-600 bg-indigo-100/80 shadow-sm' : 'border-slate-300 bg-white hover:bg-slate-50'}`;
+        card.innerHTML = `
+          <img src="${tmpl.image}" alt="${tmpl.name}" class="w-16 h-12 object-cover rounded mb-1 border border-slate-200">
+          <span class="text-[11px] font-semibold text-slate-800 line-clamp-1">${tmpl.name}</span>
+        `;
+        card.onclick = () => {
+          selectedProductTemplateId = tmpl.id;
+          renderProductTemplatesList();
+          autoFillNameAndCodeForModal();
+        };
+        listContainer.appendChild(card);
+      });
+    }
+
+    // Hàm tự động chèn tên và mã khi chọn sản phẩm hoặc nhánh cha
+    function autoFillNameAndCodeForManager(parentNode) {
+      if (!parentNode) return;
+      let nameInput = document.getElementById("input-new-ver-name");
+      let codeInput = document.getElementById("input-new-ver-code");
+
+      if (parentNode.type === 'Product') {
+        nameInput.value = `Phiên bản BOM chuẩn của ${parentNode.name}`;
+        let childCount = parentNode.children ? parentNode.children.length : 0;
+        codeInput.value = `BOM-v1.${childCount}`;
+      } else if (parentNode.type === 'BOM Version') {
+        nameInput.value = `Quy trình Routine cho ${parentNode.name}`;
+        let childCount = parentNode.children ? parentNode.children.length : 0;
+        codeInput.value = `ROUT-v1.${childCount}`;
+      }
+    }
+
+    function autoFillNameAndCodeForModal() {
+      let nameInput = document.getElementById("input-new-ver-name");
+      let codeInput = document.getElementById("input-new-ver-code");
+
+      if (modalSelectedParentId === "null" || modalSelectedParentId === null) {
+        let selectedTmpl = availableProductTemplates.find(t => t.id === selectedProductTemplateId);
+        nameInput.value = selectedTmpl ? selectedTmpl.name : "Sản phẩm điện mới";
+        codeInput.value = `CAR-PROD-${Date.now().toString().slice(-3)}`;
+      } else {
+        let parentNode = findNodeById(productsList, modalSelectedParentId);
+        if (parentNode) {
+          autoFillNameAndCodeForManager(parentNode);
+        }
       }
     }
 
@@ -631,10 +637,10 @@
       const ecn = document.getElementById("input-ecn-search").value;
       const fileInput = document.getElementById("input-new-ver-file");
 
-      if (!name) { alert("Vui lòng nhập tên version!"); return; }
+      if (!name) { alert("Vui lòng nhập tên!"); return; }
 
       if (isEditingMode) {
-        let node = findNodeById(versionTreeData, selectedNodeId);
+        let node = findNodeById(productsList, selectedNodeId);
         if (node) {
           node.name = name;
           node.description = desc;
@@ -658,52 +664,76 @@
         renderVersionTree();
         closeAddVersionModal();
       } else {
-        let parentNode = findNodeById(versionTreeData, modalSelectedParentId);
-        if (!parentNode) parentNode = versionTreeData[0];
-
-        let newNode = {
-          id: "VER-" + Date.now().toString().slice(-4),
-          name: name,
-          code: code || "v0",
-          productName: parentNode.productName || parentNode.name,
-          type: "BOM Version",
-          locked: false,
-          expanded: true,
-          approved: false,
-          ecr: ecr,
-          ecn: ecn,
-          description: desc || "Phiên bản BOM mới tạo.",
-          svgImage: null,
-          showNote: true,
-          noteText: `Note: ${name}`,
-          noteX: 100, noteY: 100,
-          children: []
-        };
-
-        if (fileInput.files && fileInput.files[0]) {
-          const reader = new FileReader();
-          reader.onload = function(evt) {
-            const img = new Image();
-            img.onload = function() {
-              newNode.svgImage = img;
-              if (!parentNode.children) parentNode.children = [];
-              parentNode.children.push(newNode);
-              renderVersionTree();
-              closeAddVersionModal();
-            };
-            img.src = evt.target.result;
+        if (modalSelectedParentId === "null" || modalSelectedParentId === null) {
+          let newProduct = {
+            id: "PROD-" + Date.now().toString().slice(-4),
+            name: name,
+            code: code || "CAR-NEW-00",
+            type: "Product",
+            description: desc || "Sản phẩm chính mới tạo.",
+            approved: false,
+            expanded: true,
+            ecr: ecr,
+            ecn: ecn,
+            svgImage: null,
+            showNote: true,
+            noteText: `Note: ${name}`,
+            noteX: 80, noteY: 80,
+            children: []
           };
-          reader.readAsDataURL(fileInput.files[0]);
-        } else {
-          if (!parentNode.children) parentNode.children = [];
-          parentNode.children.push(newNode);
+          productsList.push(newProduct);
+          selectedProductId = newProduct.id;
+          initProductSelector();
           renderVersionTree();
           closeAddVersionModal();
+        } else {
+          let parentNode = findNodeById(productsList, modalSelectedParentId);
+          if (!parentNode) parentNode = getCurrentProduct();
+
+          let newType = parentNode.type === 'Product' ? 'BOM Version' : 'Routine Version';
+
+          let newNode = {
+            id: "NODE-" + Date.now().toString().slice(-4),
+            name: name,
+            code: code || "v1.0",
+            type: newType,
+            locked: false,
+            expanded: true,
+            approved: false,
+            ecr: ecr,
+            ecn: ecn,
+            description: desc || "Phiên bản mới tạo.",
+            svgImage: null,
+            showNote: true,
+            noteText: `Note: ${name}`,
+            noteX: 100, noteY: 100,
+            children: []
+          };
+
+          if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+              const img = new Image();
+              img.onload = function() {
+                newNode.svgImage = img;
+                if (!parentNode.children) parentNode.children = [];
+                parentNode.children.push(newNode);
+                renderVersionTree();
+                closeAddVersionModal();
+              };
+              img.src = evt.target.result;
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+          } else {
+            if (!parentNode.children) parentNode.children = [];
+            parentNode.children.push(newNode);
+            renderVersionTree();
+            closeAddVersionModal();
+          }
         }
       }
     }
 
-    // --- CANVAS & CAD TOOLS ---
     function initCanvas() {
       canvas = document.getElementById("version-svg-canvas");
       ctx = canvas.getContext("2d");
@@ -715,6 +745,8 @@
         const clickX = (e.clientX - rect.left - panX) / zoomLevel;
         const clickY = (e.clientY - rect.top - panY) / zoomLevel;
 
+        let currentProd = getCurrentProduct();
+
         if (activeTool === 'PAN') {
           isDragging = true;
           startX = e.clientX - panX;
@@ -724,7 +756,7 @@
         else if (activeTool === 'TEXT') {
           let textInput = prompt("Nhập nội dung Text Note trực tiếp trên layout:", "Note mới");
           if (textInput && textInput.trim()) {
-            let targetNode = findNodeById(versionTreeData, selectedNodeId);
+            let targetNode = findNodeById([currentProd], selectedNodeId);
             if (targetNode) {
               targetNode.noteText = textInput.trim();
               targetNode.noteX = Math.round(clickX);
@@ -736,20 +768,20 @@
         } 
         else if (activeTool === 'MOVE') {
           if (isWaitingForMoveTargetSelect) {
-            let targetNode = findNodeById(versionTreeData, selectedNodeId);
+            let targetNode = findNodeById([currentProd], selectedNodeId);
             if (targetNode && isClickOnNote(clickX, clickY, targetNode)) {
               moveTargetObj = targetNode;
               isWaitingForMoveTargetSelect = false;
               alert("Đã chọn đối tượng. Hãy di chuyển chuột tới vị trí mới và bấm ENTER để kết thúc.");
             } else {
-              alert("Vui lòng click chính xác vào vùng Note của version đang chọn!");
+              alert("Vui lòng click chính xác vào vùng Note của nhánh đang chọn!");
             }
           } else if (moveTargetObj) {
             isDraggingMovingObj = true;
           }
         }
         else if (activeTool === 'DELETE') {
-          let targetNode = findNodeById(versionTreeData, selectedNodeId);
+          let targetNode = findNodeById([currentProd], selectedNodeId);
           if (targetNode && targetNode.showNote && isClickOnNote(clickX, clickY, targetNode)) {
             if (confirm("Bạn có muốn xóa đoạn text này hay không?")) {
               targetNode.noteText = "";
@@ -781,38 +813,6 @@
         isDraggingMovingObj = false;
         if (activeTool === 'PAN') {
           document.getElementById("canvas-wrapper").style.cursor = "grab";
-        }
-      });
-
-      canvas.addEventListener("dblclick", (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const clickX = (e.clientX - rect.left - panX) / zoomLevel;
-        const clickY = (e.clientY - rect.top - panY) / zoomLevel;
-
-        let targetNode = findNodeById(versionTreeData, selectedNodeId);
-        if (targetNode && targetNode.showNote && isClickOnNote(clickX, clickY, targetNode)) {
-          let newText = prompt("Chỉnh sửa nội dung Text trực tiếp:", targetNode.noteText);
-          if (newText !== null) {
-            targetNode.noteText = newText.trim();
-            drawSvgCanvas();
-          }
-        }
-      });
-
-      window.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          if (activeTool === 'MOVE') {
-            if (!moveTargetObj && !isWaitingForMoveTargetSelect) {
-              isWaitingForMoveTargetSelect = true;
-              alert("Chế độ Move: Vui lòng click chọn đối tượng (Text note) cần di chuyển.");
-            } else if (moveTargetObj) {
-              moveTargetObj = null;
-              isWaitingForMoveTargetSelect = false;
-              alert("Đã hoàn tất lệnh Move.");
-            }
-          } else if (!activeTool && lastTool) {
-            toggleTool(lastTool);
-          }
         }
       });
 
@@ -893,7 +893,8 @@
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      let targetNode = findNodeById(versionTreeData, selectedNodeId);
+      let currentProd = getCurrentProduct();
+      let targetNode = findNodeById([currentProd], selectedNodeId);
       const emptyState = document.getElementById("empty-svg-state");
 
       if (targetNode && targetNode.svgImage) {
@@ -927,7 +928,7 @@
 
         ctx.fillStyle = "#1e293b";
         ctx.font = "bold 11px sans-serif";
-        ctx.fillText("📌 Version Note:", nx + 8, ny + 18);
+        ctx.fillText("📌 Node Note:", nx + 8, ny + 18);
         ctx.font = "10px sans-serif";
         ctx.fillText(targetNode.noteText, nx + 8, ny + 36);
 
@@ -949,7 +950,7 @@
       let dragging = false;
       res.addEventListener("mousedown", () => dragging = true);
       window.addEventListener("mousemove", (e) => {
-        if (dragging && e.clientX > 300 && e.clientX < window.innerWidth * 0.75) {
+        if (dragging && e.clientX > 320 && e.clientX < window.innerWidth * 0.75) {
           left.style.width = `${e.clientX}px`;
           resizeCanvas();
         }
