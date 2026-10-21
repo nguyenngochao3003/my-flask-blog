@@ -1,816 +1,1365 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siemens Teamcenter PLM - Manufacturing Process Planner</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for professional UI icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #eef2f6;
-            color: #1e293b;
-            user-select: none;
-        }
-        /* Custom scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        .tree-node:hover {
-            background-color: rgba(0, 82, 204, 0.08);
-        }
-        .tree-node.selected {
-            background-color: #0052cc !important;
-            color: white !important;
-        }
-        .tree-node.selected * {
-            color: white !important;
-        }
-        .drag-over {
-            background-color: rgba(59, 130, 246, 0.2) !important;
-            border: 1px dashed #3b82f6 !important;
-        }
-        /* Toast animation */
-        @keyframes slideIn {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .toast-animate {
-            animation: slideIn 0.3s ease-out forwards;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siemens Teamcenter PLM - Routine & BOR/BOP Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; user-select: none; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .resizer-h { cursor: col-resize; width: 6px; background: #cbd5e1; transition: background 0.2s; shrink: 0; }
+    .resizer-h:hover, .resizer-h.active { background: #2563eb; }
+    .canvas-bg {
+      background-color: #0f172a;
+      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .prop-panel-content { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+    .prop-panel-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; opacity: 0; }
+    .tree-node-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="h-screen flex flex-col overflow-hidden bg-slate-100 text-slate-800" oncontextmenu="return false;">
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+  <!-- ================= HEADER ================= -->
+  <header class="bg-slate-900 text-white h-12 px-4 flex items-center justify-between border-b border-slate-700 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs tracking-wider flex items-center gap-1.5">
+        <i class="fa-solid fa-network-wired"></i> TEAMCENTER PLM
+      </div>
+      <span class="text-sm font-semibold text-slate-200">Routine & BOR/BOP Manager</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button onclick="openFromToModal()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow">
+        <i class="fa-solid fa-table-cells"></i> Ma Trận From-To (Chỉ Xem)
+      </button>
+      <span class="text-xs text-slate-400 ml-2"><i class="fa-solid fa-circle-info text-blue-400"></i> Quản lý quy trình sản xuất xe điện</span>
+    </div>
+  </header>
 
-    <!-- Top Navigation / Application Header -->
-    <header class="bg-[#1e293b] text-white flex items-center justify-between px-4 py-2 border-b border-slate-700 shadow-sm text-sm">
-        <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1 rounded border border-slate-700">
-                <i class="fa-solid fa-gear text-blue-400"></i>
-                <span class="font-semibold tracking-wide">Manufacturing Process Planner & BOM Routine</span>
-            </div>
-            <span class="text-slate-400 text-xs">(pat - Manufacturing.Engineering / Designer [ IMC--2105151906 ])</span>
+  <!-- ================= MAIN CONTAINER ================= -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- CỘT 1: ROUTINE STRUCTURE TREE & PROPERTIES -->
+    <div id="left-bom-container" class="w-[380px] min-w-[260px] max-w-[50%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+      <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sitemap text-blue-600 text-sm"></i>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">ROUTINE STRUCTURE TREE</h2>
         </div>
-        <div class="flex items-center space-x-4 text-xs text-slate-300">
-            <div onclick="showToast('Đã đồng bộ dữ liệu với cơ sở dữ liệu Supabase thành công!')" class="flex items-center space-x-1 bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded cursor-pointer transition text-white shadow">
-                <i class="fa-solid fa-sync text-xs"></i>
-                <span>Đồng bộ Supabase</span>
-            </div>
-            <div class="flex items-center space-x-1 cursor-pointer hover:text-white" onclick="showToast('Mở bảng cài đặt hệ thống')">
-                <i class="fa-solid fa-gear"></i>
-                <span>Settings</span>
-            </div>
+        <div class="flex items-center gap-1">
+          <button onclick="openAddBomModal()" title="Tạo mới nhánh" class="px-2.5 py-1 bg-blue-600 text-white rounded text-[11px] hover:bg-blue-700 font-medium flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> Tạo mới
+          </button>
+          <button onclick="moveBomNodeOrder(-1)" title="Di chuyển lên" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
+          <button onclick="moveBomNodeOrder(1)" title="Di chuyển xuống" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+          <button onclick="deleteUnlockedOperation()" title="Xóa operation đã mở khóa" class="p-1 px-1.5 bg-rose-100 hover:bg-rose-200 rounded text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
         </div>
-    </header>
+      </div>
 
-    <!-- Sub-Header Tabs -->
-    <div class="bg-[#f8fafc] border-b border-slate-300 px-4 py-1.5 flex items-center justify-between text-xs font-medium text-slate-700">
-        <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2 bg-white px-3 py-1 rounded border border-slate-300 shadow-sm cursor-pointer border-t-2 border-t-blue-600">
-                <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
-                <span class="font-bold text-slate-900">TM-3001-0500/B;1-Handdrill (Teamcenter PLM)</span>
-            </div>
-            <span class="text-slate-500">Kéo thả Operation từ Process (dưới) vào BOM Line (trên) để gắn nhánh (Operation giữ nguyên bánh răng tím, không phân cấp trong)</span>
+      <!-- Header bảng Routine -->
+      <div class="bg-slate-100 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-600 shrink-0">
+        <span>Cấu trúc Nhánh</span>
+        <span class="w-16 text-center">Type</span>
+      </div>
+
+      <!-- CÂY ROUTINE -->
+      <div class="flex-1 overflow-auto p-2 relative bg-white border-l border-dashed border-slate-200" id="bom-tree-root" ondragover="event.preventDefault()" ondrop="dropToBomTree(event, 'BOM-ROOT')"></div>
+
+      <!-- THUỘC TÍNH ROUTINE PROPERTY -->
+      <div id="bom-prop-panel-wrapper" class="bg-slate-50 border-t border-slate-200 flex flex-col shrink-0">
+        <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="toggleBomPropPanel()">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-blue-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-700">Material & ECN/ECR Properties</span>
+          </div>
+          <button id="bom-prop-toggle-btn" class="p-1 text-slate-500 hover:text-slate-700 text-xs">
+            <i class="fa-solid fa-chevron-up"></i>
+          </button>
         </div>
-        <div class="flex items-center space-x-3 text-slate-500">
-            <span><i class="fa-solid fa-user-shield mr-1 text-blue-600"></i> Role: Design Engineer</span>
+        <div id="bom-prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[220px]">
+          <div id="bom-prop-panel-details" class="space-y-2.5">
+            <p class="text-slate-400 italic">Chọn một nhánh để xem thông tin...</p>
+          </div>
         </div>
+      </div>
     </div>
 
-    <!-- Main Workspace Split Screen: Top & Bottom BOM Sections -->
-    <div class="flex-1 flex flex-col overflow-hidden bg-slate-200 gap-2 p-2">
+    <!-- RESIZER NGANG 1 -->
+    <div id="resizer-bom-bor" class="resizer-h"></div>
 
-        <!-- ================= TOP SECTION: REFERENCE BOM / PLANT PRODUCT ================= -->
-        <div class="flex-1 bg-white rounded-lg shadow-sm border border-slate-300 flex flex-col overflow-hidden">
-            <!-- Section Header Bar -->
-            <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-xs">
-                <div class="flex items-center space-x-2">
-                    <span class="bg-emerald-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">PLANT PRODUCT BOM</span>
-                    <span class="font-bold text-slate-800">Base View <i class="fa-solid fa-chevron-right text-[9px] text-slate-400 mx-1"></i> IPA - Jul 24, 2011 3:13:17 PM</span>
-                </div>
-                <div class="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    <i class="fa-solid fa-info-circle mr-1"></i> Thả các operation/checkbox đã chọn vào các nhánh BOM bên dưới để liên kết
-                </div>
-            </div>
-
-            <!-- 3 Columns Layout for Top Section -->
-            <div class="flex-1 grid grid-cols-12 overflow-hidden">
-                
-                <!-- Column 1 (Left): BOM Tree View (4 cols) - Drop Target -->
-                <div class="col-span-4 border-r border-slate-200 flex flex-col bg-white overflow-hidden">
-                    <div class="bg-slate-50 px-3 py-1.5 border-b border-slate-200 text-xs font-bold text-slate-700 flex items-center justify-between">
-                        <span>BOM Line (Product Structure)</span>
-                        <span class="text-[10px] font-normal text-slate-500">Drop Target Active</span>
-                    </div>
-                    <div id="top-tree" class="flex-1 overflow-y-auto p-2 text-xs font-mono space-y-1">
-                        <!-- Tree nodes rendered via JS with gear icons -->
-                    </div>
-                </div>
-
-                <!-- Column 2 (Middle): Graphics Viewport (4 cols) -->
-                <div class="col-span-4 border-r border-slate-200 flex flex-col bg-slate-900 relative overflow-hidden">
-                    <!-- Graphics Toolbar -->
-                    <div class="bg-slate-800 border-b border-slate-700 px-2 py-1 flex items-center justify-between text-xs text-slate-300">
-                        <div class="flex items-center space-x-1">
-                            <span class="font-bold text-white text-[11px] mr-2">Graphics <i class="fa-solid fa-cube text-blue-400"></i></span>
-                            <button class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Pan"><i class="fa-solid fa-hand"></i></button>
-                            <button class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Rotate"><i class="fa-solid fa-rotate"></i></button>
-                            <button class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Fit"><i class="fa-solid fa-expand"></i></button>
-                        </div>
-                        <div class="flex items-center space-x-1">
-                            <button class="p-1 hover:bg-slate-700 rounded text-xs px-2 bg-slate-700 text-white font-sans">3D CAD</button>
-                        </div>
-                    </div>
-                    <!-- Canvas / Visual Area -->
-                    <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
-                        <canvas id="top-canvas" class="w-full h-full absolute inset-0"></canvas>
-                        <div class="absolute bottom-2 left-2 text-[10px] text-slate-400 font-sans bg-slate-900/80 px-2 py-1 rounded border border-slate-700">
-                            Selected BOM: <span id="top-selected-name" class="text-blue-400 font-bold">PL-009083 / aa-PLANT PRODUCT</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Column 3 (Right): Details & Accountability Check (4 cols) -->
-                <div class="col-span-4 flex flex-col bg-white overflow-hidden">
-                    <div class="bg-slate-100 border-b border-slate-200 flex text-xs">
-                        <button class="px-3 py-1.5 font-bold border-b-2 border-blue-600 bg-white text-blue-700">Full Results</button>
-                    </div>
-                    <div class="p-3 flex-1 overflow-y-auto text-xs space-y-3">
-                        <div class="border border-slate-200 rounded p-2.5 bg-slate-50">
-                            <div class="font-bold text-slate-900 mb-2 flex items-center justify-between border-b pb-1">
-                                <span>BOM Line & Operation Properties</span>
-                                <span id="prop-badge" class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-semibold">Active Item</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 text-slate-700">
-                                <div><span class="text-slate-400 block text-[10px]">Element ID:</span> <span id="prop-id" class="font-semibold">PL-009083</span></div>
-                                <div><span class="text-slate-400 block text-[10px]">Revision:</span> <span id="prop-rev" class="font-semibold text-blue-600">A</span></div>
-                                <div><span class="text-slate-400 block text-[10px]">Type:</span> <span id="prop-type" class="font-semibold">Plant Product</span></div>
-                                <div><span class="text-slate-400 block text-[10px]">Status:</span> <span class="text-emerald-600 font-semibold">Approved</span></div>
-                                <div class="col-span-2"><span class="text-slate-400 block text-[10px]">Description & Thao tác trong Operation:</span> <span id="prop-desc" class="font-medium">Top level automotive assembly structure</span></div>
-                            </div>
-                        </div>
-
-                        <!-- Traceability table / Operations Actions List -->
-                        <div class="border border-slate-200 rounded overflow-hidden">
-                            <div class="bg-slate-100 px-2.5 py-1 font-bold text-slate-700 border-b border-slate-200">Traceability & Attached Operations / Actions</div>
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 text-[10px] text-slate-500 border-b">
-                                        <th class="p-1.5">BOM / Operation Line / Action</th>
-                                        <th class="p-1.5">Status</th>
-                                        <th class="p-1.5">Match</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="top-accountability-table" class="text-[11px]">
-                                    <tr class="border-b hover:bg-blue-50">
-                                        <td class="p-1.5 text-blue-700 font-semibold"><i class="fa-solid fa-gear mr-1 text-purple-600"></i> PL-017749/aa-ROOF BOW FRT ASM</td>
-                                        <td class="p-1.5 text-emerald-600">Linked</td>
-                                        <td class="p-1.5">100%</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+    <!-- CỘT 2: BOR & BOP TREES -->
+    <div id="mid-bor-bop-container" class="w-[420px] min-w-[260px] max-w-[50%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+      
+      <!-- BOR TREE PHẦN TRÊN -->
+      <div id="bor-section" class="flex flex-col border-b border-slate-200 flex-1 transition-all">
+        <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-cubes text-emerald-600 text-sm"></i>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOR TREE (6 CẤP NGUỒN LỰC)</h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="toggleExclusiveSection('bor')" class="p-1 px-2 bg-emerald-100 text-emerald-700 rounded text-[11px] font-semibold hover:bg-emerald-200" title="Chỉ mở phần này"><i id="bor-toggle-icon" class="fa-solid fa-chevron-up"></i> Thu gọn/Mở</button>
+          </div>
         </div>
-
-        <!-- ================= BOTTOM SECTION: ACTIVE BOM / PLANT PROCESS ================= -->
-        <div class="flex-1 bg-white rounded-lg shadow-sm border border-slate-300 flex flex-col overflow-hidden">
-            <!-- Section Header Bar -->
-            <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-xs">
-                <div class="flex items-center space-x-2">
-                    <span class="bg-purple-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">PLANT PROCESS & OPERATIONS</span>
-                    <span class="font-bold text-slate-800">Process Structure (Drag items or checked checkboxes up)</span>
-                </div>
-                <div class="text-[11px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                    <i class="fa-solid fa-hand-pointer mr-1"></i> Check boxes to drag multiple operations (checkboxes will auto-uncheck upon drop)
-                </div>
-            </div>
-
-            <!-- 3 Columns Layout for Bottom Section -->
-            <div class="flex-1 grid grid-cols-12 overflow-hidden">
-                
-                <!-- Column 1 (Left): Process Tree View with Draggable Nodes & Checkboxes (4 cols) -->
-                <div class="col-span-4 border-r border-slate-200 flex flex-col bg-white overflow-hidden">
-                    <div class="bg-slate-50 px-3 py-1.5 border-b border-slate-200 text-xs font-bold text-slate-700 flex items-center justify-between">
-                        <span>Process Tree (Draggable Source)</span>
-                        <span class="text-[10px] font-normal text-slate-500">Operation / Workcenter</span>
-                    </div>
-                    <div id="bottom-tree" class="flex-1 overflow-y-auto p-2 text-xs font-mono space-y-1">
-                        <!-- Bottom tree nodes rendered via JS -->
-                    </div>
-                </div>
-
-                <!-- Column 2 (Middle): Graphics Viewport (4 cols) -->
-                <div class="col-span-4 border-r border-slate-200 flex flex-col bg-slate-900 relative overflow-hidden">
-                    <!-- Graphics Toolbar -->
-                    <div class="bg-slate-800 border-b border-slate-700 px-2 py-1 flex items-center justify-between text-xs text-slate-300">
-                        <div class="flex items-center space-x-1">
-                            <span class="font-bold text-white text-[11px] mr-2">Graphics <i class="fa-solid fa-gears text-purple-400"></i></span>
-                            <button class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Pan"><i class="fa-solid fa-hand"></i></button>
-                            <button class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Rotate"><i class="fa-solid fa-rotate"></i></button>
-                            <button class="p-1 hover:bg-slate-700 rounded text-slate-300" title="Fit"><i class="fa-solid fa-expand"></i></button>
-                        </div>
-                        <div class="flex items-center space-x-1">
-                            <button class="p-1 hover:bg-slate-700 rounded text-xs px-2 bg-purple-700 text-white font-sans">Process Flow</button>
-                        </div>
-                    </div>
-                    <!-- Canvas / Visual Area -->
-                    <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
-                        <canvas id="bottom-canvas" class="w-full h-full absolute inset-0"></canvas>
-                        <div class="absolute bottom-2 left-2 text-[10px] text-slate-400 font-sans bg-slate-900/80 px-2 py-1 rounded border border-slate-700">
-                            Selected Process: <span id="bottom-selected-name" class="text-purple-400 font-bold">PL-005871 / aa-PLANT PROCESS</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Column 3 (Right): Target Details & Info (4 cols) -->
-                <div class="col-span-4 flex flex-col bg-white overflow-hidden">
-                    <div class="bg-slate-100 border-b border-slate-200 flex text-xs">
-                        <button class="px-3 py-1.5 font-bold border-b-2 border-purple-600 bg-white text-purple-700">Target Process Line</button>
-                    </div>
-                    <div class="p-3 flex-1 overflow-y-auto text-xs space-y-3">
-                        <div class="border border-slate-200 rounded p-2.5 bg-slate-50">
-                            <div class="font-bold text-slate-900 mb-2 flex items-center justify-between border-b pb-1">
-                                <span>Process Node Attributes</span>
-                                <span class="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded font-semibold">Active Process</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 text-slate-700">
-                                <div><span class="text-slate-400 block text-[10px]">Process ID:</span> <span id="b-prop-id" class="font-semibold">PL-005871</span></div>
-                                <div><span class="text-slate-400 block text-[10px]">Revision:</span> <span id="b-prop-rev" class="font-semibold text-purple-600">A</span></div>
-                                <div><span class="text-slate-400 block text-[10px]">Type:</span> <span id="b-prop-type" class="font-semibold">Plant Process</span></div>
-                                <div><span class="text-slate-400 block text-[10px]">Status:</span> <span class="text-emerald-600 font-semibold">In Work</span></div>
-                                <div class="col-span-2"><span class="text-slate-400 block text-[10px]">Workcenter:</span> <span id="b-prop-wc" class="font-medium text-amber-600">WC-ASSEMBLY-01</span></div>
-                            </div>
-                        </div>
-
-                        <!-- Target Summary Table -->
-                        <div class="border border-slate-200 rounded overflow-hidden">
-                            <div class="bg-slate-100 px-2.5 py-1 font-bold text-slate-700 border-b border-slate-200">Allocated Operations & Actions</div>
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 text-[10px] text-slate-500 border-b">
-                                        <th class="p-1.5">Operation Name</th>
-                                        <th class="p-1.5">Type</th>
-                                        <th class="p-1.5">Time / Action Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="text-[11px]">
-                                    <tr class="border-b hover:bg-purple-50">
-                                        <td class="p-1.5 text-slate-800 font-medium"><i class="fa-solid fa-gear text-purple-600 mr-1"></i> PL-017563/aa-STA110 LOAD</td>
-                                        <td class="p-1.5 text-purple-600">Operation</td>
-                                        <td class="p-1.5">12.5s (Step 1: Load, Step 2: Clamp)</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+        <div id="bor-full-body" class="flex-1 flex flex-col overflow-hidden">
+          <div class="p-2 bg-slate-100/80 border-b border-slate-200 flex items-center gap-1.5 shrink-0">
+            <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+            <input type="text" id="bor-search-input" oninput="filterBorTree()" placeholder="Tìm kiếm nguồn lực, xưởng, trạm..." class="w-full text-xs p-1 bg-white border border-slate-300 rounded outline-none">
+          </div>
+          <div id="bor-content-body" class="flex-1 overflow-auto p-2 relative bg-white">
+            <div id="bor-tree-root"></div>
+          </div>
+          <div class="bg-slate-50 border-t border-slate-200 p-2 text-xs shrink-0 max-h-[120px] overflow-auto" id="bor-prop-panel-details">
+            <p class="text-slate-400 italic">Chọn node BOR để xem thông tin...</p>
+          </div>
         </div>
+      </div>
+
+      <!-- BOP TREE PHẦN DƯỚI -->
+      <div id="bop-section" class="flex flex-col border-b border-slate-200 flex-1 transition-all">
+        <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-sitemap text-purple-600 text-sm"></i>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOP TREE (QUY TRÌNH)</h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="toggleExclusiveSection('bop')" class="p-1 px-2 bg-purple-100 text-purple-700 rounded text-[11px] font-semibold hover:bg-purple-200" title="Chỉ mở phần này"><i id="bop-toggle-icon" class="fa-solid fa-chevron-up"></i> Thu gọn/Mở</button>
+          </div>
+        </div>
+        <div id="bop-full-body" class="flex-1 flex flex-col overflow-hidden">
+          <div class="p-2 bg-slate-100/80 border-b border-slate-200 flex items-center gap-1.5 shrink-0">
+            <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+            <input type="text" id="bop-search-input" oninput="filterBopTree()" placeholder="Tìm kiếm quy trình, công đoạn..." class="w-full text-xs p-1 bg-white border border-slate-300 rounded outline-none">
+          </div>
+          <div id="bop-content-body" class="flex-1 overflow-auto p-2 relative bg-white">
+            <div id="bop-tree-root"></div>
+          </div>
+          <div class="bg-slate-50 border-t border-slate-200 p-2 text-xs shrink-0 max-h-[140px] overflow-auto" id="bop-prop-panel-details">
+            <p class="text-slate-400 italic">Chọn node BOP để xem thông tin...</p>
+          </div>
+        </div>
+      </div>
 
     </div>
 
-    <!-- JavaScript Application Logic with Drag & Drop & Gear Icons -->
-    <script>
-        // Toast Notification Function (replaces alert)
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `pointer-events-auto px-4 py-2.5 rounded-lg shadow-lg text-xs font-medium text-white toast-animate flex items-center space-x-2 ${type === 'success' ? 'bg-slate-900 border border-slate-700' : 'bg-blue-600'}`;
-            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-info-circle'} text-sm"></i><span>${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+    <!-- RESIZER NGANG 2 -->
+    <div id="resizer-bor-layout" class="resizer-h"></div>
 
-        // Data structure for Top Tree (Plant Product BOM)
-        const topTreeData = [
-            {
-                id: "PL-009083",
-                name: "PL-009083/aa-PLANT PRODUCT (TOP-LEVEL)",
-                type: "gear", 
+    <!-- CỘT 3: LAYOUT & VIEWPORT -->
+    <div class="flex-1 flex flex-col bg-slate-900 relative overflow-hidden">
+      <div class="p-2 bg-slate-800 text-slate-200 border-b border-slate-700 flex items-center justify-between shrink-0 z-10 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span id="selected-layout-label" class="text-[11px] bg-slate-700 text-blue-300 px-2 py-0.5 rounded">Layout: Tổng thể nhà máy</span>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button id="tool-pan-btn" onclick="togglePanTool()" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1">
+            <i class="fa-solid fa-hand"></i> Pan
+          </button>
+          <button id="show-all-btn" onclick="toggleShowAllRegions()" class="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-eye"></i> Show All: Bật
+          </button>
+          <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
+          <button onclick="resetZoomLayout()" class="p-1 px-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs"><i class="fa-solid fa-rotate-left"></i> Reset View</button>
+        </div>
+      </div>
+
+      <div class="flex-1 relative canvas-bg overflow-hidden cursor-crosshair">
+        <canvas id="factory-canvas" class="absolute left-0 top-0"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= MODAL: THÊM NHÁNH ROUTINE ================= -->
+  <div id="modal-bom" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-[520px] max-w-[90vw] overflow-hidden flex flex-col border border-slate-300">
+      <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <i class="fa-solid fa-sitemap text-blue-400"></i> <span>Thêm Nhánh Cấu Trúc Routine</span>
+        </h3>
+        <button onclick="closeBomModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Chọn Nhánh Cha (Parent):</label>
+          <div id="bom-parent-tree-select" class="border border-slate-300 rounded max-h-[140px] overflow-auto p-2 bg-slate-50 text-xs"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Tên Sản Phẩm / Cấu trúc:</label>
+          <input type="text" id="input-bom-name" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="VD: Cụm cửa xe...">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Type:</label>
+          <input type="text" id="input-bom-type" value="Assembly" class="w-full text-xs p-2 border border-slate-300 rounded outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Mã Vật Liệu (Material Code):</label>
+            <input type="text" id="input-bom-matcode" value="MAT-ALU-6061" class="w-full text-xs p-2 border border-slate-300 rounded outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tên Vật Liệu:</label>
+            <input type="text" id="input-bom-matname" value="Hợp kim nhôm nguyên khối" class="w-full text-xs p-2 border border-slate-300 rounded outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kích thước thô & Kích thước (DxRxC):</label>
+          <input type="text" id="input-bom-size" value="120x60x40 (Thô: 130x70x45)" class="w-full text-xs p-2 border border-slate-300 rounded outline-none">
+        </div>
+      </div>
+      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end space-x-2">
+        <button onclick="closeBomModal()" class="px-3 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400">Hủy</button>
+        <button onclick="saveBomModal()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Tạo mới</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: MA TRẬN FROM-TO ================= -->
+  <div id="modal-fromto" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] h-[85vh] overflow-hidden flex flex-col border border-slate-300">
+      <div class="p-3.5 bg-slate-800 text-white flex items-center justify-between border-b border-slate-700 shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-table-cells text-purple-400 text-lg"></i>
+          <h3 class="text-sm font-bold">Ma Trận Khoảng Cách & Định Mức (Chỉ Xem)</h3>
+        </div>
+        <button onclick="closeFromToModal()" class="text-slate-400 hover:text-white text-xl leading-none"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="flex-1 overflow-auto p-4 bg-slate-50">
+        <div id="fromto-matrix-table-container" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto"></div>
+      </div>
+      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end shrink-0">
+        <button onclick="closeFromToModal()" class="px-4 py-1.5 bg-slate-700 text-white font-semibold rounded hover:bg-slate-800 text-xs">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const availableMaterialCatalog = [
+      { id: "MAT-01", name: "Sơn lót chống gỉ cao cấp", unit: "Lít" },
+      { id: "MAT-02", name: "Sơn màu Sear (Metallic Blue)", unit: "Lít" },
+      { id: "MAT-03", name: "Sơn bóng bảo vệ 2K", unit: "Lít" },
+      { id: "MAT-04", name: "Keo dán kính chuyên dụng", unit: "Tuýp" }
+    ];
+
+    let borData = [
+      {
+        id: "PLANT-01",
+        name: "PL-005871/aa-PLANT MAIN SHOP",
+        type: "PLANT",
+        expanded: true,
+        description: "Nhà máy chính sản xuất và lắp ráp xe điện thông minh.",
+        x: 40, y: 40, w: 520, h: 340,
+        visible: true,
+        children: [
+          {
+            id: "SHOP-01",
+            name: "Xưởng Sơn & Hoàn Thiện Xe",
+            type: "WORKSHOP",
+            expanded: true,
+            description: "Xưởng chuyên trách sơn phủ tĩnh điện và hoàn thiện bề mặt thân vỏ.",
+            visible: true,
+            children: [
+              {
+                id: "WC-101",
+                name: "PL-008605/aa-PAINT SHOP WORKCENTER",
+                type: "WORKCENTER",
                 expanded: true,
-                rev: "A",
-                status: "Approved",
-                desc: "Top level automotive plant product baseline",
-                actions: ["Initialize BOM structure", "Verify assembly clearances"],
+                description: "Cụm trạm làm việc tự động hóa cao phục vụ phun sơn ngoại thất.",
+                x: 70, y: 80, w: 220, h: 260,
+                visible: true,
                 children: [
-                    {
-                        id: "PL-015846",
-                        name: "PL-015846/aa-UNDERBODY AREA",
-                        type: "gear",
-                        expanded: false,
-                        rev: "A",
-                        status: "Approved",
-                        desc: "Underbody structural area assembly",
-                        actions: ["Check floor pan welds", "Inspect brackets"],
-                        children: [
-                            { id: "PL-000292", name: "PL-000292/aa-BRACE ASM FRT W/H PNL RH", type: "gear", rev: "A", status: "Approved", desc: "Front right brace assembly panel", actions: ["Weld RH bracket", "Torque bolts to 25Nm"] },
-                            { id: "PL-000379", name: "PL-000379/aa-BRACE ASM FRT W/H PNL LH", type: "gear", rev: "A", status: "Approved", desc: "Front left brace assembly panel", actions: ["Weld LH bracket", "Torque bolts to 25Nm"] }
-                        ]
-                    },
-                    {
-                        id: "PL-017745",
-                        name: "PL-017745/aa-ROOF AREA",
-                        type: "gear",
+                  {
+                    id: "WS-101",
+                    name: "WS-PAINTING ROBOT CELL #1",
+                    type: "WORKSTATION",
+                    expanded: true,
+                    labor: "Kỹ thuật viên vận hành robot",
+                    laborQty: 2,
+                    machine: "Robot phun sơn Fanuc P-250iB",
+                    machineQty: 1,
+                    visible: true,
+                    children: [
+                      {
+                        id: "BOR-OP-01",
+                        name: "Công đoạn: Sơn phủ màu Sear",
+                        type: "OPERATION",
                         expanded: true,
-                        rev: "B",
-                        status: "In Work",
-                        desc: "Roof assembly zone and structural reinforcement",
-                        actions: ["Align roof flange", "Apply structural adhesive"],
+                        description: "Công đoạn phun sơn màu chủ đạo cho toàn bộ khung xe.",
+                        visible: true,
                         children: [
-                            { id: "PL-017749", name: "PL-017749/aa-ROOF BOW FRT ASM", type: "gear", rev: "A", status: "Approved", desc: "Roof bow front assembly", actions: ["Position bow front", "Spot weld 6 points"] },
-                            { id: "PL-017752", name: "PL-017752/aa-ROOF PANEL ASM", type: "gear", rev: "A", status: "Approved", desc: "Roof panel assembly component", actions: ["Hem roof edges", "Laser inspection"] }
+                          {
+                            id: "BOR-SUB-01",
+                            name: "Bước chuẩn bị bề mặt & thổi khí",
+                            type: "SUB_OPERATION",
+                            laborCount: 1,
+                            machineCount: 1,
+                            stdOp: "Setup (Chuẩn bị bề mặt)",
+                            stdTime: "4.5s",
+                            formula: "CycleTime * 1.0",
+                            tools: "Súng thổi khí ion hóa",
+                            materials: []
+                          }
                         ]
-                    }
+                      }
+                    ]
+                  }
                 ]
-            }
-        ];
+              }
+            ]
+          }
+        ]
+      }
+    ];
 
-        // Data structure for Bottom Tree (Plant Process)
-        const bottomTreeData = [
-            {
-                id: "PL-005871",
-                name: "PL-005871/aa-PLANT PROCESS (TOP-LEVEL)",
-                type: "plant",
+    let bopData = [
+      {
+        id: "PROCESS-ROOT",
+        name: "Quy trình tổng thể sản xuất xe hơi",
+        type: "PROCESS",
+        expanded: true,
+        children: [
+          {
+            id: "BOP-OP-01",
+            name: "Công đoạn: Sơn phủ màu Sear",
+            type: "OPERATION",
+            expanded: true,
+            description: "Công đoạn phun sơn màu chính thức trên dây chuyền.",
+            locked: true,
+            workcenterName: "PL-008605/aa-PAINT SHOP WORKCENTER",
+            children: [
+              {
+                id: "BOP-SUB-01",
+                name: "Bước chuẩn bị bề mặt & thổi khí",
+                type: "SUB_OPERATION",
+                locked: true,
+                laborCount: 1,
+                machineCount: 1,
+                stdOp: "Setup (Chuẩn bị bề mặt)",
+                stdTime: "4.5s",
+                formula: "CycleTime * 1.0",
+                tools: "Súng thổi khí ion hóa",
+                materials: [{ materialId: "MAT-02", norm: 1.2, formula: "Time * 0.5" }]
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let bomData = [
+      {
+        id: "BOM-ROOT",
+        name: "Quy trình tổng thể sản xuất xe hơi",
+        type: "BOM Version",
+        materialCode: "BOM-ROOT-00",
+        materialName: "Hệ thống tổng thể xe điện",
+        size: "4500x1800x1450 (Thô: 4600x1900x1500)",
+        expanded: true,
+        children: [
+          { id: "BOM-01", name: "khung gầm xe", type: "Assembly", materialCode: "MAT-CHASSIS-01", materialName: "Thép chịu lực cường độ cao", size: "3200x1500x1500 (Thô: 3300x1550x1550)", expanded: true },
+          { id: "BOM-02", name: "cản trước", type: "Assembly", materialCode: "MAT-BUMPER-02", materialName: "Nhựa ABS tổng hợp", size: "100x50 (Thô: 110x55)", expanded: true },
+          {
+            id: "BOM-03",
+            name: "nóc xe",
+            type: "Assembly",
+            materialCode: "MAT-ROOF-03",
+            materialName: "Hợp kim nhôm mạ kẽm",
+            size: "100x50 (Thô: 110x55)",
+            expanded: true,
+            children: [
+              {
+                id: "BOM-04",
+                name: "cụm giữa",
+                type: "Assembly",
+                materialCode: "MAT-MID-04",
+                materialName: "Composite cốt sợi thủy tinh",
+                size: "100x50 (Thô: 110x55)",
                 expanded: true,
-                rev: "A",
-                status: "In Work",
-                desc: "Top level manufacturing process plan",
-                actions: ["Master process route setup", "Line balancing check"],
                 children: [
-                    {
-                        id: "PL-006995",
-                        name: "PL-006995/aa-BODY (View)",
-                        type: "plant",
-                        expanded: true,
-                        rev: "A",
-                        status: "In Work",
-                        desc: "Body shop process line",
-                        actions: ["Verify body station sequence", "Safety interlock check"],
-                        children: [
-                            {
-                                id: "PL-008605",
-                                name: "PL-008605/aa-UNDERBODY ZONE",
-                                type: "workcenter",
-                                expanded: false,
-                                rev: "A",
-                                status: "In Work",
-                                desc: "Underbody welding workstation",
-                                actions: ["Robot welder calibration", "Tip dresser cycle"],
-                                children: [
-                                    { id: "PL-000975", name: "PL-000975/aa-BAR/FLR PNL-1", type: "part", rev: "A", status: "Approved", desc: "Floor bar and panel component", actions: ["Load panel to fixture"] },
-                                    { id: "PL-000516", name: "PL-000516/aa-NUT WELD HEX", type: "part", rev: "A", status: "Approved", desc: "Hex weld nut component", actions: ["Feed weld nuts to gun"] }
-                                ]
-                            },
-                            {
-                                id: "PL-008868",
-                                name: "PL-008868/aa-INNER FRAMING ZONE",
-                                type: "workcenter",
-                                expanded: true,
-                                rev: "B",
-                                status: "In Work",
-                                desc: "Inner framing assembly cell",
-                                actions: ["Cell PLC sync", "Vision system check"],
-                                children: [
-                                    {
-                                        id: "PL-017563",
-                                        name: "PL-017563/aa-STA110 LOAD AND TOY",
-                                        type: "operation",
-                                        rev: "A",
-                                        status: "Approved",
-                                        desc: "Station 110 loading and alignment operation",
-                                        actions: ["Step 1: Place panel in nest", "Step 2: Engage pneumatic clamps", "Step 3: Verify part seated sensor"]
-                                    },
-                                    {
-                                        id: "PL-017564",
-                                        name: "PL-017564/aa-STA120 SPOT WELDING",
-                                        type: "operation",
-                                        rev: "A",
-                                        status: "Approved",
-                                        desc: "Station 120 automated spot welding operation",
-                                        actions: ["Step 1: Gun approach", "Step 2: Weld pulse 4.2kA", "Step 3: Quality signature check"]
-                                    },
-                                    {
-                                        id: "PL-017565",
-                                        name: "PL-017565/aa-STA130 QUALITY CHECK",
-                                        type: "operation",
-                                        rev: "A",
-                                        status: "Approved",
-                                        desc: "Station 130 dimensional inspection operation",
-                                        actions: ["Step 1: Laser scan geometry", "Step 2: Compare tolerance matrix", "Step 3: Stamp OK barcode"]
-                                    }
-                                ]
-                            }
-                        ]
-                    }
+                  { id: "BOM-05", name: "cụm trước và cụm sau", type: "Assembly", materialCode: "MAT-ASSEM-05", materialName: "Hợp kim nhôm 6061", size: "100x50 (Thô: 110x55)", expanded: true }
                 ]
-            }
-        ];
+              }
+            ]
+          }
+        ]
+      }
+    ];
 
-        // Icon definitions: Operation stations always use purple gear icon as requested
-        function getIconForType(type, isTop = true) {
-            if (type === 'operation') {
-                return '<i class="fa-solid fa-gear text-purple-600 mr-1.5" title="Operation Gear"></i>';
-            }
-            if (isTop) {
-                return '<i class="fa-solid fa-gear text-blue-600 mr-1.5" title="BOM Product Gear Node"></i>';
-            }
-            switch(type) {
-                case 'plant':
-                    return '<i class="fa-solid fa-industry text-emerald-600 mr-1.5" title="Plant"></i>';
-                case 'part':
-                    return '<i class="fa-solid fa-gear text-blue-600 mr-1.5" title="Part / Assembly"></i>';
-                case 'workcenter':
-                    return '<i class="fa-solid fa-gear text-amber-500 mr-1.5" title="Workcenter"></i>';
-                default:
-                    return '<i class="fa-solid fa-circle-dot text-slate-500 mr-1.5"></i>';
-            }
+    let selectedBomId = "BOM-04";
+    let selectedBorId = "PLANT-01";
+    let selectedBopId = "BOP-OP-01";
+    let modalSelectedParentBomId = "BOM-ROOT";
+    let isEditingBom = false;
+    let draggedNodeData = null;
+    let checkedBorIds = new Set();
+    let checkedBopIds = new Set();
+    let isPanActive = false;
+    let showAllRegions = true;
+    let zoomLevel = 1.0, panX = 0, panY = 0;
+    let isDragging = false, startX = 0, startY = 0;
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderBomTree();
+      renderBorTree();
+      renderBopTree();
+      initCanvas();
+      setupResizers();
+    });
+
+    let activeExclusiveSection = 'none';
+    function toggleExclusiveSection(type) {
+      let borSec = document.getElementById('bor-section');
+      let bopSec = document.getElementById('bop-section');
+      let borBody = document.getElementById('bor-full-body');
+      let bopBody = document.getElementById('bop-full-body');
+
+      if (activeExclusiveSection === type) {
+        activeExclusiveSection = 'none';
+        borBody.style.display = 'flex';
+        bopBody.style.display = 'flex';
+        borSec.style.flex = '1 1 auto';
+        bopSec.style.flex = '1 1 auto';
+        document.getElementById('bor-toggle-icon').className = 'fa-solid fa-chevron-up';
+        document.getElementById('bop-toggle-icon').className = 'fa-solid fa-chevron-up';
+      } else {
+        activeExclusiveSection = type;
+        if (type === 'bor') {
+          borBody.style.display = 'flex';
+          bopBody.style.display = 'none';
+          borSec.style.flex = '1 1 auto';
+          bopSec.style.flex = '0 0 auto';
+          document.getElementById('bor-toggle-icon').className = 'fa-solid fa-chevron-up';
+          document.getElementById('bop-toggle-icon').className = 'fa-solid fa-chevron-down';
+        } else {
+          borBody.style.display = 'none';
+          bopBody.style.display = 'flex';
+          borSec.style.flex = '0 0 auto';
+          bopSec.style.flex = '1 1 auto';
+          document.getElementById('bor-toggle-icon').className = 'fa-solid fa-chevron-down';
+          document.getElementById('bop-toggle-icon').className = 'fa-solid fa-chevron-up';
         }
+      }
+    }
 
-        // Render Top Tree (BOM Product) with Drop Targets
-        function renderTopTree() {
-            const container = document.getElementById('top-tree');
-            container.innerHTML = '';
+    function filterBorTree() {
+      const keyword = document.getElementById('bor-search-input').value.toLowerCase().trim();
+      renderBorTree(keyword);
+    }
+
+    function filterBopTree() {
+      const keyword = document.getElementById('bop-search-input').value.toLowerCase().trim();
+      renderBopTree(keyword);
+    }
+
+    // --- RENDER CÂY ROUTINE ---
+    function renderBomTree() {
+      const container = document.getElementById("bom-tree-root");
+      container.innerHTML = "";
+      bomData.forEach(node => {
+        container.appendChild(createBomTreeNodeElement(node, 0));
+      });
+      updateBomPropertiesPanel();
+    }
+
+    function createBomTreeNodeElement(node, level) {
+      const div = document.createElement("div");
+      div.className = "relative select-none";
+      const isSelected = node.id === selectedBomId;
+      const bgClass = isSelected ? "bg-blue-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
+
+      let iconHtml = `<i class="fa-solid fa-sitemap text-blue-400"></i>`;
+      if (node.type === 'OPERATION') iconHtml = `<i class="fa-solid fa-gears text-purple-400"></i>`;
+      else if (node.type === 'SUB_OPERATION') {
+        let hasMat = node.materials && node.materials.length > 0;
+        let matIcon = hasMat ? `<i class="fa-solid fa-boxes-stacked text-amber-500 mr-1" title="Có vật liệu"></i>` : '';
+        iconHtml = `${matIcon}<i class="fa-solid fa-list-check text-blue-300"></i>`;
+      }
+
+      let lockIcon = node.locked !== undefined ? (node.locked ? `<i class="fa-solid fa-lock text-rose-500 text-[10px]" title="Đang khóa"></i>` : `<i class="fa-solid fa-lock-open text-slate-400 text-[10px]" title="Đang mở"></i>`) : '';
+
+      let hasChildren = node.children && node.children.length > 0;
+      let expandIcon = hasChildren ? `<button onclick="event.stopPropagation(); toggleNodeExpand('bom', '${node.id}')" class="p-0.5 text-slate-400 hover:text-slate-700 text-xs"><i class="fa-solid ${node.expanded !== false ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></button>` : `<span class="w-3"></span>`;
+
+      let typeBadge = node.type ? `<span class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium">${node.type}</span>` : '';
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
+             style="padding-left: ${level * 8 + 4}px;"
+             onclick="selectBomNode(event, '${node.id}')"
+             ondragover="event.preventDefault()"
+             ondrop="dropToBomTree(event, '${node.id}')">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            ${expandIcon}
+            ${lockIcon ? `<button onclick="event.stopPropagation(); toggleLockBomNode('${node.id}')" class="p-0.5">${lockIcon}</button>` : ''}
+            ${iconHtml}
+            <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+          </div>
+          <div class="flex items-center gap-4 text-[11px] shrink-0 font-mono">
+            <span class="w-16 text-center">${typeBadge}</span>
+          </div>
+        </div>
+      `;
+
+      if (hasChildren && node.expanded !== false) {
+        const childContainer = document.createElement("div");
+        childContainer.className = "relative border-l border-dashed border-slate-200 ml-1.5";
+        node.children.forEach(child => {
+          childContainer.appendChild(createBomTreeNodeElement(child, level + 1));
+        });
+        div.appendChild(childContainer);
+      }
+      return div;
+    }
+
+    function toggleNodeExpand(treeType, id) {
+      if (treeType === 'bom') {
+        let node = findBomNodeById(bomData, id);
+        if (node) { node.expanded = node.expanded === false ? true : false; renderBomTree(); }
+      } else if (treeType === 'bor') {
+        let node = findBorNodeById(borData, id);
+        if (node) { node.expanded = node.expanded === false ? true : false; renderBorTree(document.getElementById('bor-search-input').value.toLowerCase().trim()); }
+      } else if (treeType === 'bop') {
+        let node = findBopNodeById(bopData, id);
+        if (node) { node.expanded = node.expanded === false ? true : false; renderBopTree(document.getElementById('bop-search-input').value.toLowerCase().trim()); }
+      }
+    }
+
+    function selectBomNode(e, id) {
+      e.stopPropagation();
+      selectedBomId = id;
+      isEditingBom = false;
+      renderBomTree();
+    }
+
+    function toggleLockBomNode(id) {
+      let node = findBomNodeById(bomData, id);
+      if (node) {
+        node.locked = !node.locked;
+        renderBomTree();
+      }
+    }
+
+    function moveBomNodeOrder(dir) {
+      if (selectedBomId === "BOM-ROOT") return;
+      function move(nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+          if (!nodes[i].children) continue;
+          let idx = nodes[i].children.findIndex(c => c.id === selectedBomId);
+          if (idx !== -1) {
+            let target = idx + dir;
+            if (target >= 0 && target < nodes[i].children.length) {
+              let temp = nodes[i].children[idx];
+              nodes[i].children[idx] = nodes[i].children[target];
+              nodes[i].children[target] = temp;
+              return true;
+            }
+          }
+          if (move(nodes[i].children)) return true;
+        }
+        return false;
+      }
+      move(bomData);
+      renderBomTree();
+    }
+
+    // --- SEARCH HELPERS CHO BOR & BOP ---
+    function nodeMatches(node, keyword) {
+      if (!keyword) return true;
+      return (node.name && node.name.toLowerCase().includes(keyword)) || 
+             (node.description && node.description.toLowerCase().includes(keyword)) ||
+             (node.materialCode && node.materialCode.toLowerCase().includes(keyword)) ||
+             (node.materialName && node.materialName.toLowerCase().includes(keyword));
+    }
+
+    function checkNodeMatchOrHasMatchedChild(node, keyword) {
+      if (!keyword) return true;
+      if (nodeMatches(node, keyword)) return true;
+      if (node.children) {
+        return node.children.some(child => checkNodeMatchOrHasMatchedChild(child, keyword));
+      }
+      return false;
+    }
+
+    // --- RENDER CÂY BOR ---
+    function renderBorTree(filterKeyword = "") {
+      const container = document.getElementById("bor-tree-root");
+      container.innerHTML = "";
+      borData.forEach(node => {
+        let el = createBorTreeNodeElement(node, 0, filterKeyword);
+        if (el) container.appendChild(el);
+      });
+      updateBorPropertiesPanel();
+    }
+
+    function createBorTreeNodeElement(node, level, keyword, forceFullChildren = false) {
+      const selfMatches = nodeMatches(node, keyword);
+      const hasMatchedDescendant = checkNodeMatchOrHasMatchedChild(node, keyword);
+
+      if (keyword && !hasMatchedDescendant) {
+        return null;
+      }
+
+      const div = document.createElement("div");
+      div.className = "relative select-none";
+      const isSelected = node.id === selectedBorId;
+      const isChecked = checkedBorIds.has(node.id);
+      const bgClass = isSelected ? "bg-emerald-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
+
+      let iconHTML = `<i class="fa-solid fa-cubes text-slate-400"></i>`;
+      if (node.type === 'PLANT') iconHTML = `<i class="fa-solid fa-industry text-emerald-500"></i>`;
+      else if (node.type === 'WORKSHOP') iconHTML = `<i class="fa-solid fa-building text-indigo-500"></i>`;
+      else if (node.type === 'WORKCENTER') iconHTML = `<i class="fa-solid fa-gear text-amber-500"></i>`;
+      else if (node.type === 'WORKSTATION') iconHTML = `<i class="fa-solid fa-desktop text-sky-500"></i>`;
+      else if (node.type === 'OPERATION') iconHTML = `<i class="fa-solid fa-gears text-purple-500"></i>`;
+      else if (node.type === 'SUB_OPERATION') {
+        let hasMat = node.materials && node.materials.length > 0;
+        let matIcon = hasMat ? `<i class="fa-solid fa-boxes-stacked text-amber-500 mr-1" title="Có vật liệu"></i>` : '';
+        iconHTML = `${matIcon}<i class="fa-solid fa-list-check text-blue-500"></i>`;
+      }
+
+      if (isSelected) iconHTML = iconHTML.replace(/text-[a-z]+-500/g, "text-white").replace(/text-[a-z]+-400/g, "text-white");
+
+      let hasChildren = node.children && node.children.length > 0;
+      let expandIcon = hasChildren ? `<button onclick="event.stopPropagation(); toggleNodeExpand('bor', '${node.id}')" class="p-0.5 text-slate-400 hover:text-slate-700 text-xs"><i class="fa-solid ${node.expanded !== false ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></button>` : `<span class="w-3"></span>`;
+
+      let isOp = (node.type === 'OPERATION');
+      let checkboxHtml = isOp ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBorNode('${node.id}')" class="rounded accent-emerald-600 mr-1" title="Chọn để kéo thả">` : '';
+      let dragAttr = isOp ? `draggable="true" ondragstart="dragNodeStart(event, '${node.id}', 'BOR')"` : '';
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
+             style="padding-left: ${level * 8 + 4}px;"
+             onclick="selectBorNode(event, '${node.id}')"
+             ${dragAttr}
+             title="${node.name}">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            ${expandIcon}
+            ${checkboxHtml}
+            ${iconHTML}
+            <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+          </div>
+        </div>
+      `;
+
+      if (hasChildren && node.expanded !== false) {
+        const childContainer = document.createElement("div");
+        childContainer.className = "relative border-l border-dashed border-slate-200 ml-1.5";
+        node.children.forEach(child => {
+          let childEl = createBorTreeNodeElement(child, level + 1, selfMatches ? "" : keyword, selfMatches || forceFullChildren);
+          if (childEl) childContainer.appendChild(childEl);
+        });
+        div.appendChild(childContainer);
+      }
+      return div;
+    }
+
+    function selectBorNode(e, id) {
+      e.stopPropagation();
+      selectedBorId = id;
+      renderBorTree(document.getElementById('bor-search-input').value.toLowerCase().trim());
+      updateBorPropertiesPanel();
+      drawCanvas();
+    }
+
+    function toggleCheckBorNode(id) {
+      if (checkedBorIds.has(id)) checkedBorIds.delete(id);
+      else checkedBorIds.add(id);
+      renderBorTree(document.getElementById('bor-search-input').value.toLowerCase().trim());
+    }
+
+    // --- RENDER CÂY BOP ---
+    function renderBopTree(filterKeyword = "") {
+      const container = document.getElementById("bop-tree-root");
+      container.innerHTML = "";
+      bopData.forEach(node => {
+        let el = createBopTreeNodeElement(node, 0, filterKeyword);
+        if (el) container.appendChild(el);
+      });
+      updateBopPropertiesPanel();
+    }
+
+    function createBopTreeNodeElement(node, level, keyword, forceFullChildren = false) {
+      const selfMatches = nodeMatches(node, keyword);
+      const hasMatchedDescendant = checkNodeMatchOrHasMatchedChild(node, keyword);
+
+      if (keyword && !hasMatchedDescendant) {
+        return null;
+      }
+
+      const div = document.createElement("div");
+      div.className = "relative select-none";
+      const isSelected = node.id === selectedBopId;
+      const isChecked = checkedBopIds.has(node.id);
+      const bgClass = isSelected ? "bg-purple-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
+
+      let iconHtml = `<i class="fa-solid fa-sitemap text-purple-400"></i>`;
+      if (node.type === 'OPERATION') iconHtml = `<i class="fa-solid fa-gears text-purple-400"></i>`;
+      else if (node.type === 'SUB_OPERATION') {
+        let hasMat = node.materials && node.materials.length > 0;
+        let matIcon = hasMat ? `<i class="fa-solid fa-boxes-stacked text-amber-500 mr-1" title="Có vật liệu"></i>` : '';
+        iconHtml = `${matIcon}<i class="fa-solid fa-list-check text-blue-300"></i>`;
+      }
+
+      let lockIcon = node.locked !== undefined ? (node.locked ? `<i class="fa-solid fa-lock text-rose-500 text-[10px]" title="Đang khóa"></i>` : `<i class="fa-solid fa-lock-open text-slate-400 text-[10px]" title="Đang mở"></i>`) : '';
+
+      let hasChildren = node.children && node.children.length > 0;
+      let expandIcon = hasChildren ? `<button onclick="event.stopPropagation(); toggleNodeExpand('bop', '${node.id}')" class="p-0.5 text-slate-400 hover:text-slate-700 text-xs"><i class="fa-solid ${node.expanded !== false ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></button>` : `<span class="w-3"></span>`;
+
+      let isDraggable = (node.type === 'OPERATION' || node.type === 'PROCESS');
+      let checkboxHtml = isDraggable ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBopNode('${node.id}')" class="rounded accent-purple-600 mr-1" title="Chọn để kéo thả">` : '';
+      let dragAttr = isDraggable ? `draggable="true" ondragstart="dragNodeStart(event, '${node.id}', 'BOP')"` : '';
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
+             style="padding-left: ${level * 8 + 4}px;"
+             onclick="selectBopNode(event, '${node.id}')"
+             ${dragAttr}
+             title="${node.name}">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            ${expandIcon}
+            ${checkboxHtml}
+            ${lockIcon ? `<button onclick="event.stopPropagation(); toggleLockBopNode('${node.id}')" class="p-0.5">${lockIcon}</button>` : ''}
+            ${iconHtml}
+            <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+          </div>
+        </div>
+      `;
+
+      if (hasChildren && node.expanded !== false) {
+        const childContainer = document.createElement("div");
+        childContainer.className = "relative border-l border-dashed border-slate-200 ml-1.5";
+        node.children.forEach(child => {
+          let childEl = createBopTreeNodeElement(child, level + 1, selfMatches ? "" : keyword, selfMatches || forceFullChildren);
+          if (childEl) childContainer.appendChild(childEl);
+        });
+        div.appendChild(childContainer);
+      }
+      return div;
+    }
+
+    function selectBopNode(e, id) {
+      e.stopPropagation();
+      selectedBopId = id;
+      renderBopTree(document.getElementById('bop-search-input').value.toLowerCase().trim());
+      updateBopPropertiesPanel();
+    }
+
+    function toggleLockBopNode(id) {
+      let node = findBopNodeById(bopData, id);
+      if (node) {
+        node.locked = !node.locked;
+        renderBopTree(document.getElementById('bop-search-input').value.toLowerCase().trim());
+      }
+    }
+
+    function toggleCheckBopNode(id) {
+      if (checkedBopIds.has(id)) checkedBopIds.delete(id);
+      else checkedBopIds.add(id);
+      renderBopTree(document.getElementById('bop-search-input').value.toLowerCase().trim());
+    }
+
+    // --- KÉO THẢ ---
+    function dragNodeStart(e, id, sourceTree) {
+      e.stopPropagation();
+      checkedBorIds.clear();
+      checkedBopIds.clear();
+      if (sourceTree === 'BOR') {
+        checkedBorIds.add(id);
+        draggedNodeData = findBorNodeById(borData, id);
+      } else {
+        checkedBopIds.add(id);
+        draggedNodeData = findBopNodeById(bopData, id);
+      }
+    }
+
+    function dropToBomTree(e, targetBomId) {
+      e.preventDefault();
+      let allOpIds = new Set([...checkedBorIds, ...checkedBopIds]);
+      if (draggedNodeData) allOpIds.add(draggedNodeData.id);
+      if (allOpIds.size === 0) return;
+
+      let targetNode = findBomNodeById(bomData, targetBomId);
+      if (!targetNode) return;
+
+      let actualTargetNode = targetNode;
+      if (actualTargetNode.type === 'OPERATION') {
+        let parentNode = findParentNodeInBom(bomData, actualTargetNode.id);
+        if (parentNode) {
+          actualTargetNode = parentNode;
+        }
+      }
+
+      let clonedNodes = [];
+      allOpIds.forEach(opId => {
+        let opNode = findBorNodeById(borData, opId) || findBopNodeById(bopData, opId);
+        if (!opNode) return;
+
+        if (opNode.type === 'PROCESS' && opNode.children) {
+          opNode.children.forEach(childOp => {
+            let clonedOp = JSON.parse(JSON.stringify(childOp));
+            clonedOp.id = "BOM-OP-" + Date.now() + Math.random().toString(36).substr(2, 4);
+            clonedOp.type = 'OPERATION';
+            clonedOp.locked = true;
             
-            function buildHtml(items, depth = 0) {
-                let html = '';
-                items.forEach((item) => {
-                    const hasChildren = item.children && item.children.length > 0;
-                    const paddingLeft = depth * 16 + 8;
-                    
-                    html += `
-                        <div class="tree-node flex items-center justify-between py-1 px-1 rounded cursor-pointer text-slate-700 transition droppable-target" 
-                             style="padding-left: ${paddingLeft}px;"
-                             data-id="${item.id}" data-name="${item.name}" data-type="${item.type}" data-rev="${item.rev}" data-status="${item.status}" data-desc="${item.desc || ''}" data-actions='${JSON.stringify(item.actions || [])}'>
-                            <div class="flex items-center space-x-1.5 truncate pointer-events-none">
-                                ${hasChildren ? `
-                                    <button class="toggle-btn w-4 h-4 text-center text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-1 pointer-events-auto" data-id="${item.id}">
-                                        ${item.expanded ? '-' : '+'}
-                                    </button>
-                                ` : '<span class="w-4 mr-1"></span>'}
-                                ${getIconForType(item.type, true)}
-                                <span class="truncate hover:underline">${item.name}</span>
-                            </div>
-                            <span class="text-[10px] text-slate-400 font-sans px-1 bg-slate-100 rounded">${item.rev}</span>
-                        </div>
-                    `;
-                    if (hasChildren && item.expanded) {
-                        html += buildHtml(item.children, depth + 1);
-                    }
-                });
-                return html;
+            function cloneSubNodes(sub) {
+              sub.id = "BOM-SUB-" + Date.now() + Math.random().toString(36).substr(2, 4);
+              sub.locked = true;
+              if (sub.children) sub.children.forEach(cloneSubNodes);
             }
+            if (clonedOp.children) clonedOp.children.forEach(cloneSubNodes);
+            clonedNodes.push(clonedOp);
+          });
+        } else if (opNode.type === 'OPERATION') {
+          let parentsInfo = findBorParentsInfo(borData, opId);
+          let clonedOp = JSON.parse(JSON.stringify(opNode));
+          clonedOp.id = "BOM-OP-" + Date.now() + Math.random().toString(36).substr(2, 4);
+          clonedOp.type = 'OPERATION';
+          clonedOp.locked = true;
+          clonedOp.plantName = parentsInfo ? parentsInfo.plant?.name : "";
+          clonedOp.workshopName = parentsInfo ? parentsInfo.workshop?.name : "";
+          clonedOp.workcenterName = parentsInfo ? parentsInfo.workcenter?.name : "N/A";
+          
+          function cloneSubNodes(subNode) {
+            subNode.id = "BOM-SUB-" + Date.now() + Math.random().toString(36).substr(2, 4);
+            subNode.locked = true;
+            if (subNode.children) subNode.children.forEach(cloneSubNodes);
+          }
+          if (clonedOp.children) clonedOp.children.forEach(cloneSubNodes);
 
-            container.innerHTML = buildHtml(topTreeData);
-
-            // Click & Toggle listeners for top tree
-            container.querySelectorAll('.tree-node').forEach(node => {
-                node.addEventListener('click', (e) => {
-                    if (e.target.closest('.toggle-btn')) {
-                        const id = e.target.closest('.toggle-btn').getAttribute('data-id');
-                        toggleNode(topTreeData, id);
-                        renderTopTree();
-                        return;
-                    }
-                    container.querySelectorAll('.tree-node').forEach(n => n.classList.remove('selected'));
-                    node.classList.add('selected');
-
-                    const id = node.getAttribute('data-id');
-                    const name = node.getAttribute('data-name');
-                    const type = node.getAttribute('data-type');
-                    const rev = node.getAttribute('data-rev');
-                    const status = node.getAttribute('data-status');
-                    const desc = node.getAttribute('data-desc');
-                    const actions = JSON.parse(node.getAttribute('data-actions') || '[]');
-
-                    document.getElementById('prop-id').textContent = id;
-                    document.getElementById('prop-rev').textContent = rev;
-                    document.getElementById('prop-type').textContent = type === 'operation' ? 'OPERATION (PURPLE GEAR)' : 'GEAR BOM LINE';
-                    document.getElementById('prop-badge').textContent = type === 'operation' ? 'Operation Node' : 'Active Item';
-                    document.getElementById('prop-desc').textContent = desc || name;
-                    document.getElementById('top-selected-name').textContent = name;
-
-                    // Update accountability / full results table with operation actions
-                    const accTable = document.getElementById('top-accountability-table');
-                    if (actions.length > 0) {
-                        accTable.innerHTML = actions.map((act, idx) => `
-                            <tr class="border-b hover:bg-blue-50">
-                                <td class="p-1.5 text-blue-700 font-semibold"><i class="fa-solid fa-check-circle mr-1 text-purple-600"></i> ${act}</td>
-                                <td class="p-1.5 text-emerald-600">Active</td>
-                                <td class="p-1.5">Step ${idx + 1}</td>
-                            </tr>
-                        `).join('');
-                    } else {
-                        accTable.innerHTML = `
-                            <tr class="border-b hover:bg-blue-50">
-                                <td class="p-1.5 text-blue-700 font-semibold"><i class="fa-solid fa-gear mr-1 text-blue-600"></i> ${name}</td>
-                                <td class="p-1.5 text-emerald-600">Linked</td>
-                                <td class="p-1.5">100%</td>
-                            </tr>
-                        `;
-                    }
-
-                    drawCADCanvas('top-canvas', type);
-                });
-
-                // Drag and Drop event listeners on Top Tree nodes
-                node.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    node.classList.add('drag-over');
-                });
-
-                node.addEventListener('dragleave', () => {
-                    node.classList.remove('drag-over');
-                });
-
-                node.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    node.classList.remove('drag-over');
-                    const targetId = node.getAttribute('data-id');
-                    const targetName = node.getAttribute('data-name');
-
-                    // Retrieve dragged payload
-                    const draggedId = e.dataTransfer.getData('text/plain');
-                    
-                    // Check if multiple checkboxes are checked in bottom tree
-                    const checkedCheckboxes = document.querySelectorAll('.bottom-checkbox:checked');
-                    let itemsToDrop = [];
-
-                    if (checkedCheckboxes.length > 0) {
-                        checkedCheckboxes.forEach(chk => {
-                            const nodeId = chk.getAttribute('data-id');
-                            const nodeObj = findNodeById(bottomTreeData, nodeId);
-                            if (nodeObj) itemsToDrop.push(nodeObj);
-                            // Uncheck checkbox after drop as requested
-                            chk.checked = false;
-                        });
-                    } else if (draggedId) {
-                        const singleObj = findNodeById(bottomTreeData, draggedId);
-                        if (singleObj) {
-                            itemsToDrop.push(singleObj);
-                            // Also uncheck its checkbox if it exists
-                            const chk = document.querySelector(`.bottom-checkbox[data-id="${draggedId}"]`);
-                            if (chk) chk.checked = false;
-                        }
-                    }
-
-                    if (itemsToDrop.length > 0) {
-                        // Attach items as child branches to target node in topTreeData
-                        const targetNode = findNodeById(topTreeData, targetId);
-                        if (targetNode) {
-                            if (!targetNode.children) targetNode.children = [];
-                            itemsToDrop.forEach(item => {
-                                // Clone item to avoid direct reference bugs
-                                const cloned = JSON.parse(JSON.stringify(item));
-                                // Requirement: "trong tab bom line thì khi kéo các operation từ process lên thì level operation không có phân cấp bên trong nữa chỉ bom mới được phân cấp còn operation thì không cần"
-                                // Remove nested children inside dropped operation so level operation has no inner hierarchy
-                                if (cloned.type === 'operation' || cloned.children) {
-                                    cloned.children = undefined; 
-                                }
-                                // Check if already exists
-                                if (!targetNode.children.some(c => c.id === cloned.id)) {
-                                    targetNode.children.push(cloned);
-                                }
-                            });
-                            targetNode.expanded = true;
-                            renderTopTree();
-                            showToast(`Đã gán thành công ${itemsToDrop.length} operation(s) vào nhánh BOM [${targetName.split('/')[0]}]!`);
-                        }
-                    }
-                });
-            });
+          clonedNodes.push(clonedOp);
         }
+      });
 
-        // Render Bottom Tree (Process Structure) with Checkboxes & Draggable support
-        function renderBottomTree() {
-            const container = document.getElementById('bottom-tree');
-            container.innerHTML = '';
-            
-            function buildHtml(items, depth = 0) {
-                let html = '';
-                items.forEach((item) => {
-                    const hasChildren = item.children && item.children.length > 0;
-                    const paddingLeft = depth * 16 + 8;
-                    
-                    html += `
-                        <div class="tree-node flex items-center justify-between py-1 px-1 rounded cursor-pointer text-slate-700 transition draggable-source" 
-                             draggable="true"
-                             data-id="${item.id}" data-name="${item.name}" data-type="${item.type}" data-rev="${item.rev}" data-status="${item.status}" data-desc="${item.desc || ''}" data-actions='${JSON.stringify(item.actions || [])}'
-                             style="padding-left: ${paddingLeft}px;">
-                            <div class="flex items-center space-x-1.5 truncate">
-                                <input type="checkbox" class="bottom-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 mr-1" data-id="${item.id}" onclick="event.stopPropagation()">
-                                ${hasChildren ? `
-                                    <button class="toggle-btn w-4 h-4 text-center text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center mr-1" data-id="${item.id}">
-                                        ${item.expanded ? '-' : '+'}
-                                    </button>
-                                ` : '<span class="w-4 mr-1"></span>'}
-                                ${getIconForType(item.type, false)}
-                                <span class="truncate hover:underline">${item.name}</span>
-                            </div>
-                            <span class="text-[10px] text-slate-400 font-sans px-1 bg-slate-100 rounded">${item.rev}</span>
-                        </div>
-                    `;
-                    if (hasChildren && item.expanded) {
-                        html += buildHtml(item.children, depth + 1);
-                    }
-                });
-                return html;
-            }
+      if (clonedNodes.length === 0) return;
 
-            container.innerHTML = buildHtml(bottomTreeData);
+      if (!actualTargetNode.children) actualTargetNode.children = [];
+      actualTargetNode.children.push(...clonedNodes);
+      actualTargetNode.expanded = true;
 
-            // Event listeners for bottom tree
-            container.querySelectorAll('.tree-node').forEach(node => {
-                // Click selection
-                node.addEventListener('click', (e) => {
-                    if (e.target.closest('.toggle-btn')) {
-                        const id = e.target.closest('.toggle-btn').getAttribute('data-id');
-                        toggleNode(bottomTreeData, id);
-                        renderBottomTree();
-                        return;
-                    }
-                    if (e.target.closest('.bottom-checkbox')) return; // let checkbox toggle naturally
+      checkedBorIds.clear();
+      checkedBopIds.clear();
+      draggedNodeData = null;
+      renderBomTree();
+      renderBorTree();
+      renderBopTree();
+    }
 
-                    container.querySelectorAll('.tree-node').forEach(n => n.classList.remove('selected'));
-                    node.classList.add('selected');
-
-                    const id = node.getAttribute('data-id');
-                    const name = node.getAttribute('data-name');
-                    const type = node.getAttribute('data-type');
-                    const rev = node.getAttribute('data-rev');
-                    const desc = node.getAttribute('data-desc');
-                    const actions = JSON.parse(node.getAttribute('data-actions') || '[]');
-                    
-                    document.getElementById('b-prop-id').textContent = id;
-                    document.getElementById('b-prop-rev').textContent = rev;
-                    document.getElementById('b-prop-type').textContent = type.toUpperCase();
-                    document.getElementById('bottom-selected-name').textContent = name;
-
-                    // Display operation actions/steps in target process details table
-                    const targetTable = document.querySelector('.flex-1.grid.grid-cols-12 tbody.text-\\[11px\\]');
-                    if (targetTable && actions.length > 0) {
-                        targetTable.innerHTML = actions.map((act, idx) => `
-                            <tr class="border-b hover:bg-purple-50">
-                                <td class="p-1.5 text-slate-800 font-medium"><i class="fa-solid fa-list-check text-purple-600 mr-1"></i> ${act}</td>
-                                <td class="p-1.5 text-purple-600">Step ${idx + 1}</td>
-                                <td class="p-1.5">Active Operation Action</td>
-                            </tr>
-                        `).join('');
-                    }
-
-                    drawCADCanvas('bottom-canvas', type);
-                });
-
-                // Drag start event
-                node.addEventListener('dragstart', (e) => {
-                    const id = node.getAttribute('data-id');
-                    e.dataTransfer.setData('text/plain', id);
-                    node.style.opacity = '0.5';
-                });
-
-                node.addEventListener('dragend', () => {
-                    node.style.opacity = '1.0';
-                });
-            });
+    function findParentNodeInBom(nodes, targetId, parent = null) {
+      for (let n of nodes) {
+        if (n.id === targetId) return parent;
+        if (n.children) {
+          let found = findParentNodeInBom(n.children, targetId, n);
+          if (found) return found;
         }
+      }
+      return null;
+    }
 
-        // Helper to find node by ID recursively
-        function findNodeById(nodes, id) {
-            for (let node of nodes) {
-                if (node.id === id) return node;
-                if (node.children) {
-                    const found = findNodeById(node.children, id);
-                    if (found) return found;
-                }
-            }
-            return null;
+    function findBorParentsInfo(nodes, targetId, plant = null, workshop = null, workcenter = null) {
+      for (let n of nodes) {
+        let p = plant, ws = workshop, wc = workcenter;
+        if (n.type === 'PLANT') p = n;
+        if (n.type === 'WORKSHOP') ws = n;
+        if (n.type === 'WORKCENTER') wc = n;
+
+        if (n.id === targetId) return { plant: p, workshop: ws, workcenter: wc };
+        if (n.children) {
+          let res = findBorParentsInfo(n.children, targetId, p, ws, wc);
+          if (res) return res;
         }
+      }
+      return null;
+    }
 
-        // Toggle expand/collapse recursively
-        function toggleNode(nodes, id) {
-            for (let node of nodes) {
-                if (node.id === id) {
-                    node.expanded = !node.expanded;
-                    return true;
-                }
-                if (node.children) {
-                    if (toggleNode(node.children, id)) return true;
-                }
-            }
-            return false;
+    function deleteUnlockedOperation() {
+      let node = findBomNodeById(bomData, selectedBomId);
+      if (!node) {
+        alert("Vui lòng chọn một operation trong cây Routine để xóa!");
+        return;
+      }
+      if (node.type === 'BOM Version' || node.type === 'Assembly') {
+        alert("Không cho phép xóa nhánh cấu trúc BOM/Assembly!");
+        return;
+      }
+      if (node.locked) {
+        alert("Operation này đang ở trạng thái Khóa. Vui lòng mở khóa trước khi xóa!");
+        return;
+      }
+
+      function removeNode(nodes, id) {
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].id === id) { nodes.splice(i, 1); return true; }
+          if (nodes[i].children && removeNode(nodes[i].children, id)) return true;
         }
+        return false;
+      }
 
-        // HTML5 Canvas CAD Wireframe/Shaded Simulation
-        function drawCADCanvas(canvasId, type) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
+      removeNode(bomData, selectedBomId);
+      selectedBomId = "BOM-ROOT";
+      renderBomTree();
+    }
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // --- PROPERTY PANEL CHO ROUTINE & NHÁNH BOM ---
+    function updateBomPropertiesPanel() {
+      const panel = document.getElementById("bom-prop-panel-details");
+      const node = findBomNodeById(bomData, selectedBomId);
+      if (!node) {
+        panel.innerHTML = `<p class="text-slate-400 italic">Chọn một nhánh để xem thông tin...</p>`;
+        return;
+      }
 
-            ctx.strokeStyle = '#1e293b';
-            ctx.lineWidth = 1;
-            const step = 30;
-            for (let x = 0; x < canvas.width; x += step) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-            for (let y = 0; y < canvas.height; y += step) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
+      let lockStatus = node.locked !== undefined ? (node.locked ? `<span class="text-rose-500 font-bold"><i class="fa-solid fa-lock"></i> Đã khóa</span>` : `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-lock-open"></i> Đang mở</span>`) : '';
+      let editBtnHtml = `<button onclick="toggleEditBomMode()" class="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] font-semibold flex items-center gap-1 shadow"><i class="fa-solid fa-pen"></i> ${isEditingBom ? 'Lưu' : 'Sửa'}</button>`;
 
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
+      if (isEditingBom) {
+        let materialsHtml = (node.materials || []).map((m, idx) => {
+          let options = availableMaterialCatalog.map(mat => `<option value="${mat.id}" ${mat.id === m.materialId ? 'selected' : ''}>${mat.name} (${mat.unit})</option>`).join('');
+          return `
+            <div class="flex items-center gap-1.5 bg-white p-1.5 border border-indigo-200 rounded mb-1.5">
+              <select onchange="updateBomMaterialItem(${idx}, 'materialId', this.value)" class="text-xs p-1 bg-slate-50 border border-slate-300 rounded flex-1">${options}</select>
+              <input type="number" step="0.1" value="${m.norm}" oninput="updateBomMaterialItem(${idx}, 'norm', this.value)" class="w-16 text-xs p-1 border border-slate-300 rounded font-bold text-emerald-700">
+              <input type="text" value="${m.formula}" oninput="updateBomMaterialItem(${idx}, 'formula', this.value)" class="w-28 text-xs p-1 border border-slate-300 rounded font-mono">
+              <button onclick="removeBomMaterialRow(${idx})" class="p-1 bg-rose-100 text-rose-600 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          `;
+        }).join('');
 
-            ctx.save();
-            ctx.translate(cx, cy);
+        let addMaterialBtn = (node.type === 'SUB_OPERATION' || node.type === 'OPERATION') ? `
+          <div class="p-2 bg-indigo-50 border border-indigo-200 rounded space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-indigo-900"><i class="fa-solid fa-boxes-stacked"></i> Định mức vật tư:</span>
+              <button onclick="addBomMaterialRow()" class="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-semibold"><i class="fa-solid fa-plus"></i> Thêm</button>
+            </div>
+            <div class="space-y-1">${materialsHtml}</div>
+          </div>
+        ` : '';
 
-            let strokeColor = '#3b82f6';
-            let fillColor = 'rgba(59, 130, 246, 0.15)';
-            if (type === 'gear' || type === 'plant') { strokeColor = '#10b981'; fillColor = 'rgba(16, 185, 129, 0.15);'; }
-            else if (type === 'workcenter') { strokeColor = '#f59e0b'; fillColor = 'rgba(245, 158, 11, 0.15);'; }
-            else if (type === 'operation') { strokeColor = '#8b5cf6'; fillColor = 'rgba(139, 92, 246, 0.15);'; }
+        panel.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatus} ${editBtnHtml}</div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Tên sản phẩm / quy trình:</label>
+              <input type="text" id="form-bom-name" value="${node.name}" class="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold text-blue-700">
+            </div>
+            ${node.type !== 'OPERATION' && node.type !== 'SUB_OPERATION' ? `
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Mã vật liệu:</label>
+                  <input type="text" id="form-bom-matcode" value="${node.materialCode || ''}" class="w-full text-xs p-1.5 border border-slate-300 rounded font-mono">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Tên vật liệu:</label>
+                  <input type="text" id="form-bom-matname" value="${node.materialName || ''}" class="w-full text-xs p-1.5 border border-slate-300 rounded">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Kích thước thô & thành phẩm:</label>
+                <input type="text" id="form-bom-size" value="${node.size || ''}" class="w-full text-xs p-1.5 border border-slate-300 rounded font-mono">
+              </div>
+            ` : ''}
+            ${addMaterialBtn}
+            <button onclick="saveBomEditForm()" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow">Lưu thay đổi</button>
+          </div>
+        `;
+      } else {
+        let mats = (node.materials || []).map(m => {
+          let matObj = availableMaterialCatalog.find(x => x.id === m.materialId);
+          return `<div class="flex justify-between bg-indigo-50/70 px-2.5 py-1.5 rounded text-xs mb-1 border border-indigo-200 shadow-sm">
+            <span class="font-bold text-slate-800">${matObj ? matObj.name : m.materialId}</span>
+            <span class="font-mono text-indigo-700 font-bold">Định mức: ${m.norm} | CT: ${m.formula}</span>
+          </div>`;
+        }).join('');
 
-            ctx.strokeStyle = strokeColor;
-            ctx.fillStyle = fillColor;
-            ctx.lineWidth = 2;
+        let bomExtraDetails = (node.type !== 'OPERATION' && node.type !== 'SUB_OPERATION') ? `
+          <div class="grid grid-cols-2 gap-1 pt-1 border-t border-slate-200">
+            <div><b>Mã vật liệu:</b> <span class="font-mono text-purple-700">${node.materialCode || 'N/A'}</span></div>
+            <div><b>Tên vật liệu:</b> <span class="text-slate-700">${node.materialName || 'N/A'}</span></div>
+          </div>
+          <div><b>Kích thước thô & TP:</b> <span class="font-mono text-slate-700">${node.size || 'N/A'} mm</span></div>
+        ` : '';
 
-            ctx.beginPath();
-            ctx.rect(-80, -50, 160, 100);
-            ctx.fill();
-            ctx.stroke();
+        let subOpDetails = (node.type === 'SUB_OPERATION') ? `
+          <div class="grid grid-cols-2 gap-1 mt-1">
+            <div><b>SL người:</b> ${node.laborCount || 1}</div>
+            <div><b>SL máy:</b> ${node.machineCount || 1}</div>
+            <div><b>Công đoạn chuẩn:</b> ${node.stdOp || 'N/A'}</div>
+            <div><b>Thời gian chuẩn:</b> ${node.stdTime || '0s'}</div>
+          </div>
+          <div><b>Công thức tính:</b> <span class="font-mono text-purple-700">${node.formula || 'N/A'}</span></div>
+          <div><b>Công cụ:</b> ${node.tools || 'N/A'}</div>
+        ` : '';
 
-            ctx.beginPath();
-            ctx.moveTo(-80, -50);
-            ctx.lineTo(80, 50);
-            ctx.moveTo(80, -50);
-            ctx.lineTo(-80, 50);
-            ctx.stroke();
+        panel.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatus} ${editBtnHtml}</div>
+            <div><b>Tên:</b> <span class="text-blue-700 font-semibold">${node.name}</span></div>
+            <div class="pt-1">
+              <span><b>Loại:</b> ${node.type || 'Assembly'}</span>
+            </div>
+            ${bomExtraDetails}
+            ${subOpDetails}
+            ${mats ? `<div class="mt-2"><b class="text-slate-800 text-[11px] block mb-1">Vật tư sử dụng:</b>${mats}</div>` : ''}
+          </div>
+        `;
+      }
+    }
 
-            ctx.beginPath();
-            ctx.arc(0, 0, 28, 0, Math.PI * 2);
-            ctx.fillStyle = strokeColor;
-            ctx.fill();
+    function toggleEditBomMode() {
+      isEditingBom = !isEditingBom;
+      updateBomPropertiesPanel();
+    }
 
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '11px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(type.toUpperCase(), 0, 0);
+    function addBomMaterialRow() {
+      let node = findBomNodeById(bomData, selectedBomId);
+      if (!node.materials) node.materials = [];
+      node.materials.push({ materialId: availableMaterialCatalog[0].id, norm: 1.0, formula: "Time * 1.0" });
+      updateBomPropertiesPanel();
+    }
 
-            ctx.restore();
+    function updateBomMaterialItem(idx, field, val) {
+      let node = findBomNodeById(bomData, selectedBomId);
+      if (node && node.materials && node.materials[idx]) {
+        if (field === 'norm') node.materials[idx].norm = parseFloat(val) || 0;
+        else node.materials[idx][field] = val;
+      }
+    }
+
+    function removeBomMaterialRow(idx) {
+      let node = findBomNodeById(bomData, selectedBomId);
+      if (node && node.materials) {
+        node.materials.splice(idx, 1);
+        updateBomPropertiesPanel();
+      }
+    }
+
+    function saveBomEditForm() {
+      let node = findBomNodeById(bomData, selectedBomId);
+      if (node) {
+        node.name = document.getElementById("form-bom-name").value.trim();
+        if (node.type !== 'OPERATION' && node.type !== 'SUB_OPERATION') {
+          node.materialCode = document.getElementById("form-bom-matcode").value.trim();
+          node.materialName = document.getElementById("form-bom-matname").value.trim();
+          node.size = document.getElementById("form-bom-size").value.trim();
         }
+        isEditingBom = false;
+        renderBomTree();
+      }
+    }
 
-        // Initialize on load
-        window.onload = function() {
-            renderTopTree();
-            renderBottomTree();
+    function toggleBomPropPanel() {
+      const content = document.getElementById("bom-prop-panel-content");
+      const icon = document.querySelector("#bom-prop-toggle-btn i");
+      if (content.classList.contains("collapsed")) {
+        content.classList.remove("collapsed");
+        icon.className = "fa-solid fa-chevron-up";
+      } else {
+        content.classList.add("collapsed");
+        icon.className = "fa-solid fa-chevron-down";
+      }
+    }
 
-            drawCADCanvas('top-canvas', 'gear');
-            drawCADCanvas('bottom-canvas', 'plant');
+    // --- PROPERTY PANEL CHO BOR ---
+    function updateBorPropertiesPanel() {
+      const panel = document.getElementById("bor-prop-panel-details");
+      const node = findBorNodeById(borData, selectedBorId);
+      if (!node) { panel.innerHTML = `<p class="text-slate-400 italic">Chọn node BOR để xem...</p>`; return; }
 
-            window.addEventListener('resize', () => {
-                drawCADCanvas('top-canvas', 'gear');
-                drawCADCanvas('bottom-canvas', 'plant');
-            });
+      let contentHtml = "";
 
-            showToast('Đã cập nhật tính năng: Kéo thả tự động bỏ chọn checkbox, giữ nguyên màu bánh răng tím cho operation, và phẳng hóa level operation!');
+      if (node.type === 'PLANT' || node.type === 'WORKSHOP' || node.type === 'WORKCENTER') {
+        contentHtml = `
+          <div><b>Tên:</b> <span class="text-emerald-700 font-semibold">${node.name}</span></div>
+          <div><b>Mô tả:</b> <span class="text-slate-600">${node.description || 'Không có mô tả'}</span></div>
+        `;
+      } else if (node.type === 'WORKSTATION') {
+        contentHtml = `
+          <div><b>Tên:</b> <span class="text-emerald-700 font-semibold">${node.name}</span></div>
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <div><b>Nhân công:</b> <span class="text-slate-700">${node.labor || 'N/A'}</span></div>
+            <div><b>Số lượng:</b> <span class="font-bold text-blue-700">${node.laborQty || 1}</span></div>
+            <div><b>Máy móc:</b> <span class="text-slate-700">${node.machine || 'N/A'}</span></div>
+            <div><b>Số lượng:</b> <span class="font-bold text-blue-700">${node.machineQty || 1}</span></div>
+          </div>
+        `;
+      } else if (node.type === 'OPERATION') {
+        contentHtml = `
+          <div><b>Tên:</b> <span class="text-emerald-700 font-semibold">${node.name}</span></div>
+          <div><b>Mô tả:</b> <span class="text-slate-600">${node.description || 'Không có mô tả'}</span></div>
+        `;
+      } else if (node.type === 'SUB_OPERATION') {
+        let mats = (node.materials || []).map(m => {
+          let matObj = availableMaterialCatalog.find(x => x.id === m.materialId);
+          return `<div class="flex justify-between bg-indigo-50/70 px-2 py-1 rounded text-xs mb-1 border border-indigo-200">
+            <span class="font-bold text-slate-800">${matObj ? matObj.name : m.materialId}</span>
+            <span class="font-mono text-indigo-700 font-bold">Định mức: ${m.norm} | CT: ${m.formula}</span>
+          </div>`;
+        }).join('');
+
+        contentHtml = `
+          <div><b>Tên:</b> <span class="text-emerald-700 font-semibold">${node.name}</span></div>
+          <div class="grid grid-cols-2 gap-1 mt-1">
+            <div><b>SL người:</b> ${node.laborCount || 1}</div>
+            <div><b>SL máy:</b> ${node.machineCount || 1}</div>
+            <div><b>Công đoạn chuẩn:</b> ${node.stdOp || 'N/A'}</div>
+            <div><b>Thời gian chuẩn:</b> ${node.stdTime || '0s'}</div>
+          </div>
+          <div><b>Công thức tính:</b> <span class="font-mono text-purple-700">${node.formula || 'N/A'}</span></div>
+          <div><b>Công cụ:</b> ${node.tools || 'N/A'}</div>
+          ${mats ? `<div class="mt-1"><b>Vật tư sử dụng:</b>${mats}</div>` : `<div class="mt-1 text-slate-400 italic text-[11px]">BOR không có sẵn vật tư (có thể thêm nếu cần).</div>`}
+        `;
+      } else {
+        contentHtml = `<div><b>Tên:</b> ${node.name}</div>`;
+      }
+
+      panel.innerHTML = `<div class="space-y-1">${contentHtml}</div>`;
+    }
+
+    // --- PROPERTY PANEL CHO BOP ---
+    function updateBopPropertiesPanel() {
+      const panel = document.getElementById("bop-prop-panel-details");
+      const node = findBopNodeById(bopData, selectedBopId);
+      if (!node) { panel.innerHTML = `<p class="text-slate-400 italic">Chọn node BOP để xem...</p>`; return; }
+
+      let lockStatus = node.locked !== undefined ? (node.locked ? `<span class="text-rose-500 font-bold"><i class="fa-solid fa-lock"></i> Đã khóa</span>` : `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-lock-open"></i> Đang mở</span>`) : '';
+      let contentHtml = "";
+
+      if (node.type === 'PROCESS' || node.type === 'OPERATION') {
+        contentHtml = `
+          <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatus}</div>
+          <div><b>Tên:</b> <span class="text-blue-700 font-semibold">${node.name}</span></div>
+          <div><b>Mô tả:</b> <span class="text-slate-600">${node.description || 'Không có mô tả'}</span></div>
+        `;
+      } else if (node.type === 'SUB_OPERATION') {
+        let mats = (node.materials || []).map(m => {
+          let matObj = availableMaterialCatalog.find(x => x.id === m.materialId);
+          return `<div class="flex justify-between bg-indigo-50/70 px-2 py-1 rounded text-xs mb-1 border border-indigo-200">
+            <span class="font-bold text-slate-800">${matObj ? matObj.name : m.materialId}</span>
+            <span class="font-mono text-indigo-700 font-bold">Định mức: ${m.norm} | CT: ${m.formula}</span>
+          </div>`;
+        }).join('');
+
+        contentHtml = `
+          <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatus}</div>
+          <div><b>Tên:</b> <span class="text-blue-700 font-semibold">${node.name}</span></div>
+          <div class="grid grid-cols-2 gap-1 mt-1">
+            <div><b>SL người:</b> ${node.laborCount || 1}</div>
+            <div><b>SL máy:</b> ${node.machineCount || 1}</div>
+            <div><b>Công đoạn chuẩn:</b> ${node.stdOp || 'N/A'}</div>
+            <div><b>Thời gian chuẩn:</b> ${node.stdTime || '0s'}</div>
+          </div>
+          <div><b>Công thức tính:</b> <span class="font-mono text-purple-700">${node.formula || 'N/A'}</span></div>
+          <div><b>Công cụ:</b> ${node.tools || 'N/A'}</div>
+          ${mats ? `<div class="mt-1"><b>Vật tư sử dụng (BOP có sẵn):</b>${mats}</div>` : ''}
+        `;
+      } else {
+        contentHtml = `<div><b>Tên:</b> ${node.name}</div>`;
+      }
+
+      panel.innerHTML = `<div class="space-y-1">${contentHtml}</div>`;
+    }
+
+    // --- MODAL THÊM ROUTINE ---
+    function openAddBomModal() {
+      renderModalParentTreeView();
+      document.getElementById("input-bom-name").value = "";
+      document.getElementById("modal-bom").classList.remove("hidden");
+    }
+
+    function renderModalParentTreeView() {
+      const container = document.getElementById("bom-parent-tree-select");
+      container.innerHTML = "";
+      function renderNode(node, level) {
+        const isSelected = modalSelectedParentBomId === node.id;
+        const div = document.createElement("div");
+        div.className = `p-1 rounded cursor-pointer text-xs flex items-center ${isSelected ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-50 text-slate-700'}`;
+        div.style.paddingLeft = `${level * 8 + 6}px`;
+        div.innerHTML = `<i class="fa-solid fa-sitemap mr-1"></i> <span>${node.name}</span>`;
+        div.onclick = (e) => {
+          e.stopPropagation();
+          modalSelectedParentBomId = node.id;
+          renderModalParentTreeView();
         };
-    </script>
+        container.appendChild(div);
+        if (node.children) node.children.forEach(c => renderNode(c, level + 1));
+      }
+      bomData.forEach(n => renderNode(n, 0));
+    }
+
+    function closeBomModal() {
+      document.getElementById("modal-bom").classList.add("hidden");
+    }
+
+    function saveBomModal() {
+      const name = document.getElementById("input-bom-name").value.trim();
+      const type = document.getElementById("input-bom-type").value.trim();
+      const matCode = document.getElementById("input-bom-matcode").value.trim();
+      const matName = document.getElementById("input-bom-matname").value.trim();
+      const size = document.getElementById("input-bom-size").value.trim();
+      if (!name) { alert("Vui lòng nhập tên!"); return; }
+
+      let parentNode = findBomNodeById(bomData, modalSelectedParentBomId);
+      if (parentNode) {
+        if (!parentNode.children) parentNode.children = [];
+        parentNode.children.push({
+          id: "BOM-" + Date.now().toString().slice(-4),
+          name: name,
+          type: type,
+          materialCode: matCode,
+          materialName: matName,
+          size: size,
+          children: []
+        });
+        renderBomTree();
+        closeBomModal();
+      }
+    }
+
+    function findBomNodeById(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) { let f = findBomNodeById(n.children, id); if (f) return f; }
+      }
+      return null;
+    }
+
+    function findBorNodeById(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) { let f = findBorNodeById(n.children, id); if (f) return f; }
+      }
+      return null;
+    }
+
+    function findBopNodeById(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) { let f = findBopNodeById(n.children, id); if (f) return f; }
+      }
+      return null;
+    }
+
+    // --- CANVAS & VIEWPORT ---
+    let canvas, ctx;
+    function initCanvas() {
+      canvas = document.getElementById("factory-canvas");
+      ctx = canvas.getContext("2d");
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+
+      canvas.addEventListener("mousedown", (e) => {
+        if (isPanActive) { isDragging = true; startX = e.clientX - panX; startY = e.clientY - panY; }
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (isDragging) { panX = e.clientX - startX; panY = e.clientY - startY; drawCanvas(); }
+      });
+      window.addEventListener("mouseup", () => isDragging = false);
+      canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        zoomLevel = Math.max(0.3, Math.min(3.0, zoomLevel * (e.deltaY < 0 ? 1.05 : 0.95)));
+        drawCanvas();
+      });
+      drawCanvas();
+    }
+
+    function resizeCanvas() {
+      const wrap = canvas.parentElement;
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      drawCanvas();
+    }
+
+    function togglePanTool() {
+      isPanActive = !isPanActive;
+      const btn = document.getElementById("tool-pan-btn");
+      btn.className = isPanActive ? "px-2 py-1 bg-amber-600 text-white rounded text-[11px] font-medium flex items-center gap-1" : "px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
+    }
+
+    function toggleShowAllRegions() {
+      showAllRegions = !showAllRegions;
+      const btn = document.getElementById("show-all-btn");
+      btn.innerHTML = `<i class="fa-solid fa-eye"></i> Show All: ${showAllRegions ? 'Bật' : 'Tắt'}`;
+      drawCanvas();
+    }
+
+    function resetZoomLayout() {
+      zoomLevel = 1.0; panX = 0; panY = 0;
+      drawCanvas();
+    }
+
+    function drawCanvas() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(panX, panY);
+      ctx.scale(zoomLevel, zoomLevel);
+
+      function drawNodes(nodes) {
+        nodes.forEach(n => {
+          if (showAllRegions && n.x !== undefined) {
+            const isSelected = n.id === selectedBorId;
+            ctx.save();
+            ctx.strokeStyle = isSelected ? "#38bdf8" : "#64748b";
+            ctx.lineWidth = isSelected ? 3.5 : 1.5;
+            ctx.fillStyle = isSelected ? "rgba(56, 189, 248, 0.25)" : "rgba(30, 41, 59, 0.4)";
+            ctx.strokeRect(n.x, n.y, n.w, n.h);
+            ctx.fillRect(n.x, n.y, n.w, n.h);
+            ctx.fillStyle = isSelected ? "#38bdf8" : "#cbd5e1";
+            ctx.font = isSelected ? "bold 12px sans-serif" : "bold 11px sans-serif";
+            ctx.fillText(n.name, n.x + 8, n.y + 18);
+            ctx.restore();
+          }
+          if (n.children) drawNodes(n.children);
+        });
+      }
+      drawNodes(borData);
+      ctx.restore();
+    }
+
+    function openFromToModal() {
+      document.getElementById("modal-fromto").classList.remove("hidden");
+      const container = document.getElementById("fromto-matrix-table-container");
+      let tableHTML = `<table class="w-full text-center border-collapse text-xs">`;
+      tableHTML += `<thead><tr class="bg-slate-800 text-white font-bold"><th class="p-2 border border-slate-700 text-left">From \\ To</th>`;
+      borData.forEach(n => tableHTML += `<th class="p-2 border border-slate-700">${n.name}</th>`);
+      tableHTML += `</tr></thead><tbody>`;
+      borData.forEach(n1 => {
+        tableHTML += `<tr><td class="p-2 border border-slate-200 bg-slate-100 font-bold text-left">${n1.name}</td>`;
+        borData.forEach(n2 => {
+          let dist = n1.id === n2.id ? "-" : Math.round(Math.abs((n2.x||0) - (n1.x||0)) + Math.abs((n2.y||0) - (n1.y||0))) + " px";
+          tableHTML += `<td class="p-2 border border-slate-200 font-mono text-blue-700">${dist}</td>`;
+        });
+        tableHTML += `</tr>`;
+      });
+      tableHTML += `</tbody></table>`;
+      container.innerHTML = tableHTML;
+    }
+
+    function closeFromToModal() {
+      document.getElementById("modal-fromto").classList.add("hidden");
+    }
+
+    function setupResizers() {
+      const res1 = document.getElementById("resizer-bom-bor");
+      const left1 = document.getElementById("left-bom-container");
+      let d1 = false;
+      res1.addEventListener("mousedown", () => d1 = true);
+      window.addEventListener("mousemove", (e) => { if(d1 && e.clientX > 250 && e.clientX < window.innerWidth*0.6) left1.style.width = `${e.clientX}px`; });
+      window.addEventListener("mouseup", () => d1 = false);
+
+      const res2 = document.getElementById("resizer-bor-layout");
+      const left2 = document.getElementById("mid-bor-bop-container");
+      let d2 = false;
+      res2.addEventListener("mousedown", () => d2 = true);
+      window.addEventListener("mousemove", (e) => { if(d2) left2.style.width = `${e.clientX - left1.offsetWidth}px`; });
+      window.addEventListener("mouseup", () => d2 = false);
+    }
+  </script>
 </body>
 </html>
