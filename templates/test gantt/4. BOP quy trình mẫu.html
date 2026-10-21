@@ -47,18 +47,18 @@
   <div class="flex-1 flex overflow-hidden">
     
     <!-- CỘT 1: BOP TREE & PROPERTIES -->
-    <div id="left-bop-container" class="w-[380px] min-w-[260px] max-w-[50%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+    <div id="left-bop-container" class="w-[440px] min-w-[280px] max-w-[50%] flex flex-col bg-white border-r border-slate-200 shrink-0">
       <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-sitemap text-blue-600 text-sm"></i>
           <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOP TREE (QUY TRÌNH)</h2>
         </div>
         <div class="flex items-center gap-1">
-          <button onclick="openAddBopModal()" title="Thêm nhánh quy trình sản xuất" class="px-2.5 py-1 bg-blue-600 text-white rounded text-[11px] hover:bg-blue-700 font-medium flex items-center gap-1">
-            <i class="fa-solid fa-plus"></i> Tạo mới Process
+          <button onclick="openAddBopModal()" title="Thêm nhánh quy trình sản xuất" class="px-2 py-1 bg-blue-600 text-white rounded text-[11px] hover:bg-blue-700 font-medium flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> Tạo mới
           </button>
-          <button onclick="moveBopNodeOrder(-1)" title="Lên trên" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
-          <button onclick="moveBopNodeOrder(1)" title="Xuống dưới" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+          <button onclick="moveBopNodeOrder(-1)" title="Di chuyển lên" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
+          <button onclick="moveBopNodeOrder(1)" title="Di chuyển xuống" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
           <button onclick="deleteBopNode()" title="Xóa nhánh" class="p-1 px-1.5 bg-rose-100 hover:bg-rose-200 rounded text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
         </div>
       </div>
@@ -71,13 +71,13 @@
         <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="toggleBopPropPanel()">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-pen-to-square text-blue-600 text-xs"></i>
-            <span class="text-xs font-bold text-slate-700">Properties & Details</span>
+            <span class="text-xs font-bold text-slate-700">Properties, Vật tư & Details</span>
           </div>
           <button id="bop-prop-toggle-btn" class="p-1 text-slate-500 hover:text-slate-700 text-xs">
             <i class="fa-solid fa-chevron-up"></i>
           </button>
         </div>
-        <div id="bop-prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[220px]">
+        <div id="bop-prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[260px]">
           <div id="bop-prop-panel-details" class="space-y-2.5">
             <p class="text-slate-400 italic">Chọn một nhánh BOP để xem thông tin...</p>
           </div>
@@ -93,9 +93,9 @@
       <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-cubes text-emerald-600 text-sm"></i>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOR TREE (RESOURCE - NGUỒN LỰC)</h2>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">BOR TREE (6 CẤP NGUỒN LỰC)</h2>
         </div>
-        <span class="text-[10px] text-slate-500 italic">Kéo thả hoặc Copy</span>
+        <span class="text-[10px] text-slate-500 italic">Click để highlight layout</span>
       </div>
 
       <!-- CÂY BOR -->
@@ -109,7 +109,7 @@
             <span class="text-xs font-bold text-slate-700">Resource Properties & Details</span>
           </div>
         </div>
-        <div class="p-3 text-xs overflow-auto max-h-[185px]" id="bor-prop-panel-details">
+        <div class="p-3 text-xs overflow-auto max-h-[195px]" id="bor-prop-panel-details">
           <p class="text-slate-400 italic">Chọn node BOR để xem thông tin...</p>
         </div>
       </div>
@@ -130,9 +130,6 @@
           </button>
           <button id="show-all-btn" onclick="toggleShowAllRegions()" class="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold flex items-center gap-1">
             <i class="fa-solid fa-eye"></i> Show All: Bật
-          </button>
-          <button id="hide-main-img-btn" onclick="toggleHideMainImage()" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-semibold flex items-center gap-1">
-            <i class="fa-solid fa-image"></i> Hide Image: Hiện
           </button>
           <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
           <button onclick="resetZoomLayout()" class="p-1 px-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs"><i class="fa-solid fa-rotate-left"></i> Reset View</button>
@@ -162,11 +159,11 @@
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Tên Quy Trình / Process Name:</label>
-          <input type="text" id="input-bop-name" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="VD: Lắp ráp khung gầm...">
+          <input type="text" id="input-bop-name" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="VD: Công đoạn sơn phủ màu...">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Mô tả quy trình (Description):</label>
-          <textarea id="input-bop-desc" rows="3" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="Nhập mô tả chi tiết công đoạn..."></textarea>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Mô tả quy trình:</label>
+          <textarea id="input-bop-desc" rows="2" class="w-full text-xs p-2 border border-slate-300 rounded outline-none" placeholder="Nhập mô tả..."></textarea>
         </div>
       </div>
       <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end space-x-2">
@@ -195,14 +192,16 @@
     </div>
   </div>
 
-  <!-- CONTEXT MENU BOR -->
-  <div id="bor-context-menu" class="hidden fixed bg-white shadow-xl border border-slate-300 rounded py-1 z-50 text-xs">
-    <div onclick="copySelectedBorNodes()" class="px-3 py-1.5 hover:bg-blue-50 text-slate-700 cursor-pointer flex items-center gap-2">
-      <i class="fa-solid fa-copy text-blue-600"></i> Copy các nhánh đã chọn
-    </div>
-  </div>
-
   <script>
+    // Danh mục vật tư mẫu cho sub-operation
+    const availableMaterialCatalog = [
+      { id: "MAT-01", name: "Sơn lót chống gỉ cao cấp", unit: "Lít" },
+      { id: "MAT-02", name: "Sơn màu Sear (Metallic Blue)", unit: "Lít" },
+      { id: "MAT-03", name: "Sơn bóng bảo vệ 2K", unit: "Lít" },
+      { id: "MAT-04", name: "Keo dán kính chuyên dụng", unit: "Tuýp" }
+    ];
+
+    // Cấu trúc BOR chuẩn 6 cấp có tọa độ layout
     let borData = [
       {
         id: "PLANT-01",
@@ -210,40 +209,74 @@
         type: "PLANT",
         x: 40, y: 40, w: 520, h: 340,
         visible: true,
-        resourcesList: [{ type: "MACHINE", name: "Khuôn dập thủy lực 200T", quantity: 1 }],
-        operationProps: { stdTime: "10.0s", opType: "Setup (Chuẩn bị)", formula: "CycleTime * 1.0" },
         children: [
           {
-            id: "WC-101",
-            name: "PL-008605/aa-UNDERBODY WORKCENTER",
-            type: "WORKCENTER",
-            x: 70, y: 80, w: 220, h: 260,
+            id: "SHOP-01",
+            name: "Xưởng Sơn & Hoàn Thiện Xe",
+            type: "WORKSHOP",
             visible: true,
-            resourcesList: [{ type: "MACHINE", name: "Băng tải tự động PVC", quantity: 1 }],
-            operationProps: { stdTime: "8.0s", opType: "Processing", formula: "CycleTime * 1.0" },
             children: [
               {
-                id: "WS-101",
-                name: "WS-WELDING ROBOT CELL #1",
-                type: "WORKSTATION",
-                x: 90, y: 110, w: 180, h: 50,
+                id: "WC-101",
+                name: "PL-008605/aa-PAINT SHOP WORKCENTER",
+                type: "WORKCENTER",
+                x: 70, y: 80, w: 220, h: 260,
                 visible: true,
-                resourcesList: [
-                  { type: "MACHINE", name: "Robot hàn tự động Panasonic", quantity: 2 },
-                  { type: "HUMAN", name: "Thợ vận hành máy bậc 3/7", quantity: 1 }
-                ],
-                operationProps: { stdTime: "5.0s", opType: "Processing", formula: "CycleTime * 1.0" },
-                children: []
-              },
-              {
-                id: "WS-102",
-                name: "WS-ASSEMBLY STATION #2",
-                type: "WORKSTATION",
-                x: 100, y: 220, w: 180, h: 50,
-                visible: true,
-                resourcesList: [{ type: "HUMAN", name: "Công nhân kiểm tra KCS", quantity: 4 }],
-                operationProps: { stdTime: "3.5s", opType: "Inspection", formula: "CycleTime * 1.0" },
-                children: []
+                children: [
+                  {
+                    id: "WS-101",
+                    name: "WS-PAINTING ROBOT CELL #1",
+                    type: "WORKSTATION",
+                    x: 90, y: 110, w: 180, h: 50,
+                    visible: true,
+                    resourcesList: [
+                      { type: "MACHINE", name: "Robot sơn tự động KUKA", quantity: 2 },
+                      { type: "HUMAN", name: "Kỹ sư giám sát dây chuyền sơn", quantity: 1 }
+                    ],
+                    tools: [{ name: "Súng phun sơn áp lực cao", code: "TOOL-S01" }],
+                    children: [
+                      {
+                        id: "OP-01",
+                        name: "Công đoạn: Sơn phủ màu Sear",
+                        type: "OPERATION",
+                        visible: true,
+                        children: [
+                          {
+                            id: "SUB-01",
+                            name: "Bước chuẩn bị bề mặt & thổi khí",
+                            type: "SUB_OPERATION",
+                            operationProps: { stdTime: "4.5s", opType: "Setup (Chuẩn bị)", formula: "CycleTime * 1.0" },
+                            tools: [{ name: "Đầu thổi khí ion", code: "TOOL-A02" }],
+                            materials: [{ materialId: "MAT-02", norm: 1.2, formula: "Time * 0.5" }]
+                          },
+                          {
+                            id: "SUB-02",
+                            name: "Phun lớp sơn màu chính thức",
+                            type: "SUB_OPERATION",
+                            operationProps: { stdTime: "12.0s", opType: "Processing (Gia công)", formula: "CycleTime * 1.2" },
+                            tools: [{ name: "Súng phun tự động", code: "TOOL-S01" }],
+                            materials: [{ materialId: "MAT-02", norm: 2.5, formula: "Area * 0.15" }]
+                          }
+                        ]
+                      },
+                      {
+                        id: "OP-02",
+                        name: "Công đoạn: Sấy nhiệt & Kiểm tra bề mặt",
+                        type: "OPERATION",
+                        visible: true,
+                        children: [
+                          {
+                            id: "SUB-03",
+                            name: "Sấy khô bằng đèn hồng ngoại",
+                            type: "SUB_OPERATION",
+                            operationProps: { stdTime: "25.0s", opType: "Processing", formula: "Temp * 1.1" },
+                            tools: [{ name: "Đèn sấy nhiệt", code: "TOOL-H01" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           }
@@ -262,25 +295,47 @@
         children: [
           {
             id: "BOP-01",
-            name: "Công đoạn 1: Dập và Hàn Khung",
-            description: "Thực hiện dập các tấm thép và hàn robot tự động",
+            name: "Khu vực Sơn & Phủ Màu",
+            description: "Quy trình sơn xe hoàn thiện",
             isCustomProcess: true,
             locked: false,
             expanded: true,
-            children: []
+            children: [
+              {
+                id: "BOP-OP-01",
+                name: "Công đoạn: Sơn phủ màu Sear",
+                isCustomProcess: true,
+                type: "OPERATION",
+                plantName: "PL-005871/aa-PLANT MAIN SHOP",
+                workshopName: "Xưởng Sơn & Hoàn Thiện Xe",
+                workcenterName: "PL-008605/aa-PAINT SHOP WORKCENTER",
+                workcenterPath: "PL-005871/aa-PLANT MAIN SHOP > Xưởng Sơn & Hoàn Thiện Xe",
+                locked: true, // Mặc định khóa khi mới khởi tạo
+                children: [
+                  {
+                    id: "BOP-SUB-01",
+                    name: "Bước chuẩn bị bề mặt & thổi khí",
+                    isCustomProcess: false,
+                    type: "SUB_OPERATION",
+                    operationProps: { stdTime: "4.5s", opType: "Setup (Chuẩn bị)", formula: "CycleTime * 1.0" },
+                    materials: [{ materialId: "MAT-02", norm: 1.2, formula: "Time * 0.5" }],
+                    locked: true
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
     ];
 
-    let selectedBopId = "BOP-01";
+    let selectedBopId = "BOP-OP-01";
     let selectedBorId = "PLANT-01";
     let modalSelectedParentBopId = "BOP-ROOT";
+    let isEditingBop = false;
     let checkedBorIds = new Set();
-    let copiedBorNodes = [];
     let isPanActive = false;
     let showAllRegions = true;
-    let hideMainImage = false;
     let zoomLevel = 1.0, panX = 0, panY = 0;
     let isDragging = false, startX = 0, startY = 0;
 
@@ -308,26 +363,29 @@
       const bgClass = isSelected ? "bg-blue-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
 
       let iconHtml = `<i class="fa-solid fa-sitemap text-blue-400"></i>`;
-      if (!node.isCustomProcess) {
-        if (node.type === 'PLANT') iconHtml = `<i class="fa-solid fa-industry text-emerald-500"></i>`;
-        else if (node.type === 'WORKCENTER') iconHtml = `<i class="fa-solid fa-gear text-amber-500"></i>`;
-        else iconHtml = `<i class="fa-solid fa-desktop text-sky-500"></i>`;
-      }
+      if (node.type === 'OPERATION') iconHtml = `<i class="fa-solid fa-gears text-purple-400"></i>`;
+      else if (node.type === 'SUB_OPERATION') iconHtml = `<i class="fa-solid fa-list-check text-blue-300"></i>`;
 
       let lockIcon = node.locked ? `<i class="fa-solid fa-lock text-rose-500 text-[10px]" title="Đang khóa"></i>` : `<i class="fa-solid fa-lock-open text-slate-400 text-[10px]" title="Đang mở"></i>`;
+
+      let wcBadge = "";
+      if (node.workcenterName) {
+        wcBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono ml-2 truncate max-w-[140px]" title="Workcenter: ${node.workcenterName}">${node.workcenterName}</span>`;
+      }
+      let hoverPathTooltip = node.workcenterPath ? `Đường dẫn: ${node.workcenterPath}` : node.name;
 
       div.innerHTML = `
         <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
              style="padding-left: ${level * 16 + 4}px;"
              onclick="selectBopNode('${node.id}')"
-             oncontextmenu="handleBopContextMenu(event, '${node.id}')"
              ondragover="event.preventDefault()"
              ondrop="dropToBopTree(event, '${node.id}')"
-             title="${node.name}">
+             title="${hoverPathTooltip}">
           <div class="flex items-center gap-1.5 min-w-0 flex-1">
             <button onclick="event.stopPropagation(); toggleLockBopNode('${node.id}')" class="p-0.5" title="Khóa/Mở khóa">${lockIcon}</button>
             ${iconHtml}
             <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+            ${wcBadge}
           </div>
         </div>
       `;
@@ -345,6 +403,7 @@
 
     function selectBopNode(id) {
       selectedBopId = id;
+      isEditingBop = false;
       renderBopTree();
     }
 
@@ -356,7 +415,30 @@
       }
     }
 
-    // --- RENDER CÂY BOR (KÉO THẢ & CHECKBOX) ---
+    function moveBopNodeOrder(dir) {
+      if (selectedBopId === "BOP-ROOT") return;
+      function move(nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+          if (!nodes[i].children) continue;
+          let idx = nodes[i].children.findIndex(c => c.id === selectedBopId);
+          if (idx !== -1) {
+            let target = idx + dir;
+            if (target >= 0 && target < nodes[i].children.length) {
+              let temp = nodes[i].children[idx];
+              nodes[i].children[idx] = nodes[i].children[target];
+              nodes[i].children[target] = temp;
+              return true;
+            }
+          }
+          if (move(nodes[i].children)) return true;
+        }
+        return false;
+      }
+      move(bopData);
+      renderBopTree();
+    }
+
+    // --- RENDER CÂY BOR CÓ CHECKBOX CHO OPERATION ---
     function renderBorTree() {
       const container = document.getElementById("bor-tree-root");
       container.innerHTML = "";
@@ -373,19 +455,28 @@
       const isChecked = checkedBorIds.has(node.id);
       const bgClass = isSelected ? "bg-emerald-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
 
-      let iconHTML = `<i class="fa-solid ${node.type === 'PLANT' ? 'fa-industry text-emerald-500' : (node.type === 'WORKCENTER' ? 'fa-gear text-amber-500' : 'fa-desktop text-sky-500')}"></i>`;
-      if (isSelected) iconHTML = iconHTML.replace(/text-[a-z]+-500/g, "text-white");
+      let iconHTML = `<i class="fa-solid fa-cubes text-slate-400"></i>`;
+      if (node.type === 'PLANT') iconHTML = `<i class="fa-solid fa-industry text-emerald-500"></i>`;
+      else if (node.type === 'WORKSHOP') iconHTML = `<i class="fa-solid fa-building text-indigo-500"></i>`;
+      else if (node.type === 'WORKCENTER') iconHTML = `<i class="fa-solid fa-gear text-amber-500"></i>`;
+      else if (node.type === 'WORKSTATION') iconHTML = `<i class="fa-solid fa-desktop text-sky-500"></i>`;
+      else if (node.type === 'OPERATION') iconHTML = `<i class="fa-solid fa-gears text-purple-500"></i>`;
+      else if (node.type === 'SUB_OPERATION') iconHTML = `<i class="fa-solid fa-list-check text-blue-500"></i>`;
+
+      if (isSelected) iconHTML = iconHTML.replace(/text-[a-z]+-500/g, "text-white").replace(/text-[a-z]+-400/g, "text-white");
+
+      let isOp = (node.type === 'OPERATION');
+      let checkboxHtml = isOp ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBorNode('${node.id}')" class="rounded accent-emerald-600 mr-1" title="Chọn để kéo thả">` : '';
+      let dragAttr = isOp ? `draggable="true" ondragstart="dragOperationNodeStart(event, '${node.id}')"` : '';
 
       div.innerHTML = `
         <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
              style="padding-left: ${level * 16 + 4}px;"
              onclick="selectBorNode('${node.id}')"
-             oncontextmenu="openBorContextMenu(event, '${node.id}')"
-             draggable="true"
-             ondragstart="dragBorNodeStart(event, '${node.id}')"
+             ${dragAttr}
              title="${node.name}">
           <div class="flex items-center gap-1.5 min-w-0 flex-1">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBorNode('${node.id}')" class="rounded accent-emerald-600">
+            ${checkboxHtml}
             ${iconHTML}
             <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
           </div>
@@ -406,120 +497,240 @@
     function selectBorNode(id) {
       selectedBorId = id;
       renderBorTree();
-      drawCanvas();
+      updateBorPropertiesPanel();
+      drawCanvas(); // Cập nhật highlight trên canvas
     }
 
     function toggleCheckBorNode(id) {
       if (checkedBorIds.has(id)) checkedBorIds.delete(id);
       else checkedBorIds.add(id);
+      renderBorTree();
     }
 
-    // --- KÉO THẢ TỪ BOR SANG BOP (ÁP DỤNG QUY TẮC CẤP ĐỘ) ---
-    let draggedBorId = null;
-    function dragBorNodeStart(e, id) {
-      draggedBorId = id;
+    // --- KÉO THẢ OPERATION TỪ BOR SANG BOP (MẶC ĐỊNH KHÓA NHÁNH) ---
+    let draggedOperationId = null;
+    function dragOperationNodeStart(e, id) {
+      draggedOperationId = id;
+      if (!checkedBorIds.has(id)) checkedBorIds.add(id);
+    }
+
+    function findParentNodeInBop(nodes, targetId, parent = null) {
+      for (let n of nodes) {
+        if (n.id === targetId) return parent;
+        if (n.children) {
+          let found = findParentNodeInBop(n.children, targetId, n);
+          if (found) return found;
+        }
+      }
+      return null;
     }
 
     function dropToBopTree(e, targetBopId) {
       e.preventDefault();
-      if (!draggedBorId) return;
+      let targetNode = findBopNodeById(bopData, targetBopId);
+      if (!targetNode) return;
 
-      let sourceNode = findBorNodeById(borData, draggedBorId);
-      if (!sourceNode) return;
-
-      let processedNode = processNodeByLevel(sourceNode);
-      let targetBop = findBopNodeById(bopData, targetBopId);
-      if (targetBop) {
-        if (!targetBop.children) targetBop.children = [];
-        targetBop.children.push(processedNode);
-        renderBopTree();
-        alert("Kéo thả nhánh resource sang BOP thành công!");
+      let actualTargetNode = targetNode;
+      if (targetNode.type === 'SUB_OPERATION' || targetNode.type === 'OPERATION' || (!targetNode.isCustomProcess && targetNode.id !== 'BOP-ROOT')) {
+        let parentNode = findParentNodeInBop(bopData, targetBopId);
+        if (parentNode) {
+          if (parentNode.type === 'OPERATION') {
+            let grandParent = findParentNodeInBop(bopData, parentNode.id);
+            if (grandParent) actualTargetNode = grandParent;
+          } else {
+            actualTargetNode = parentNode;
+          }
+        }
       }
-      draggedBorId = null;
+
+      let opIdsToDrop = checkedBorIds.size > 0 ? Array.from(checkedBorIds) : (draggedOperationId ? [draggedOperationId] : []);
+      if (opIdsToDrop.length === 0) return;
+
+      opIdsToDrop.forEach(opId => {
+        let opNode = findBorNodeById(borData, opId);
+        if (!opNode || opNode.type !== 'OPERATION') return;
+
+        let parentsInfo = findBorParentsInfo(borData, opId);
+        let clonedOp = JSON.parse(JSON.stringify(opNode));
+        
+        // Mặc định khóa (locked = true) cho operation mới kéo sang
+        clonedOp.locked = true;
+        clonedOp.isCustomProcess = true;
+        clonedOp.type = 'OPERATION';
+        clonedOp.plantName = parentsInfo.plant ? parentsInfo.plant.name : "";
+        clonedOp.workshopName = parentsInfo.workshop ? parentsInfo.workshop.name : "";
+        clonedOp.workcenterName = parentsInfo.workcenter ? parentsInfo.workcenter.name : "N/A";
+        clonedOp.workcenterPath = `${parentsInfo.plant ? parentsInfo.plant.name : ''} > ${parentsInfo.workshop ? parentsInfo.workshop.name : ''}`;
+
+        // Đệ quy khóa luôn các sub-operation bên trong để bảo vệ dữ liệu
+        function lockSubNodes(subNode) {
+          subNode.locked = true;
+          if (subNode.children) subNode.children.forEach(lockSubNodes);
+        }
+        if (clonedOp.children) clonedOp.children.forEach(lockSubNodes);
+
+        if (!actualTargetNode.children) actualTargetNode.children = [];
+        actualTargetNode.children.push(clonedOp);
+      });
+
+      checkedBorIds.clear();
+      draggedOperationId = null;
+      renderBopTree();
+      renderBorTree();
+      alert("Đã chèn Operation vào nhánh Process thành công (mặc định ở trạng thái Khóa)!");
     }
 
-    function processNodeByLevel(node) {
-      // Mặc định khóa toàn bộ nhánh kéo/copy từ BOR sang BOP
-      let cloned = JSON.parse(JSON.stringify(node));
-      cloned.locked = true; // Mặc định khóa
+    function findBorParentsInfo(nodes, targetId, plant = null, workshop = null, workcenter = null) {
+      for (let n of nodes) {
+        let p = plant, ws = workshop, wc = workcenter;
+        if (n.type === 'PLANT') p = n;
+        if (n.type === 'WORKSHOP') ws = n;
+        if (n.type === 'WORKCENTER') wc = n;
 
-      if (cloned.type === 'PLANT' || cloned.type === 'WORKSHOP') {
-        cloned.children = []; // Chỉ giữ lại đúng 1 dòng, bỏ các nhánh con
-      } else if (cloned.type === 'WORKCENTER') {
-        // Giữ nguyên các dòng con bên trong
+        if (n.id === targetId) return { plant: p, workshop: ws, workcenter: wc };
+        if (n.children) {
+          let res = findBorParentsInfo(n.children, targetId, p, ws, wc);
+          if (res) return res;
+        }
       }
-      return cloned;
+      return null;
     }
 
-    // --- QUẢN LÝ PROPERTIES & DETAILS (CHỈ XEM NẾU KHÓA) ---
+    // --- QUẢN LÝ PROPERTY & DETAILS (BOP) ---
     function updateBopPropertiesPanel() {
       const panel = document.getElementById("bop-prop-panel-details");
       const node = findBopNodeById(bopData, selectedBopId);
       if (!node) {
-        panel.innerHTML = `<p class="text-slate-400 italic">Chưa chọn nhánh BOP nào...</p>`;
+        panel.innerHTML = `<p class="text-slate-400 italic">Chọn một nhánh BOP để xem thông tin...</p>`;
         return;
       }
 
-      let lockStatusBadge = node.locked ? `<span class="text-rose-500 font-bold"><i class="fa-solid fa-lock"></i> Đã khóa (Chỉ xem)</span>` : `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-lock-open"></i> Đang mở</span>`;
+      let lockBadge = node.locked ? `<span class="text-rose-500 font-bold"><i class="fa-solid fa-lock"></i> Đã khóa</span>` : `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-lock-open"></i> Đang mở</span>`;
+      let editBtnHtml = (!node.locked) ? `<button onclick="toggleEditBopMode()" class="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] font-semibold flex items-center gap-1 shadow"><i class="fa-solid fa-pen"></i> ${isEditingBop ? 'Lưu' : 'Edit'}</button>` : '';
 
-      if (node.isCustomProcess) {
-        if (node.locked) {
-          panel.innerHTML = `
-            <div class="space-y-2">
-              <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatusBadge}</div>
-              <div><b>Tên Process:</b> <span class="text-blue-700 font-semibold">${node.name}</span></div>
-              <div><b>Mô tả:</b> <span class="text-slate-600">${node.description || 'Không có mô tả'}</span></div>
-              <p class="text-[10px] text-amber-600 italic">🔒 Nhánh này đang bị khóa, không thể chỉnh sửa.</p>
+      if (isEditingBop && !node.locked) {
+        let materialsHtml = (node.materials || []).map((m, idx) => {
+          let options = availableMaterialCatalog.map(mat => `<option value="${mat.id}" ${mat.id === m.materialId ? 'selected' : ''}>${mat.name} (${mat.unit})</option>`).join('');
+          return `
+            <div class="flex items-center gap-1.5 bg-white p-1.5 border border-indigo-200 rounded mb-1.5" id="mat-row-${idx}">
+              <select onchange="updateBopMaterialItem(${idx}, 'materialId', this.value)" class="text-xs p-1 bg-slate-50 border border-slate-300 rounded flex-1">${options}</select>
+              <input type="number" step="0.1" value="${m.norm}" oninput="updateBopMaterialItem(${idx}, 'norm', this.value)" class="w-16 text-xs p-1 border border-slate-300 rounded font-bold text-emerald-700" placeholder="Định mức">
+              <input type="text" value="${m.formula}" oninput="updateBopMaterialItem(${idx}, 'formula', this.value)" class="w-28 text-xs p-1 border border-slate-300 rounded font-mono" placeholder="Công thức">
+              <button onclick="removeBopMaterialRow(${idx})" class="p-1 bg-rose-100 text-rose-600 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
             </div>
           `;
-        } else {
-          panel.innerHTML = `
-            <div class="space-y-2">
-              <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockStatusBadge}</div>
-              <div>
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Tên Process:</label>
-                <input type="text" id="edit-bop-name" value="${node.name}" oninput="updateBopNameLive(this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded font-semibold text-blue-700 outline-none">
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Mô tả quy trình:</label>
-                <textarea id="edit-bop-desc" rows="2" oninput="updateBopDescLive(this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none">${node.description || ''}</textarea>
+        }).join('');
+
+        let addMaterialBtn = (node.type === 'SUB_OPERATION') ? `
+          <div class="p-2 bg-indigo-50 border border-indigo-200 rounded space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-indigo-900"><i class="fa-solid fa-boxes-stacked"></i> Định mức vật tư sử dụng:</span>
+              <button onclick="addBopMaterialRow()" class="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-semibold"><i class="fa-solid fa-plus"></i> Thêm vật tư</button>
+            </div>
+            <div id="bop-materials-container" class="space-y-1">${materialsHtml}</div>
+          </div>
+        ` : '';
+
+        panel.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockBadge} ${editBtnHtml}</div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Tên:</label>
+              <input type="text" id="form-bop-name" value="${node.name}" class="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold text-blue-700">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Mô tả:</label>
+              <textarea id="form-bop-desc" rows="2" class="w-full text-xs p-1.5 border border-slate-300 rounded">${node.description || ''}</textarea>
+            </div>
+            ${addMaterialBtn}
+            <button onclick="saveBopEditForm()" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow">Lưu thay đổi</button>
+          </div>
+        `;
+      } else {
+        let mats = (node.materials || []).map(m => {
+          let matObj = availableMaterialCatalog.find(x => x.id === m.materialId);
+          return `<div class="flex justify-between bg-indigo-50/70 px-2.5 py-1.5 rounded text-xs mb-1 border border-indigo-200 shadow-sm">
+            <span class="font-bold text-slate-800">${matObj ? matObj.name : m.materialId}</span>
+            <span class="font-mono text-indigo-700 font-bold">Định mức: ${m.norm} | CT: ${m.formula}</span>
+          </div>`;
+        }).join('');
+
+        let opPropsHtml = "";
+        if (node.type === "SUB_OPERATION" && node.operationProps) {
+          let op = node.operationProps;
+          opPropsHtml = `
+            <div class="mt-2 pt-2 border-t border-slate-200">
+              <b class="text-slate-800 block mb-1 flex items-center gap-1"><i class="fa-solid fa-gears text-indigo-600"></i> Thuộc tính Sub Operation:</b>
+              <div class="bg-indigo-50 border border-indigo-200 p-2 rounded space-y-1 text-xs">
+                <div><b class="text-slate-700">Standard Time:</b> <span class="text-indigo-700 font-bold">${op.stdTime || 'N/A'}</span></div>
+                <div><b class="text-slate-700">Operation Type:</b> <span class="text-indigo-700 font-semibold">${op.opType || 'N/A'}</span></div>
+                <div><b class="text-slate-700">Formula:</b> <span class="font-mono text-slate-700">${op.formula || 'N/A'}</span></div>
               </div>
             </div>
           `;
         }
-      } else {
-        let resHtml = "";
-        if (node.resourcesList) {
-          resHtml = node.resourcesList.map(r => `
-            <div class="flex items-center justify-between bg-purple-50 border border-purple-200 px-2 py-1 rounded text-xs mb-1">
-              <span><i class="fa-solid fa-robot text-sky-600 mr-1"></i> ${r.name} <span class="text-[10px] text-slate-500">(${r.type})</span></span>
-              <span class="font-bold bg-white px-1.5 py-0.5 border border-purple-200 rounded text-purple-700">SL: ${r.quantity}</span>
+
+        let plantWorkshopInfo = "";
+        if (node.plantName || node.workshopName || node.workcenterName) {
+          plantWorkshopInfo = `
+            <div class="mt-2 pt-2 border-t border-slate-200 space-y-1 text-xs text-slate-700">
+              ${node.plantName ? `<div><b>Plant:</b> ${node.plantName}</div>` : ''}
+              ${node.workshopName ? `<div><b>Workshop:</b> ${node.workshopName}</div>` : ''}
+              ${node.workcenterName ? `<div><b>Workcenter:</b> <span class="text-amber-700 font-mono font-bold">${node.workcenterName}</span></div>` : ''}
             </div>
-          `).join('');
+          `;
         }
 
         panel.innerHTML = `
-          <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200 mb-1"><span>Trạng thái:</span> ${lockStatusBadge}</div>
-          <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
-            <div><b>Node ID:</b> ${node.id}</div>
-            <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded">${node.type}</span></div>
-            <div class="col-span-2"><b>Tên:</b> ${node.name}</div>
-            <div><b>Tọa độ:</b> X=${node.x}, Y=${node.y}</div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-[10px] pb-1 border-b border-slate-200"><span>Trạng thái:</span> ${lockBadge} ${editBtnHtml}</div>
+            <div><b>Tên:</b> <span class="text-blue-700 font-semibold">${node.name}</span></div>
+            <div><b>Mô tả:</b> <span class="text-slate-600">${node.description || 'Không có mô tả'}</span></div>
+            ${plantWorkshopInfo}
+            ${mats ? `<div class="mt-2"><b class="text-slate-800 text-[11px] block mb-1">Vật tư sử dụng:</b>${mats}</div>` : ''}
+            ${opPropsHtml}
           </div>
-          ${resHtml ? `<div class="mt-2 pt-1 border-t border-slate-200"><b class="text-slate-800 text-[11px]">Nguồn lực:</b>${resHtml}</div>` : ''}
-          <p class="text-[10px] text-amber-600 italic mt-1">🔒 Nhánh Resource kế thừa từ BOR luôn ở chế độ chỉ xem.</p>
         `;
       }
     }
 
-    function updateBopNameLive(val) {
-      let node = findBopNodeById(bopData, selectedBopId);
-      if (node && !node.locked) { node.name = val; renderBopTree(); }
+    function toggleEditBopMode() {
+      isEditingBop = !isEditingBop;
+      updateBopPropertiesPanel();
     }
 
-    function updateBopDescLive(val) {
+    function addBopMaterialRow() {
       let node = findBopNodeById(bopData, selectedBopId);
-      if (node && !node.locked) { node.description = val; }
+      if (!node.materials) node.materials = [];
+      node.materials.push({ materialId: availableMaterialCatalog[0].id, norm: 1.0, formula: "Time * 1.0" });
+      updateBopPropertiesPanel();
+    }
+
+    function updateBopMaterialItem(idx, field, val) {
+      let node = findBopNodeById(bopData, selectedBopId);
+      if (node && node.materials && node.materials[idx]) {
+        if (field === 'norm') node.materials[idx].norm = parseFloat(val) || 0;
+        else node.materials[idx][field] = val;
+      }
+    }
+
+    function removeBopMaterialRow(idx) {
+      let node = findBopNodeById(bopData, selectedBopId);
+      if (node && node.materials) {
+        node.materials.splice(idx, 1);
+        updateBopPropertiesPanel();
+      }
+    }
+
+    function saveBopEditForm() {
+      let node = findBopNodeById(bopData, selectedBopId);
+      if (node) {
+        node.name = document.getElementById("form-bop-name").value.trim();
+        node.description = document.getElementById("form-bop-desc").value.trim();
+        isEditingBop = false;
+        renderBopTree();
+        alert("Đã lưu thông tin thành công!");
+      }
     }
 
     function toggleBopPropPanel() {
@@ -534,71 +745,90 @@
       }
     }
 
+    // --- PROPERTY PANEL BOR ---
     function updateBorPropertiesPanel() {
       const panel = document.getElementById("bor-prop-panel-details");
       const node = findBorNodeById(borData, selectedBorId);
       if (!node) { panel.innerHTML = `<p class="text-slate-400 italic">Chọn node BOR để xem...</p>`; return; }
 
-      let resHtml = "";
-      if (node.resourcesList) {
-        resHtml = node.resourcesList.map(r => `
-          <div class="flex items-center justify-between bg-purple-50 border border-purple-200 px-2 py-1 rounded text-xs mb-1">
-            <span><i class="fa-solid fa-robot text-sky-600 mr-1"></i> ${r.name} <span class="text-[10px] text-slate-500">(${r.type})</span></span>
-            <span class="font-bold bg-white px-1.5 py-0.5 border border-purple-200 rounded text-purple-700">SL: ${r.quantity}</span>
+      if (node.type === "WORKSTATION") {
+        let resRows = (node.resourcesList || []).map(r => `
+          <div class="flex items-center justify-between bg-purple-50 border border-purple-200 px-2.5 py-1.5 rounded text-xs mb-1">
+            <span class="font-medium text-purple-900">
+              <i class="fa-solid ${r.type === 'HUMAN' ? 'fa-user text-amber-600' : 'fa-robot text-sky-600'} mr-1.5"></i> 
+              ${r.name} <span class="text-[10px] text-slate-500">(${r.type === 'HUMAN' ? 'Người' : 'Máy'})</span>
+            </span>
+            <span class="text-[10px] font-bold bg-white px-1.5 py-0.5 border border-purple-200 rounded text-purple-700">SL: ${r.quantity || 1}</span>
           </div>
         `).join('');
+
+        let toolRows = (node.tools || []).map(t => `
+          <div class="flex items-center justify-between bg-sky-50 border border-sky-200 px-2.5 py-1.5 rounded text-xs mb-1">
+            <span class="font-medium text-sky-900"><i class="fa-solid fa-wrench text-sky-600 mr-1.5"></i> ${t.name}</span>
+            <span class="text-[10px] font-mono bg-white px-1.5 py-0.5 border border-sky-200 rounded text-sky-700">${t.code || 'N/A'}</span>
+          </div>
+        `).join('');
+
+        panel.innerHTML = `
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px] mb-2 pb-2 border-b border-slate-200">
+            <div><b>Node ID:</b> ${node.id}</div>
+            <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded font-mono text-[10px]">${node.type}</span></div>
+            <div class="col-span-2"><b>Tên:</b> ${node.name}</div>
+          </div>
+          ${resRows ? `<div class="mb-2"><b class="text-slate-800 text-[11px] block mb-1">Nguồn lực:</b>${resRows}</div>` : ''}
+          ${toolRows ? `<div><b class="text-slate-800 text-[11px] block mb-1">Tools:</b>${toolRows}</div>` : ''}
+        `;
+        return;
+      }
+
+      if (node.type === "SUB_OPERATION") {
+        let opPropsHtml = "";
+        if (node.operationProps) {
+          let op = node.operationProps;
+          opPropsHtml = `
+            <div class="mt-2 pt-2 border-t border-slate-200">
+              <b class="text-slate-800 block mb-1 flex items-center gap-1"><i class="fa-solid fa-gears text-indigo-600"></i> Thuộc tính Sub Operation:</b>
+              <div class="bg-indigo-50 border border-indigo-200 p-2 rounded space-y-1 text-xs">
+                <div><b class="text-slate-700">Standard Time:</b> <span class="text-indigo-700 font-bold">${op.stdTime || 'N/A'}</span></div>
+                <div><b class="text-slate-700">Operation Type:</b> <span class="text-indigo-700 font-semibold">${op.opType || 'N/A'}</span></div>
+                <div><b class="text-slate-700">Formula:</b> <span class="font-mono text-slate-700">${op.formula || 'N/A'}</span></div>
+              </div>
+            </div>
+          `;
+        }
+
+        panel.innerHTML = `
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px] mb-2 pb-2 border-b border-slate-200">
+            <div><b>Node ID:</b> ${node.id}</div>
+            <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded font-mono text-[10px]">${node.type}</span></div>
+            <div class="col-span-2"><b>Tên:</b> ${node.name}</div>
+          </div>
+          ${opPropsHtml}
+        `;
+        return;
+      }
+
+      if (node.type === "OPERATION") {
+        panel.innerHTML = `
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
+            <div><b>Node ID:</b> ${node.id}</div>
+            <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded font-mono text-[10px]">${node.type}</span></div>
+            <div class="col-span-2 mt-1"><b>Tên công đoạn:</b> <span class="text-purple-700 font-bold">${node.name}</span></div>
+          </div>
+        `;
+        return;
       }
 
       panel.innerHTML = `
         <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-600 text-[11px]">
           <div><b>Node ID:</b> ${node.id}</div>
-          <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded">${node.type}</span></div>
+          <div><b>Type:</b> <span class="bg-blue-100 text-blue-800 px-1 rounded font-mono text-[10px]">${node.type}</span></div>
           <div class="col-span-2"><b>Tên:</b> ${node.name}</div>
-          <div><b>Tọa độ:</b> X=${node.x}, Y=${node.y}</div>
         </div>
-        ${resHtml ? `<div class="mt-2 pt-1 border-t border-slate-200"><b class="text-slate-800 text-[11px]">Nguồn lực (${node.resourcesList.length}):</b>${resHtml}</div>` : ''}
       `;
     }
 
-    // --- COPY & PASTE ---
-    function openBorContextMenu(e, id) {
-      e.preventDefault();
-      selectedBorId = id;
-      if (!checkedBorIds.has(id)) checkedBorIds.add(id);
-      renderBorTree();
-      const menu = document.getElementById("bor-context-menu");
-      menu.style.left = `${e.clientX}px`;
-      menu.style.top = `${e.clientY}px`;
-      menu.classList.remove("hidden");
-      window.addEventListener("click", () => menu.classList.add("hidden"), { once: true });
-    }
-
-    function copySelectedBorNodes() {
-      copiedBorNodes = [];
-      checkedBorIds.forEach(borId => {
-        let node = findBorNodeById(borData, borId);
-        if (node) copiedBorNodes.push(processNodeByLevel(node));
-      });
-      alert(`Đã copy ${copiedBorNodes.length} nhánh resource! Hãy click vào nhánh BOP để dán (Paste).`);
-    }
-
-    function handleBopContextMenu(e, bopId) {
-      e.preventDefault();
-      if (copiedBorNodes.length === 0) return;
-      selectBopNode(bopId);
-
-      if (confirm(`Dán ${copiedBorNodes.length} nhánh resource đã chọn vào nhánh BOP này?`)) {
-        let parentBop = findBopNodeById(bopData, bopId);
-        if (parentBop) {
-          if (!parentBop.children) parentBop.children = [];
-          copiedBorNodes.forEach(n => parentBop.children.push(n));
-          renderBopTree();
-          alert("Dán thành công vào cây BOP!");
-        }
-      }
-    }
-
-    // --- MODAL THÊM BOP (TREEVIEW CHỌN NHÁNH CHA TRỰC QUAN CÓ ICON) ---
+    // --- MODAL THÊM BOP ---
     function openAddBopModal() {
       renderModalParentTreeView();
       document.getElementById("input-bop-name").value = "";
@@ -612,7 +842,7 @@
 
       function renderNode(node, level) {
         const isSelected = modalSelectedParentBopId === node.id;
-        let icon = node.isCustomProcess ? `<i class="fa-solid fa-sitemap text-blue-400 mr-1"></i>` : `<i class="fa-solid fa-desktop text-sky-500 mr-1"></i>`;
+        let icon = node.isCustomProcess ? `<i class="fa-solid fa-sitemap text-blue-400 mr-1"></i>` : `<i class="fa-solid fa-gears text-purple-400 mr-1"></i>`;
         
         const div = document.createElement("div");
         div.className = `p-1 rounded cursor-pointer text-xs flex items-center ${isSelected ? 'bg-blue-600 text-white font-bold' : 'hover:bg-blue-50 text-slate-700'}`;
@@ -625,9 +855,7 @@
         };
         container.appendChild(div);
 
-        if (node.children) {
-          node.children.forEach(c => renderNode(c, level + 1));
-        }
+        if (node.children) node.children.forEach(c => renderNode(c, level + 1));
       }
       bopData.forEach(n => renderNode(n, 0));
     }
@@ -639,7 +867,6 @@
     function saveBopModal() {
       const name = document.getElementById("input-bop-name").value.trim();
       const desc = document.getElementById("input-bop-desc").value.trim();
-
       if (!name) { alert("Vui lòng nhập tên quy trình!"); return; }
 
       let parentNode = findBopNodeById(bopData, modalSelectedParentBopId);
@@ -676,28 +903,6 @@
       renderBopTree();
     }
 
-    function moveBopNodeOrder(dir) {
-      if (selectedBopId === "BOP-ROOT") return;
-      function move(nodes) {
-        for (let i = 0; i < nodes.length; i++) {
-          let idx = nodes[i].children.findIndex(c => c.id === selectedBopId);
-          if (idx !== -1) {
-            let target = idx + dir;
-            if (target >= 0 && target < nodes[i].children.length) {
-              let temp = nodes[i].children[idx];
-              nodes[i].children[idx] = nodes[i].children[target];
-              nodes[i].children[target] = temp;
-              return true;
-            }
-          }
-          if (nodes[i].children && move(nodes[i].children)) return true;
-        }
-        return false;
-      }
-      move(bopData);
-      renderBopTree();
-    }
-
     function findBopNodeById(nodes, id) {
       for (let n of nodes) {
         if (n.id === id) return n;
@@ -714,7 +919,7 @@
       return null;
     }
 
-    // --- CANVAS & VIEWPORT ---
+    // --- CANVAS & VIEWPORT (HIGHLIGHT KHI CLICK BOR) ---
     let canvas, ctx;
     function initCanvas() {
       canvas = document.getElementById("factory-canvas");
@@ -757,11 +962,6 @@
       drawCanvas();
     }
 
-    function toggleHideMainImage() {
-      hideMainImage = !hideMainImage;
-      drawCanvas();
-    }
-
     function resetZoomLayout() {
       zoomLevel = 1.0; panX = 0; panY = 0;
       drawCanvas();
@@ -779,13 +979,14 @@
           if (showAllRegions && n.x !== undefined) {
             const isSelected = n.id === selectedBorId;
             ctx.save();
-            ctx.strokeStyle = isSelected ? "#3b82f6" : "#64748b";
-            ctx.lineWidth = isSelected ? 3 : 1.5;
-            ctx.fillStyle = isSelected ? "rgba(59, 130, 246, 0.25)" : "rgba(30, 41, 59, 0.4)";
+            // Highlight màu vàng sáng nếu node đang được chọn ở cây BOR, ngược lại màu mặc định
+            ctx.strokeStyle = isSelected ? "#38bdf8" : "#64748b";
+            ctx.lineWidth = isSelected ? 3.5 : 1.5;
+            ctx.fillStyle = isSelected ? "rgba(56, 189, 248, 0.25)" : "rgba(30, 41, 59, 0.4)";
             ctx.strokeRect(n.x, n.y, n.w, n.h);
             ctx.fillRect(n.x, n.y, n.w, n.h);
-            ctx.fillStyle = "#cbd5e1";
-            ctx.font = "bold 11px sans-serif";
+            ctx.fillStyle = isSelected ? "#38bdf8" : "#cbd5e1";
+            ctx.font = isSelected ? "bold 12px sans-serif" : "bold 11px sans-serif";
             ctx.fillText(n.name, n.x + 8, n.y + 18);
             ctx.restore();
           }

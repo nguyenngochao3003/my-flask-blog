@@ -295,13 +295,22 @@
           <div class="border border-slate-200 rounded max-h-[110px] overflow-auto p-2 bg-slate-50 text-xs border-l border-dashed border-slate-300" id="parent-tree-select-container"></div>
         </div>
 
+        <!-- PHẦN LỰA CHỌN TYPE (XUẤT HIỆN KHI CHA LÀ WORKCENTER) -->
+        <div id="node-type-selector-wrapper" class="hidden p-3 bg-blue-50 border border-blue-200 rounded">
+          <label class="block text-xs font-bold text-blue-900 mb-1">Chọn loại (Type) khởi tạo dưới Workcenter:</label>
+          <select id="input-sub-type-choice" onchange="updateModalFormFieldsBasedOnParentAndType()" class="w-full text-xs p-2 bg-white border border-blue-300 rounded font-semibold text-blue-800 outline-none">
+            <option value="WORKSTATION">WORKSTATION (Trạm làm việc)</option>
+            <option value="OPERATION">OPERATION (Công đoạn)</option>
+          </select>
+        </div>
+
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Tên Resource (Name):</label>
           <input type="text" id="input-node-name" class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nhập tên...">
         </div>
 
-        <!-- PHẦN QUẢN LÝ NHIỀU NGUỒN LỰC (MÁY / NGƯỜI) -->
-        <div class="p-3 bg-purple-50 border border-purple-200 rounded space-y-2">
+        <!-- PHẦN QUẢN LÝ NHIỀU NGUỒN LỰC (CHỈ HIỆN KHI TYPE LÀ WORKSTATION) -->
+        <div id="resources-input-wrapper" class="p-3 bg-purple-50 border border-purple-200 rounded space-y-2 hidden">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
               <i class="fa-solid fa-users-gear text-purple-600"></i> Danh sách Nguồn lực (Máy & Người vận hành):
@@ -313,8 +322,8 @@
           <div id="resources-input-container" class="space-y-2 max-h-[120px] overflow-auto pr-1"></div>
         </div>
 
-        <!-- PHẦN DỤNG CỤ (TOOLS) -->
-        <div class="p-3 bg-sky-50 border border-sky-200 rounded space-y-2">
+        <!-- PHẦN DỤNG CỤ TOOLS (HIỆN KHI LÀ WORKSTATION HOẶC SUB_OPERATION) -->
+        <div id="tools-input-wrapper" class="p-3 bg-sky-50 border border-sky-200 rounded space-y-2 hidden">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-sky-900 flex items-center gap-1.5">
               <i class="fa-solid fa-toolbox text-sky-600"></i> Danh sách Dụng cụ / Công cụ (Tools):
@@ -326,14 +335,14 @@
           <div id="tools-input-container" class="space-y-2 max-h-[100px] overflow-auto pr-1"></div>
         </div>
 
-        <!-- THUỘC TÍNH OPERATION / TASK -->
-        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded space-y-2.5">
+        <!-- THUỘC TÍNH THỜI GIAN VÀ CÔNG THỨC (CHỈ HIỆN KHI LÀ SUB_OPERATION) -->
+        <div id="operation-props-wrapper" class="p-3 bg-indigo-50 border border-indigo-200 rounded space-y-2.5 hidden">
           <div class="flex items-center gap-1.5 text-indigo-900 font-bold text-xs">
-            <i class="fa-solid fa-gears text-indigo-600"></i> Thuộc tính Operation / Task:
+            <i class="fa-solid fa-gears text-indigo-600"></i> Thuộc tính Sub Operation / Task:
           </div>
           <div class="grid grid-cols-2 gap-2.5">
             <div>
-              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Standard Time:</label>
+              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Standard Time (Thời gian chuẩn):</label>
               <input type="text" id="input-op-time" placeholder="VD: 5.0s" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-semibold text-indigo-700">
             </div>
             <div>
@@ -407,6 +416,7 @@
       "Kỹ thuật viên bảo trì"
     ];
 
+    // DỮ LIỆU CÂY MẪU CHUẨN 6 CẤP
     let borData = [
       {
         id: "PLANT-01",
@@ -419,66 +429,105 @@
         cadX: null, cadY: null, cadW: null, cadH: null,
         hasCadRegion: false,
         visible: true,
-        resourcesList: [{ type: "MACHINE", name: "Khuôn dập thủy lực 200T", quantity: 1 }],
-        tools: [],
-        operationProps: { stdTime: "10.0s", opType: "Setup (Chuẩn bị)", formula: "CycleTime * 1.0" },
+        resourcesList: [], tools: [], operationProps: null,
         children: [
           {
-            id: "WC-101",
-            name: "PL-008605/aa-UNDERBODY WORKCENTER",
-            type: "WORKCENTER",
+            id: "WS-SHOP-01",
+            name: "WS-01: Phân xưởng Hàn & Lắp Ráp",
+            type: "WORKSHOP",
             locked: false,
             expanded: true,
-            x: 70, y: 80, w: 220, h: 260,
+            x: 50, y: 60, w: 500, h: 300,
             hasMainRegion: true,
-            cadX: null, cadY: null, cadW: null, cadH: null,
-            hasCadRegion: false,
             visible: true,
-            resourcesList: [{ type: "MACHINE", name: "Băng tải tự động PVC", quantity: 1 }],
-            tools: [{ name: "Khuôn dập chính", code: "TOOL-M01" }],
-            operationProps: { stdTime: "8.0s", opType: "Processing (Gia công/Thực hiện)", formula: "CycleTime * 1.0" },
+            resourcesList: [], tools: [], operationProps: null,
             children: [
               {
-                id: "WS-101",
-                name: "WS-WELDING ROBOT CELL #1",
-                type: "WORKSTATION",
+                id: "WC-101",
+                name: "WC-101: Khu vực gia công gầm xe",
+                type: "WORKCENTER",
                 locked: false,
                 expanded: true,
-                x: 90, y: 110, w: 180, h: 50,
+                x: 70, y: 80, w: 220, h: 260,
                 hasMainRegion: true,
-                cadX: null, cadY: null, cadW: null, cadH: null,
-                hasCadRegion: false,
                 visible: true,
-                resourcesList: [
-                  { type: "MACHINE", name: "Robot hàn tự động Panasonic", quantity: 2 },
-                  { type: "HUMAN", name: "Thợ vận hành máy bậc 3/7", quantity: 1 }
-                ],
-                tools: [
-                  { name: "Đồ gá hàn khung xe", code: "JIG-01" },
-                  { name: "Kẹp phôi tự động", code: "CLAMP-05" }
-                ],
-                operationProps: { stdTime: "5.0s", opType: "Processing (Gia công/Thực hiện)", formula: "CycleTime * 1.0" },
-                children: []
-              },
-              {
-                id: "WS-102",
-                name: "WS-ASSEMBLY STATION #2",
-                type: "WORKSTATION",
-                locked: false,
-                expanded: true,
-                x: 100, y: 220, w: 180, h: 50,
-                hasMainRegion: true,
-                cadX: null, cadY: null, cadW: null, cadH: null,
-                hasCadRegion: false,
-                visible: true,
-                resourcesList: [
-                  { type: "HUMAN", name: "Công nhân kiểm tra KCS", quantity: 4 }
-                ],
-                tools: [
-                  { name: "Súng siết lực điện tử", code: "TOOL-T02" }
-                ],
-                operationProps: { stdTime: "3.5s", opType: "Inspection (Kiểm tra KCS)", formula: "CycleTime * 1.0" },
-                children: []
+                resourcesList: [], tools: [], operationProps: null,
+                children: [
+                  {
+                    id: "WS-101",
+                    name: "WS-WELDING ROBOT CELL #1",
+                    type: "WORKSTATION",
+                    locked: false,
+                    expanded: true,
+                    x: 90, y: 110, w: 180, h: 50,
+                    hasMainRegion: true,
+                    visible: true,
+                    resourcesList: [
+                      { type: "MACHINE", name: "Robot hàn tự động Panasonic", quantity: 2 },
+                      { type: "HUMAN", name: "Thợ vận hành máy bậc 3/7", quantity: 1 }
+                    ],
+                    tools: [
+                      { name: "Đồ gá hàn khung xe", code: "JIG-01" }
+                    ],
+                    operationProps: null,
+                    children: [
+                      {
+                        id: "OP-WS-01",
+                        name: "OP-01: Định vị & Kẹp giữ phôi",
+                        type: "OPERATION",
+                        locked: false,
+                        expanded: true,
+                        x: 95, y: 120, w: 170, h: 40,
+                        hasMainRegion: false,
+                        visible: true,
+                        resourcesList: [], tools: [], operationProps: null,
+                        children: [
+                          {
+                            id: "SUB-WS-01",
+                            name: "SubOp: Siết chốt thủy lực",
+                            type: "SUB_OPERATION",
+                            locked: false,
+                            expanded: true,
+                            x: 100, y: 130, w: 160, h: 30,
+                            hasMainRegion: false,
+                            visible: true,
+                            resourcesList: [],
+                            tools: [{ name: "Súng siết lực", code: "TOOL-T01" }],
+                            operationProps: { stdTime: "2.5s", opType: "Setup (Chuẩn bị)", formula: "CycleTime * 1.0" },
+                            children: []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    id: "OP-101",
+                    name: "OP-MAIN ASSEMBLY PROCESS",
+                    type: "OPERATION",
+                    locked: false,
+                    expanded: true,
+                    x: 100, y: 180, w: 180, h: 50,
+                    hasMainRegion: true,
+                    visible: true,
+                    resourcesList: [], tools: [], operationProps: null,
+                    children: [
+                      {
+                        id: "SUB-02",
+                        name: "SubOp: Hàn chấm gia cố khung",
+                        type: "SUB_OPERATION",
+                        locked: false,
+                        expanded: true,
+                        x: 105, y: 190, w: 160, h: 30,
+                        hasMainRegion: false,
+                        visible: true,
+                        resourcesList: [],
+                        tools: [{ name: "Kẹp phôi tự động", code: "CLAMP-05" }],
+                        operationProps: { stdTime: "3.5s", opType: "Processing (Gia công/Thực hiện)", formula: "CycleTime * 1.2" },
+                        children: []
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           }
@@ -529,10 +578,12 @@
     function getNodeIconHTML(type, isSelected = false) {
       let iconHTML = "";
       if (type === "PLANT") iconHTML = `<i class="fa-solid fa-industry text-emerald-500"></i>`;
+      else if (type === "WORKSHOP") iconHTML = `<i class="fa-solid fa-building text-indigo-500"></i>`;
       else if (type === "WORKCENTER") iconHTML = `<i class="fa-solid fa-gear text-amber-500"></i>`;
       else if (type === "WORKSTATION") iconHTML = `<i class="fa-solid fa-desktop text-sky-500"></i>`;
       else if (type === "OPERATION") iconHTML = `<i class="fa-solid fa-gears text-purple-500"></i>`;
-      else iconHTML = `<i class="fa-solid fa-list-check text-blue-500"></i>`;
+      else if (type === "SUB_OPERATION") iconHTML = `<i class="fa-solid fa-list-check text-blue-500"></i>`;
+      else iconHTML = `<i class="fa-solid fa-cubes text-slate-400"></i>`;
 
       if (isSelected) iconHTML = iconHTML.replace(/text-[a-z]+-500/g, "text-white");
       return iconHTML;
@@ -560,16 +611,6 @@
         }
       }
       return null;
-    }
-
-    function determineNodeType(parentId) {
-      if (!parentId) return "PLANT";
-      let parent = findNodeById(borData, parentId);
-      if (!parent) return "WORKSTATION";
-      if (parent.type === "PLANT") return "WORKCENTER";
-      if (parent.type === "WORKCENTER") return "WORKSTATION";
-      if (parent.type === "WORKSTATION") return "OPERATION";
-      return "TASK";
     }
 
     function isDescendant(node, targetId) {
@@ -727,7 +768,7 @@
       let visBadge = node.visible !== false ? '<span class="text-emerald-600 font-bold">Hiện (Visible)</span>' : '<span class="text-rose-500 font-bold">Ẩn (Hidden)</span>';
 
       let resourcesHtml = "";
-      if (node.resourcesList && node.resourcesList.length > 0) {
+      if (node.type === "WORKSTATION" && node.resourcesList && node.resourcesList.length > 0) {
         let resRows = node.resourcesList.map(r => `
           <div class="flex items-center justify-between bg-purple-50 border border-purple-200 px-2.5 py-1.5 rounded text-xs mb-1">
             <span class="font-medium text-purple-900">
@@ -737,26 +778,26 @@
             <span class="text-[10px] font-bold bg-white px-1.5 py-0.5 border border-purple-200 rounded text-purple-700">SL: ${r.quantity || 1}</span>
           </div>
         `).join('');
-        resourcesHtml = `<div class="mt-2 pt-2 border-t border-slate-200"><b class="text-slate-800 block mb-1">Nguồn lực (${node.resourcesList.length}):</b>${resRows}</div>`;
+        resourcesHtml = `<div class="mt-2 pt-2 border-t border-slate-200"><b class="text-slate-800 block mb-1">Nguồn lực Máy & Con người (${node.resourcesList.length}):</b>${resRows}</div>`;
       }
 
       let toolsHtml = "";
-      if (node.tools && node.tools.length > 0) {
+      if ((node.type === "WORKSTATION" || node.type === "SUB_OPERATION") && node.tools && node.tools.length > 0) {
         let toolRows = node.tools.map(t => `
           <div class="flex items-center justify-between bg-sky-50 border border-sky-200 px-2.5 py-1.5 rounded text-xs mb-1">
             <span class="font-medium text-sky-900"><i class="fa-solid fa-wrench text-sky-600 mr-1.5"></i> ${t.name}</span>
             <span class="text-[10px] font-mono bg-white px-1.5 py-0.5 border border-sky-200 rounded text-sky-700">${t.code || 'N/A'}</span>
           </div>
         `).join('');
-        toolsHtml = `<div class="mt-2 pt-2 border-t border-slate-200"><b class="text-slate-800 block mb-1">Tools (${node.tools.length}):</b>${toolRows}</div>`;
+        toolsHtml = `<div class="mt-2 pt-2 border-t border-slate-200"><b class="text-slate-800 block mb-1">Danh sách Tools (${node.tools.length}):</b>${toolRows}</div>`;
       }
 
       let opPropsHtml = "";
-      if (node.operationProps) {
+      if (node.type === "SUB_OPERATION" && node.operationProps) {
         let op = node.operationProps;
         opPropsHtml = `
           <div class="mt-2 pt-2 border-t border-slate-200">
-            <b class="text-slate-800 block mb-1 flex items-center gap-1"><i class="fa-solid fa-gears text-indigo-600"></i> Thuộc tính Operation / Task:</b>
+            <b class="text-slate-800 block mb-1 flex items-center gap-1"><i class="fa-solid fa-gears text-indigo-600"></i> Thuộc tính Sub Operation:</b>
             <div class="bg-indigo-50 border border-indigo-200 p-2 rounded space-y-1">
               <div><b class="text-slate-700">Standard Time:</b> <span class="text-indigo-700 font-bold">${op.stdTime || 'N/A'}</span></div>
               <div><b class="text-slate-700">Operation Type:</b> <span class="text-indigo-700 font-semibold">${op.opType || 'N/A'}</span></div>
@@ -1155,6 +1196,15 @@
         context.fillStyle = "#cbd5e1";
         context.font = "bold 11px sans-serif";
         context.fillText(node.name, nx + 8, ny + 18);
+      } else if (node.type === "WORKSHOP") {
+        context.strokeStyle = isSelected ? "#6366f1" : "#4f46e5";
+        context.lineWidth = isSelected ? 3 : 1.5;
+        context.fillStyle = isSelected ? "rgba(99, 102, 241, 0.3)" : "rgba(79, 70, 229, 0.15)";
+        context.strokeRect(nx, ny, nw, nh);
+        context.fillRect(nx, ny, nw, nh);
+        context.fillStyle = "#c7d2fe";
+        context.font = "bold 10px sans-serif";
+        context.fillText(node.name, nx + 7, ny + 16);
       } else if (node.type === "WORKCENTER") {
         context.strokeStyle = isSelected ? "#f59e0b" : "#d97706";
         context.lineWidth = isSelected ? 3 : 1.5;
@@ -1541,6 +1591,54 @@
       }
     }
 
+    // ĐIỀU CHỈNH TRƯỜNG NHẬP LIỆU THEO QUY TẮC CỨNG
+    function updateModalFormFieldsBasedOnParentAndType() {
+      const typeSelectorWrapper = document.getElementById("node-type-selector-wrapper");
+      const resWrapper = document.getElementById("resources-input-wrapper");
+      const toolsWrapper = document.getElementById("tools-input-wrapper");
+      const opPropsWrapper = document.getElementById("operation-props-wrapper");
+      const subTypeSelect = document.getElementById("input-sub-type-choice");
+
+      let parentNode = selectedParentId ? findNodeById(borData, selectedParentId) : null;
+
+      // Xác định Type của node tương lai
+      let targetType = "PLANT";
+      if (!parentNode) {
+        targetType = "PLANT";
+      } else if (parentNode.type === "PLANT") {
+        targetType = "WORKSHOP";
+      } else if (parentNode.type === "WORKSHOP") {
+        targetType = "WORKCENTER";
+      } else if (parentNode.type === "WORKCENTER") {
+        typeSelectorWrapper.classList.remove("hidden");
+        targetType = subTypeSelect.value; // WORKSTATION hoặc OPERATION
+      } else if (parentNode.type === "WORKSTATION") {
+        targetType = "OPERATION";
+      } else if (parentNode.type === "OPERATION") {
+        targetType = "SUB_OPERATION";
+      }
+
+      if (parentNode?.type !== "WORKCENTER") {
+        typeSelectorWrapper.classList.add("hidden");
+      }
+
+      // Đặt ẩn/hiện trường tương ứng theo đúng Type target
+      if (targetType === "WORKSTATION") {
+        resWrapper.classList.remove("hidden");
+        toolsWrapper.classList.remove("hidden");
+        opPropsWrapper.classList.add("hidden");
+      } else if (targetType === "SUB_OPERATION") {
+        resWrapper.classList.add("hidden");
+        toolsWrapper.classList.remove("hidden");
+        opPropsWrapper.classList.remove("hidden");
+      } else {
+        // PLANT, WORKSHOP, WORKCENTER, OPERATION -> Chỉ có Tên
+        resWrapper.classList.add("hidden");
+        toolsWrapper.classList.add("hidden");
+        opPropsWrapper.classList.add("hidden");
+      }
+    }
+
     function openAddNodeModal() {
       editingNode = null;
       document.getElementById("modal-title").innerText = "Thêm Resource Mới";
@@ -1558,7 +1656,10 @@
       document.getElementById("tools-input-container").innerHTML = "";
       addToolInputRow();
 
+      selectedParentId = selectedNodeId || null;
       renderParentTreeSelect();
+      updateModalFormFieldsBasedOnParentAndType();
+
       document.getElementById("modal-node").classList.remove("hidden");
     }
 
@@ -1606,7 +1707,15 @@
       let res = findParentAndIndex(borData, selectedNodeId);
       selectedParentId = res && res.parentNode ? res.parentNode.id : null;
 
+      if (node.type === "OPERATION") {
+        document.getElementById("input-sub-type-choice").value = "OPERATION";
+      } else if (node.type === "WORKSTATION") {
+        document.getElementById("input-sub-type-choice").value = "WORKSTATION";
+      }
+
       renderParentTreeSelect();
+      updateModalFormFieldsBasedOnParentAndType();
+
       document.getElementById("modal-node").classList.remove("hidden");
     }
 
@@ -1651,6 +1760,7 @@
     function selectParentNodeOption(id) {
       selectedParentId = id;
       filterParentTree();
+      updateModalFormFieldsBasedOnParentAndType();
     }
 
     function saveNodeModal() {
@@ -1669,24 +1779,44 @@
         return;
       }
 
+      let parentNode = selectedParentId ? findNodeById(borData, selectedParentId) : null;
+      let calculatedType = "PLANT";
+
+      if (!parentNode) {
+        calculatedType = "PLANT";
+      } else if (parentNode.type === "PLANT") {
+        calculatedType = "WORKSHOP";
+      } else if (parentNode.type === "WORKSHOP") {
+        calculatedType = "WORKCENTER";
+      } else if (parentNode.type === "WORKCENTER") {
+        calculatedType = document.getElementById("input-sub-type-choice").value; // WORKSTATION hoặc OPERATION
+      } else if (parentNode.type === "WORKSTATION") {
+        calculatedType = "OPERATION";
+      } else if (parentNode.type === "OPERATION") {
+        calculatedType = "SUB_OPERATION";
+      }
+
+      // Xử lý thu thập danh sách
       let resourcesList = [];
-      document.querySelectorAll("#resources-input-container .res-row").forEach(row => {
-        let rType = row.querySelector(".res-type-select").value;
-        let rName = row.querySelector(".res-name-input").value.trim();
-        let rQty = parseInt(row.querySelector(".res-qty-input").value) || 1;
-        if (rName) {
-          resourcesList.push({ type: rType, name: rName, quantity: rQty });
-        }
-      });
+      if (calculatedType === "WORKSTATION") {
+        document.querySelectorAll("#resources-input-container .res-row").forEach(row => {
+          let rType = row.querySelector(".res-type-select").value;
+          let rName = row.querySelector(".res-name-input").value.trim();
+          let rQty = parseInt(row.querySelector(".res-qty-input").value) || 1;
+          if (rName) resourcesList.push({ type: rType, name: rName, quantity: rQty });
+        });
+      }
 
       let toolsList = [];
-      document.querySelectorAll("#tools-input-container .tool-row").forEach(row => {
-        let tName = row.querySelector(".tool-name-input").value.trim();
-        let tCode = row.querySelector(".tool-code-input").value.trim();
-        if (tName) toolsList.push({ name: tName, code: tCode });
-      });
+      if (calculatedType === "WORKSTATION" || calculatedType === "SUB_OPERATION") {
+        document.querySelectorAll("#tools-input-container .tool-row").forEach(row => {
+          let tName = row.querySelector(".tool-name-input").value.trim();
+          let tCode = row.querySelector(".tool-code-input").value.trim();
+          if (tName) toolsList.push({ name: tName, code: tCode });
+        });
+      }
 
-      let operationProps = { stdTime, opType, formula };
+      let operationProps = (calculatedType === "SUB_OPERATION") ? { stdTime, opType, formula } : null;
 
       if (editingNode) {
         editingNode.name = name;
@@ -1695,14 +1825,13 @@
         editingNode.x = x; editingNode.y = y; editingNode.w = w; editingNode.h = h;
         editingNode.tools = toolsList;
         editingNode.operationProps = operationProps;
+        editingNode.type = calculatedType;
 
         let res = findParentAndIndex(borData, editingNode.id);
         if (res) {
           let oldParentId = res.parentNode ? res.parentNode.id : null;
           if (oldParentId !== selectedParentId) {
             let removedNode = res.parentArray.splice(res.index, 1)[0];
-            removedNode.type = determineNodeType(selectedParentId);
-
             if (selectedParentId === null) {
               borData.push(removedNode);
             } else {
@@ -1714,16 +1843,13 @@
                 borData.push(removedNode);
               }
             }
-          } else {
-            editingNode.type = determineNodeType(selectedParentId);
           }
         }
       } else {
-        let autoType = determineNodeType(selectedParentId);
         const newNode = {
           id: "RES-" + Date.now().toString().slice(-4),
           name: name,
-          type: autoType,
+          type: calculatedType,
           resourcesList: resourcesList,
           visible: currentModalVisibility,
           locked: false,
