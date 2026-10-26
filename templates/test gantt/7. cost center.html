@@ -4,137 +4,177 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Siemens Teamcenter PLM - BOR & Cost Center Manager</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; user-select: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
     
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    .resizer-h { cursor: col-resize; width: 6px; background: #cbd5e1; transition: background 0.2s; shrink: 0; }
+    header { background-color: #0f172a; color: #fff; height: 50px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; flex-shrink: 0; }
+    .header-logo { background: #2563eb; color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+    .header-title { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-left: 10px; }
+    
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+    
+    /* Left Panel */
+    .left-panel { width: 420px; min-width: 300px; max-width: 60%; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #cbd5e1; flex-shrink: 0; position: relative; }
+    .tree-header { padding: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .tree-title-wrapper { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #334155; }
+    .tree-actions { display: flex; align-items: center; gap: 4px; }
+    .tree-content { flex: 1; overflow: auto; padding: 8px; background: #fff; }
+    
+    .resizer-h { cursor: col-resize; width: 6px; background: #cbd5e1; transition: background 0.2s; flex-shrink: 0; }
     .resizer-h:hover, .resizer-h.active { background: #2563eb; }
 
-    .resizer-v { cursor: col-resize; width: 6px; background: #334155; transition: background 0.2s; shrink: 0; position: relative; z-index: 20; }
-    .resizer-v:hover, .resizer-v.active { background: #38bdf8; }
+    /* Properties Panel */
+    .prop-panel { background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; }
+    .prop-header { padding: 8px 12px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .prop-content { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; padding: 12px; font-size: 12px; max-height: 260px; overflow-y: auto; }
+    .prop-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; opacity: 0; }
 
-    .canvas-bg {
-      background-color: #0f172a;
-      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-      background-size: 20px 20px;
-    }
+    /* Right Panel (Cost Center Configuration Main View) */
+    .right-panel { flex: 1; display: flex; flex-direction: column; background: #f8fafc; overflow: hidden; }
+    .cost-main-container { flex: 1; display: flex; overflow: hidden; background: #f8fafc; }
+    .cost-form-col { width: 58%; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #e2e8f0; }
+    .cost-library-col { width: 42%; padding: 20px; background: #f1f5f9; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
 
-    .prop-panel-content {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: hidden;
-    }
-    .prop-panel-content.collapsed {
-      max-height: 0 !important;
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-      opacity: 0;
-    }
+    .card-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
+    .card-box-emerald { border-color: #a7f3d0; }
+    .card-box-purple { border-color: #ddd6fe; }
+    .card-box-blue { border-color: #bfdbfe; }
+    .card-box-amber { border-color: #fde68a; }
 
-    .tree-node-text {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .form-label { display: block; font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 4px; }
+    .form-input { width: 100%; padding: 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; font-family: inherit; }
+    .form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+    .form-input:disabled { background-color: #f8fafc; color: #64748b; cursor: not-allowed; }
 
-    .rate-card {
-      cursor: grab;
-      transition: all 0.2s ease;
-    }
-    .rate-card:active {
-      cursor: grabbing;
-      opacity: 0.6;
-    }
-    .drop-zone {
-      transition: border-color 0.2s, background-color 0.2s;
-    }
-    .drop-zone.drag-over {
-      border-color: #2563eb !important;
-      background-color: #eff6ff !important;
-    }
+    .btn { padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-emerald { background: #059669; color: #fff; }
+    .btn-emerald:hover { background: #047857; }
+    .btn-purple { background: #7c3aed; color: #fff; }
+    .btn-purple:hover { background: #6d28d9; }
+    .btn-slate { background: #334155; color: #fff; }
+    .btn-slate:hover { background: #1e293b; }
+    .btn-amber { background: #d97706; color: #fff; }
+    .btn-amber:hover { background: #b45309; }
+    .btn-rose { background: #e11d48; color: #fff; }
+    .btn-rose:hover { background: #be123c; }
+    .btn-light { background: #e2e8f0; color: #334155; }
+    .btn-light:hover { background: #cbd5e1; }
+
+    /* Dropdown Header */
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content { display: none; position: absolute; right: 0; background-color: #fff; min-width: 190px; box-shadow: 0px 8px 16px rgba(0,0,0,0.15); z-index: 50; border-radius: 6px; border: 1px solid #e2e8f0; padding: 4px 0; }
+    .dropdown:hover .dropdown-content { display: block; }
+    .dropdown-item { width: 100%; text-align: left; padding: 8px 12px; font-size: 12px; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #334155; }
+    .dropdown-item:hover { background-color: #f1f5f9; color: #2563eb; }
+
+    /* Rate Cards */
+    .rate-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; cursor: grab; transition: all 0.2s; }
+    .rate-card:hover { border-color: #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal-container { background: #fff; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); width: 1200px; max-width: 96vw; height: 88vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #cbd5e1; }
+    .modal-header { padding: 12px 16px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+    .modal-body { flex: 1; display: flex; overflow: hidden; background: #f8fafc; }
+    .modal-footer { padding: 12px 16px; background: #f1f5f9; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+
+    .drop-zone { transition: border-color 0.2s, background-color 0.2s; }
+    .drop-zone.drag-over { border-color: #2563eb !important; background-color: #eff6ff !important; }
+    
+    .tree-node-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 2px 0; }
+    .tree-node-item:hover { background-color: #f1f5f9; }
+    .tree-node-item.selected { background-color: #2563eb; color: #fff; }
+    .tree-node-item.selected i { color: #fff !important; }
   </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden bg-slate-100 text-slate-800">
+<body>
 
   <!-- ================= HEADER ================= -->
-  <header class="bg-slate-900 text-white h-12 px-4 flex items-center justify-between border-b border-slate-700 shrink-0">
-    <div class="flex items-center space-x-3">
-      <div class="bg-blue-600 text-white px-2 py-1 rounded font-bold text-xs tracking-wider flex items-center gap-1.5">
+  <header>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="header-logo">
         <i class="fa-solid fa-cubes"></i> TEAMCENTER
       </div>
-      <span class="text-sm font-semibold text-slate-200">Bill of Resources (BOR) & Cost Center Manager</span>
+      <span class="header-title">Bill of Resources (BOR) & Cost Center Manager</span>
     </div>
     
-    <div class="flex items-center space-x-2">
-      <button onclick="openFromToModal()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow" title="Xem Ma trận khoảng cách và phương tiện di chuyển">
-        <i class="fa-solid fa-table-cells"></i> Ma Trận From-To & Phương Tiện
-      </button>
-
-      <button onclick="saveAndSyncToMain()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow" title="Lưu dữ liệu, chuyển hình SVG và tất cả tọa độ sang Main, ẩn CAD">
-        <i class="fa-solid fa-floppy-disk"></i> Save (Chuyển CAD/SVG -> Main)
-      </button>
-      <span class="text-xs text-slate-400 ml-2"><i class="fa-solid fa-circle-info text-blue-400"></i> Quản lý vị trí nhà máy</span>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="dropdown">
+        <button class="btn btn-emerald">
+          <i class="fa-solid fa-gear"></i> Cấu hình Rate <i class="fa-solid fa-chevron-down" style="font-size: 9px;"></i>
+        </button>
+        <div class="dropdown-content">
+          <button onclick="openDetailedRateModal('mhr')" class="dropdown-item">
+            <i class="fa-solid fa-robot" style="color: #2563eb;"></i> Machine Hour Rate
+          </button>
+          <button onclick="openDetailedRateModal('labor')" class="dropdown-item">
+            <i class="fa-solid fa-user-gear" style="color: #7c3aed;"></i> Labor Rate
+          </button>
+          <button onclick="openDetailedRateModal('costing_structure')" class="dropdown-item">
+            <i class="fa-solid fa-sitemap" style="color: #059669;"></i> Costing Structure
+          </button>
+        </div>
+      </div>
+      <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-circle-info" style="color: #60a5fa;"></i> Quản lý vị trí & chi phí nhà máy</span>
     </div>
   </header>
 
   <!-- ================= MAIN CONTAINER ================= -->
-  <div class="flex-1 flex overflow-hidden">
+  <div class="main-container">
     
     <!-- CỘT TRÁI: BOR TREE & PROPERTIES PANEL -->
-    <div id="left-bor-container" class="w-[420px] min-w-[280px] max-w-[65%] flex flex-col bg-white border-r border-slate-200 shrink-0">
+    <div id="left-bor-container" class="left-panel">
       
-      <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-diagram-project text-emerald-600 text-sm"></i>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Resource Tree</h2>
+      <div class="tree-header">
+        <div class="tree-title-wrapper">
+          <i class="fa-solid fa-diagram-project" style="color: #059669;"></i>
+          <span>Resource Tree</span>
         </div>
-        <div class="flex items-center gap-1">
-          <button onclick="openAddNodeModal()" title="Thêm Resource Mới" class="px-2 py-1 bg-emerald-600 text-white rounded text-[11px] hover:bg-emerald-700 font-medium flex items-center gap-1">
+        <div class="tree-actions">
+          <button onclick="openAddNodeModal()" title="Thêm Resource Mới" class="btn btn-emerald" style="padding: 4px 8px; font-size: 11px;">
             <i class="fa-solid fa-plus"></i> Tạo mới
           </button>
-          <button onclick="moveSelectedNodeOrder(-1)" title="Di chuyển lên trên" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
-          <button onclick="moveSelectedNodeOrder(1)" title="Di chuyển xuống dưới" class="p-1 px-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
-          <button onclick="deleteSelectedNode()" title="Xóa node đang chọn" class="p-1 px-1.5 bg-rose-100 hover:bg-rose-200 rounded text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
-          <button onclick="expandAllTree()" title="Mở rộng tất cả" class="p-1 hover:bg-slate-200 rounded text-slate-600 text-xs"><i class="fa-solid fa-folder-open"></i></button>
-          <button onclick="collapseAllTree()" title="Thu gọn tất cả" class="p-1 hover:bg-slate-200 rounded text-slate-600 text-xs"><i class="fa-solid fa-folder"></i></button>
+          <button onclick="moveSelectedNodeOrder(-1)" title="Di chuyển lên trên" class="btn btn-light" style="padding: 4px 6px;"><i class="fa-solid fa-arrow-up"></i></button>
+          <button onclick="moveSelectedNodeOrder(1)" title="Di chuyển xuống dưới" class="btn btn-light" style="padding: 4px 6px;"><i class="fa-solid fa-arrow-down"></i></button>
+          <button onclick="deleteSelectedNode()" title="Xóa node đang chọn" class="btn btn-rose" style="padding: 4px 6px;"><i class="fa-solid fa-trash"></i></button>
+          <button onclick="expandAllTree()" title="Mở rộng tất cả" class="btn btn-light" style="padding: 4px 6px;"><i class="fa-solid fa-folder-open"></i></button>
+          <button onclick="collapseAllTree()" title="Thu gọn tất cả" class="btn btn-light" style="padding: 4px 6px;"><i class="fa-solid fa-folder"></i></button>
         </div>
       </div>
 
       <!-- CÂY NGUỒN LỰC -->
-      <div class="flex-1 overflow-auto p-2 relative bg-white border-l border-dashed border-slate-200" id="bor-tree-root"></div>
+      <div class="tree-content" id="bor-tree-root"></div>
 
       <!-- THUỘC TÍNH NGUỒN LỰC -->
-      <div id="prop-panel-wrapper" class="bg-slate-50 border-t border-slate-200 flex flex-col shrink-0">
-        <div class="p-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between cursor-pointer" onclick="togglePropPanel()">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-circle-info text-blue-600 text-xs"></i>
-            <span class="text-xs font-bold text-slate-700">Resource Properties & Details</span>
+      <div id="prop-panel-wrapper" class="prop-panel">
+        <div class="prop-header" onclick="togglePropPanel()">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-info" style="color: #2563eb; font-size: 11px;"></i>
+            <span style="font-size: 12px; font-weight: bold; color: #334155;">Resource Properties & Details</span>
           </div>
-          <div class="flex items-center gap-1.5">
-            <button disabled class="px-2 py-0.5 text-[10px] bg-slate-300 text-slate-500 rounded cursor-not-allowed opacity-60 flex items-center gap-1" title="Tính năng chỉnh sửa thông tin đã bị khóa">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button disabled class="btn btn-light" style="padding: 2px 6px; font-size: 10px; opacity: 0.6; cursor: not-allowed;" title="Tính năng chỉnh sửa thông tin đã bị khóa">
               <i class="fa-solid fa-pen"></i> Sửa
             </button>
-            
-            <button onclick="event.stopPropagation(); openCostCenterModal();" class="px-2 py-0.5 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded flex items-center gap-1 shadow-sm" title="Thêm / Cấu hình Cost Center cho nguồn lực này">
-              <i class="fa-solid fa-sack-dollar"></i> Add Cost
-            </button>
-
-            <button id="prop-toggle-btn" class="p-1 text-slate-500 hover:text-slate-700 text-xs transition-transform duration-200 ml-1">
+            <button id="prop-toggle-btn" class="btn btn-light" style="padding: 2px 6px; font-size: 11px;">
               <i class="fa-solid fa-chevron-up"></i>
             </button>
           </div>
         </div>
 
-        <div id="prop-panel-content" class="prop-panel-content p-3 text-xs overflow-auto max-h-[260px]">
-          <div id="prop-panel-details" class="space-y-3">
-            <p class="text-slate-400 italic">Chọn một node trên cây BOR để xem thông tin chi tiết...</p>
+        <div id="prop-panel-content" class="prop-content">
+          <div id="prop-panel-details">
+            <p style="color: #94a3b8; font-style: italic;">Chọn một node trên cây BOR để xem thông tin chi tiết...</p>
           </div>
         </div>
       </div>
@@ -144,423 +184,304 @@
     <!-- RESIZER NGANG -->
     <div id="resizer-bor-layout" class="resizer-h"></div>
 
-    <!-- CỘT PHẢI: DUAL SCREEN VIEWPORT -->
-    <div class="flex-1 flex flex-col bg-slate-900 relative overflow-hidden">
-      
-      <!-- TOOLBAR CHUNG -->
-      <div id="layout-toolbar" class="p-2 bg-slate-800 text-slate-200 border-b border-slate-700 flex items-center justify-between shrink-0 z-10 flex-wrap gap-2">
-        <div class="flex items-center gap-2">
-          <span id="selected-layout-label" class="text-[11px] bg-slate-700 text-blue-300 px-2 py-0.5 rounded">Chọn: Tất cả</span>
-        </div>
-
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <label class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-medium cursor-pointer flex items-center gap-1" title="Import file CAD / SVG / Ảnh cập nhật">
-            <i class="fa-solid fa-file-arrow-up"></i> Import CAD / SVG (Mở Layout CAD)
-            <input type="file" id="cad-file-input" accept=".svg,.png,.jpg,.jpeg,.json,.dxf,.txt" class="hidden" onchange="importCadFile(event)">
-          </label>
-
-          <button id="tool-select-btn" onclick="setCadTool('SELECT')" class="px-2 py-1 bg-blue-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Quét chọn vùng vị trí">
-            <i class="fa-solid fa-vector-square"></i> Quét chọn
-          </button>
-          
-          <button id="tool-pan-btn" onclick="setCadTool('PAN')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1" title="Bật/Tắt chế độ Pan">
-            <i class="fa-solid fa-hand"></i> Pan
-          </button>
-
-          <button id="save-region-btn" onclick="saveSelectedRegion()" class="hidden px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-semibold flex items-center gap-1" title="Lưu vị trí vừa quét cho nhánh đang chọn">
-            <i class="fa-solid fa-floppy-disk"></i> Lưu vị trí
-          </button>
-
-          <button id="show-all-btn" onclick="toggleShowAllRegions()" class="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold flex items-center gap-1" title="Hiển thị tất cả nguồn lực">
-            <i class="fa-solid fa-eye"></i> Show: Tắt
-          </button>
-
-          <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
-
-          <button onclick="resetZoomLayout()" class="p-1 px-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs" title="Reset Zoom tất cả"><i class="fa-solid fa-rotate-left"></i> Reset View</button>
-        </div>
-      </div>
-
-      <!-- KHUNG CHIA ĐÔI SONG SONG -->
-      <div class="flex-1 flex overflow-hidden relative" id="dual-viewports-container">
-        
-        <!-- MÀN HÌNH TRÁI: LAYOUT GỐC NHÀ MÁY -->
-        <div id="pane-original" class="flex-1 flex flex-col relative bg-slate-900 border-r border-slate-700 overflow-hidden" style="flex: 1;">
-          <div class="bg-slate-800/90 text-emerald-400 px-3 py-1.5 text-xs font-bold border-b border-slate-700 flex items-center justify-between shrink-0">
-            <span class="flex items-center gap-2"><i class="fa-solid fa-map"></i> 1. Layout Gốc Nhà Máy (Resources)</span>
-            <div class="flex items-center gap-2">
-              <button id="hide-main-img-btn" onclick="toggleHideMainImage()" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-semibold flex items-center gap-1">
-                <i class="fa-solid fa-image"></i> Hide Image: Hiện
-              </button>
-              <span class="text-[10px] text-slate-400 font-normal">Zoom: <span id="main-zoom-text">100%</span></span>
-            </div>
-          </div>
-          <div class="flex-1 relative canvas-bg overflow-hidden cursor-crosshair">
-            <canvas id="factory-canvas" class="absolute left-0 top-0"></canvas>
-          </div>
-        </div>
-
-        <!-- RESIZER DỌC -->
-        <div id="resizer-dual" class="resizer-v hidden" title="Kéo để thay đổi tỷ lệ 2 màn hình"></div>
-
-        <!-- MÀN HÌNH PHẢI: BẢN VẼ CAD / SVG CẬP NHẬT -->
-        <div id="pane-cad" class="flex-1 flex flex-col relative bg-slate-900 overflow-hidden hidden" style="flex: 0 0 50%;">
-          <div class="bg-slate-800/90 text-sky-400 px-3 py-1.5 text-xs font-bold border-b border-slate-700 flex items-center justify-between shrink-0">
-            <span class="flex items-center gap-2"><i class="fa-solid fa-file-code"></i> 2. Bản Vẽ CAD / SVG Cập Nhật</span>
-            <div class="flex items-center gap-2">
-              <button id="hide-cad-img-btn" onclick="toggleHideCadImage()" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-semibold flex items-center gap-1">
-                <i class="fa-solid fa-image"></i> Hide Image: Hiện
-              </button>
-              <span class="text-[10px] text-slate-400 font-normal">Zoom: <span id="cad-zoom-text">100%</span></span>
-            </div>
-          </div>
-          <div class="flex-1 relative canvas-bg overflow-hidden cursor-crosshair">
-            <div id="cad-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center text-slate-500 space-y-3 z-10 pointer-events-none">
-              <i class="fa-solid fa-file-circle-plus text-4xl text-slate-600"></i>
-              <p class="text-xs">Chưa có file CAD / SVG nào được import vào màn hình này.</p>
-            </div>
-            <canvas id="cad-file-canvas" class="absolute left-0 top-0"></canvas>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- ================= MODAL: ADD COST CENTER (CALCULATOR WITH DRAG & DROP & SQL) ================= -->
-  <div id="modal-cost-center" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-xl shadow-2xl w-[980px] max-w-[96vw] h-[88vh] overflow-hidden flex flex-col border border-slate-300">
-      
-      <!-- HEADER MODAL -->
-      <div class="p-3.5 bg-slate-800 text-white flex items-center justify-between border-b border-slate-700 shrink-0">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-calculator text-emerald-400 text-lg"></i>
+    <!-- CỘT PHẢI: MÀN HÌNH CHÍNH (CẤU HÌNH COST CENTER) -->
+    <div class="right-panel" id="right-cost-container">
+      <div style="padding: 12px 20px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-calculator" style="color: #34d399; font-size: 16px;"></i>
           <div>
-            <h3 class="text-sm font-bold">Cấu Hình Cost Center & Công Thức Chi Phí (SQL & Formula)</h3>
-            <p class="text-[10px] text-slate-300">Gán cho Resource: <span id="cost-modal-node-name" class="font-bold text-amber-300">N/A</span></p>
+            <h3 style="font-size: 13px; font-weight: bold;">Cấu Hình Cost Center & Công Thức Chi Phí</h3>
+            <p style="font-size: 10px; color: #94a3b8;">Đang cấu hình cho Resource: <span id="cost-modal-node-name" style="font-weight: bold; color: #fbbf24;">N/A</span></p>
           </div>
         </div>
-        <button onclick="closeCostCenterModal()" class="text-slate-400 hover:text-white text-xl leading-none"><i class="fa-solid fa-xmark"></i></button>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="removeCostCenterFromNode()" class="btn btn-rose" style="padding: 4px 10px; font-size: 11px;">
+            <i class="fa-solid fa-trash"></i> Xóa Cost Center
+          </button>
+          <button onclick="saveCostCenterToNode()" class="btn btn-emerald" style="padding: 4px 12px; font-size: 11px;">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+          </button>
+        </div>
       </div>
 
-      <!-- MAIN CONTENT MODAL: CHIA ĐÔI BÊN TRÁI VÀ BÊN PHẢI -->
-      <div class="flex-1 flex overflow-hidden bg-slate-50">
-        
-        <!-- BÊN TRÁI: KHUNG NHẬP LIỆU VÀ CÔNG THỨC CHI PHÍ (DIRECT, INDIRECT, OPERATION) -->
-        <div class="w-7/12 p-4 overflow-y-auto space-y-4 border-r border-slate-200">
+      <div class="cost-main-container">
+        <!-- BÊN TRÁI: FORM CÔNG THỨC CHI PHÍ -->
+        <div class="cost-form-col" id="cost-form-col-main">
           
-          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm space-y-2">
-            <label class="block text-xs font-bold text-slate-700">Tên Trung Tâm Chi Phí (Cost Center Name):</label>
-            <input type="text" id="cost-center-name-input" placeholder="VD: CC-101: Trung tâm chi phí..." class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none font-semibold text-slate-800">
+          <div id="cost-warning-banner" style="background: #fef3c7; border: 1px solid #f59e0b; padding: 10px; border-radius: 6px; font-size: 11px; color: #92400e; display: none; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px;"></i>
+            <span><b>Lưu ý:</b> Việc cấu hình Cost Center chỉ được phép thực hiện trên nhánh <b>Sub-Operation</b> (cấp thấp nhất). Các nhánh khác không được tạo chi phí!</span>
+          </div>
+
+          <div class="card-box" id="box-name-section">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label class="form-label" style="margin-bottom: 0;">Tên Trung Tâm Chi Phí (Cost Center Name):</label>
+              <button onclick="toggleSectionEdit('cost-center-name-input', this)" class="btn btn-light" style="padding: 2px 8px; font-size: 10px;"><i class="fa-solid fa-pen"></i> Sửa</button>
+            </div>
+            <input type="text" id="cost-center-name-input" disabled placeholder="VD: CC-101: Trung tâm chi phí..." class="form-input" style="font-weight: bold; color: #1e293b;">
           </div>
 
           <!-- 1. DIRECT MATERIAL COST -->
-          <div class="bg-white p-3 rounded-lg border border-emerald-200 shadow-sm space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                <i class="fa-solid fa-boxes-packing text-emerald-600"></i> Direct Material Cost (Chi phí NVL trực tiếp):
+          <div class="card-box card-box-emerald" id="box-direct-mat">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12px; font-weight: bold; color: #065f46; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-boxes-packing" style="color: #059669;"></i> Direct Material Cost (Chi phí NVL trực tiếp):
               </span>
-              <button onclick="openSqlBuilderModal('Direct Material Cost', 'cost-direct-formula')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                <i class="fa-solid fa-database"></i> SQL
-              </button>
+              <button onclick="toggleSectionEdit('cost-direct-formula', this)" class="btn btn-light" style="padding: 2px 8px; font-size: 10px;"><i class="fa-solid fa-pen"></i> Sửa</button>
             </div>
-            <div class="flex gap-2">
-              <input type="text" id="cost-direct-formula" placeholder="Nhập công thức hoặc bấm nút SQL..." class="drop-zone flex-1 text-xs p-2 bg-slate-50 border border-slate-300 rounded font-mono text-emerald-700 font-bold outline-none" ondrop="handleDropRate(event, 'cost-direct-formula')" ondragover="allowDropRate(event)">
-              <button onclick="appendToken('cost-direct-formula', ' + ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-xs font-bold rounded">+</button>
-              <button onclick="appendToken('cost-direct-formula', ' * ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-xs font-bold rounded">*</button>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <input type="text" id="cost-direct-formula" disabled placeholder="Nhập công thức hoặc kéo thả thẻ bên phải..." class="drop-zone form-input" style="font-family: monospace; color: #047857; font-weight: bold; background: #f8fafc;" ondrop="handleDropRate(event, 'cost-direct-formula')" ondragover="allowDropRate(event)">
+              <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 10px;">
+                <span style="color: #64748b; font-weight: 500; margin-right: 4px;">Chèn nhanh:</span>
+                <button onclick="appendToken('cost-direct-formula', 'material usage')" class="btn btn-light" style="padding: 4px 8px; font-size: 10px;">material usage</button>
+                <button onclick="appendToken('cost-direct-formula', 'unit cost')" class="btn btn-light" style="padding: 4px 8px; font-size: 10px;">unit cost</button>
+                <button onclick="appendToken('cost-direct-formula', ' * ')" class="btn btn-light" style="padding: 4px 6px;">*</button>
+                <button onclick="appendToken('cost-direct-formula', ' + ')" class="btn btn-light" style="padding: 4px 6px;">+</button>
+                <button onclick="appendToken('cost-direct-formula', ' - ')" class="btn btn-light" style="padding: 4px 6px;">-</button>
+                <button onclick="appendToken('cost-direct-formula', ' / ')" class="btn btn-light" style="padding: 4px 6px;">/</button>
+                <button onclick="appendToken('cost-direct-formula', ' ( ')" class="btn btn-light" style="padding: 4px 6px;">(</button>
+                <button onclick="appendToken('cost-direct-formula', ' ) ')" class="btn btn-light" style="padding: 4px 6px;">)</button>
+              </div>
             </div>
-            <div id="shortcuts-cost-direct-formula" class="flex flex-wrap gap-1 pt-1"></div>
           </div>
 
           <!-- 2. INDIRECT MATERIAL COST -->
-          <div class="bg-white p-3 rounded-lg border border-purple-200 shadow-sm space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
-                <i class="fa-solid fa-hand-holding-dollar text-purple-600"></i> Indirect Material Cost (Chi phí NVL gián tiếp):
+          <div class="card-box card-box-purple" id="box-indirect-mat">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12px; font-weight: bold; color: #581c87; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-hand-holding-dollar" style="color: #7c3aed;"></i> Indirect Material Cost (Chi phí NVL gián tiếp):
               </span>
-              <button onclick="openSqlBuilderModal('Indirect Material Cost', 'cost-indirect-formula')" class="px-2 py-0.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                <i class="fa-solid fa-database"></i> SQL
-              </button>
+              <button onclick="toggleSectionEdit('cost-indirect-formula', this)" class="btn btn-light" style="padding: 2px 8px; font-size: 10px;"><i class="fa-solid fa-pen"></i> Sửa</button>
             </div>
-            <input type="text" id="cost-indirect-formula" placeholder="Nhập công thức hoặc bấm nút SQL..." class="drop-zone w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded font-mono text-purple-700 font-bold outline-none" ondrop="handleDropRate(event, 'cost-indirect-formula')" ondragover="allowDropRate(event)">
-            <div id="shortcuts-cost-indirect-formula" class="flex flex-wrap gap-1 pt-1"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <input type="text" id="cost-indirect-formula" disabled placeholder="Nhập công thức hoặc kéo thả thẻ bên phải..." class="drop-zone form-input" style="font-family: monospace; color: #6d28d9; font-weight: bold; background: #f8fafc;" ondrop="handleDropRate(event, 'cost-indirect-formula')" ondragover="allowDropRate(event)">
+              <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 10px;">
+                <span style="color: #64748b; font-weight: 500; margin-right: 4px;">Chèn nhanh:</span>
+                <button onclick="appendToken('cost-indirect-formula', 'direct material cost')" class="btn btn-light" style="padding: 4px 8px; font-size: 10px;">direct material cost</button>
+                <button onclick="appendToken('cost-indirect-formula', '% indirect material cost')" class="btn btn-light" style="padding: 4px 8px; font-size: 10px;">% indirect material cost</button>
+                <button onclick="appendToken('cost-indirect-formula', ' * ')" class="btn btn-light" style="padding: 4px 6px;">*</button>
+                <button onclick="appendToken('cost-indirect-formula', ' + ')" class="btn btn-light" style="padding: 4px 6px;">+</button>
+                <button onclick="appendToken('cost-indirect-formula', ' - ')" class="btn btn-light" style="padding: 4px 6px;">-</button>
+                <button onclick="appendToken('cost-indirect-formula', ' / ')" class="btn btn-light" style="padding: 4px 6px;">/</button>
+                <button onclick="appendToken('cost-indirect-formula', ' ( ')" class="btn btn-light" style="padding: 4px 6px;">(</button>
+                <button onclick="appendToken('cost-indirect-formula', ' ) ')" class="btn btn-light" style="padding: 4px 6px;">)</button>
+              </div>
+            </div>
           </div>
 
-          <!-- 3. DIRECT OPERATION COST & 4. INDIRECT OPERATION COST -->
-          <div class="bg-white p-3 rounded-lg border border-blue-200 shadow-sm space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                <i class="fa-solid fa-gears text-blue-600"></i> Direct & Indirect Operation Cost (MHR & Nhân công):
+          <!-- 3. OPERATION COST -->
+          <div class="card-box card-box-blue" id="box-op-cost">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12px; font-weight: bold; color: #1e40af; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-gears" style="color: #2563eb;"></i> Direct & Indirect Operation Cost (MHR & Nhân công):
               </span>
-              <div class="flex items-center gap-1">
-                <button onclick="openDetailedRateModal('mhr')" class="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-sm" title="Thêm chi tiết Machine Hour Rate">
-                  <i class="fa-solid fa-plus"></i> Add MHR
-                </button>
-                <button onclick="openDetailedRateModal('labor')" class="px-2 py-0.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-sm" title="Thêm chi tiết Labor Rate">
-                  <i class="fa-solid fa-plus"></i> Add Labor
-                </button>
-                <button onclick="openSqlBuilderModal('Operation Cost', 'cost-op-formula')" class="px-2 py-0.5 bg-slate-700 hover:bg-slate-800 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                  <i class="fa-solid fa-database"></i> SQL
-                </button>
-              </div>
+              <button onclick="toggleSectionEdit('cost-op-formula', this)" class="btn btn-light" style="padding: 2px 8px; font-size: 10px;"><i class="fa-solid fa-pen"></i> Sửa</button>
             </div>
-            
-            <div class="drop-zone p-2.5 bg-slate-50 border border-dashed border-blue-300 rounded space-y-2" ondrop="handleDropRate(event, 'cost-op-formula')" ondragover="allowDropRate(event)">
-              <textarea id="cost-op-formula" rows="2" placeholder="Kéo thả thẻ bên phải hoặc click công thức SQL..." class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded font-mono text-blue-800 font-bold outline-none resize-none"></textarea>
-
-              <div class="flex flex-wrap gap-1 text-[10px] items-center">
-                <span class="text-slate-500 font-medium mr-1">Chèn nhanh biến:</span>
-                <button onclick="appendToken('cost-op-formula', 'CycleTime')" class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded">CycleTime (h)</button>
-                <button onclick="appendToken('cost-op-formula', 'SetupTime')" class="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold rounded">SetupTime (h)</button>
-                <button onclick="appendToken('cost-op-formula', ' * ')" class="px-1.5 py-1 bg-slate-200 font-bold rounded">*</button>
-                <button onclick="appendToken('cost-op-formula', ' + ')" class="px-1.5 py-1 bg-slate-200 font-bold rounded">+</button>
-                <button onclick="appendToken('cost-op-formula', ' ( ')" class="px-1.5 py-1 bg-slate-200 font-bold rounded">(</button>
-                <button onclick="appendToken('cost-op-formula', ' ) ')" class="px-1.5 py-1 bg-slate-200 font-bold rounded">)</button>
+            <div class="drop-zone" style="padding: 10px; background: #f8fafc; border: 1px dashed #93c5fd; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;" ondrop="handleDropRate(event, 'cost-op-formula')" ondragover="allowDropRate(event)">
+              <textarea id="cost-op-formula" disabled rows="3" placeholder="Kéo thả các thẻ MHR / Labor bên phải vào đây..." class="form-input" style="font-family: monospace; color: #1d4ed8; font-weight: bold; resize: none;"></textarea>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 10px;">
+                <span style="color: #64748b; font-weight: 500; margin-right: 4px;">Chèn nhanh biến:</span>
+                <button onclick="appendToken('cost-op-formula', 'CycleTime')" class="btn btn-light" style="padding: 4px 8px; font-size: 10px;">CycleTime (h)</button>
+                <button onclick="appendToken('cost-op-formula', 'SetupTime')" class="btn btn-light" style="padding: 4px 8px; font-size: 10px;">SetupTime (h)</button>
+                <button onclick="appendToken('cost-op-formula', ' * ')" class="btn btn-light" style="padding: 4px 6px;">*</button>
+                <button onclick="appendToken('cost-op-formula', ' + ')" class="btn btn-light" style="padding: 4px 6px;">+</button>
+                <button onclick="appendToken('cost-op-formula', ' ( ')" class="btn btn-light" style="padding: 4px 6px;">(</button>
+                <button onclick="appendToken('cost-op-formula', ' ) ')" class="btn btn-light" style="padding: 4px 6px;">)</button>
               </div>
-              <div id="shortcuts-cost-op-formula" class="flex flex-wrap gap-1 pt-1"></div>
             </div>
           </div>
 
           <!-- OVERHEAD (OVH) COST -->
-          <div class="bg-white p-3 rounded-lg border border-amber-200 shadow-sm space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                <i class="fa-solid fa-building-flag text-amber-600"></i> Overhead (OVH) Cost (Chi phí quản lý phân xưởng):
+          <div class="card-box card-box-amber" id="box-ovh-cost">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12px; font-weight: bold; color: #78350f; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-building-flag" style="color: #d97706;"></i> Overhead (OVH) Cost:
               </span>
-              <span class="text-[10px] text-amber-700 font-bold">% hoặc Cố định</span>
+              <button onclick="toggleSectionEdit('cost-ovh-percent', this, 'cost-ovh-fixed')" class="btn btn-light" style="padding: 2px 8px; font-size: 10px;"><i class="fa-solid fa-pen"></i> Sửa</button>
             </div>
-            <div class="grid grid-cols-2 gap-2">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div>
-                <label class="block text-[10px] text-slate-500 mb-0.5">% Tỷ lệ trên COGS:</label>
-                <input type="number" id="cost-ovh-percent" value="10" placeholder="10" class="w-full text-xs p-1.5 border border-slate-300 rounded font-bold text-amber-700 outline-none">
+                <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 2px;">% Tỷ lệ trên COGS:</label>
+                <input type="number" id="cost-ovh-percent" disabled value="10" class="form-input" style="font-weight: bold; color: #b45309;">
               </div>
               <div>
-                <label class="block text-[10px] text-slate-500 mb-0.5">Phí cố định cộng thêm (VND):</label>
-                <input type="number" id="cost-ovh-fixed" value="0" placeholder="0" class="w-full text-xs p-1.5 border border-slate-300 rounded font-bold text-amber-700 outline-none">
+                <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 2px;">Phí cố định (VND):</label>
+                <input type="number" id="cost-ovh-fixed" disabled value="0" class="form-input" style="font-weight: bold; color: #b45309;">
               </div>
             </div>
           </div>
 
         </div>
 
-        <!-- BÊN PHẢI: DANH SÁCH MACHINE HOUR RATE VÀ LABOR RATE (CARDS TO DRAG & DROP) -->
-        <div class="w-5/12 p-4 bg-slate-100 overflow-y-auto space-y-3">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-              <i class="fa-solid fa-list-check text-blue-600"></i> Thư viện Machine & Labor Rates:
+        <!-- BÊN PHẢI: THƯ VIỆN MACHINE HOUR RATE VÀ LABOR RATE -->
+        <div class="cost-library-col">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="font-size: 12px; font-weight: bold; color: #334155; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-list-check" style="color: #2563eb;"></i> Thư viện Machine & Labor:
             </h4>
-            <span class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">Kéo thả sang trái</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button onclick="toggleLibraryEditMode()" id="lib-edit-mode-btn" class="btn btn-light" style="padding: 3px 8px; font-size: 10px;" title="Bật/Tắt chế độ chỉnh sửa định mức">
+                <i class="fa-solid fa-pen-to-square"></i> Sửa: <span id="lib-edit-status">Tắt</span>
+              </button>
+              <span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 500;">Kéo thả</span>
+            </div>
           </div>
 
-          <p class="text-[11px] text-slate-500 italic">Nhấp hoặc kéo thả các thẻ đơn giá dưới đây vào ô công thức bên trái để lập định mức chi phí.</p>
+          <!-- Ô TÌM KIẾM (SEARCH) CHO THƯ VIỆN -->
+          <div>
+            <input type="text" id="library-search-input" oninput="filterLibraryCards(this.value)" placeholder="🔍 Tìm kiếm định mức hoặc labor..." class="form-input" style="font-size: 11px; background: #fff;">
+          </div>
 
           <!-- MACHINE HOUR RATES -->
-          <div class="space-y-2">
-            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block border-b border-slate-200 pb-1">
-              🤖 Machine Hour Rates (Đơn giá giờ máy):
-            </span>
-            <div id="mhr-cards-container" class="space-y-1.5"></div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; cursor: pointer;" onclick="toggleSectionCollapse('mhr-section-body', 'mhr-toggle-icon')">
+              <span style="font-size: 11px; font-weight: bold; color: #1e40af; display: flex; align-items: center; gap: 6px;">
+                <i id="mhr-toggle-icon" class="fa-solid fa-chevron-down" style="font-size: 9px;"></i> 🤖 Machine Hour Rates:
+              </span>
+              <button onclick="event.stopPropagation(); openAddNewRateModal('mhr')" class="btn btn-primary" style="padding: 3px 8px; font-size: 10px;">
+                <i class="fa-solid fa-plus"></i> Thêm MHR
+              </button>
+            </div>
+            <div id="mhr-section-body" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px;">
+              <div id="mhr-cards-container" style="display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
           </div>
 
           <!-- LABOR RATES -->
-          <div class="space-y-2 pt-2">
-            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block border-b border-slate-200 pb-1">
-              👤 Labor Rates (Đơn giá nhân công):
-            </span>
-            <div id="labor-cards-container" class="space-y-1.5"></div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; cursor: pointer;" onclick="toggleSectionCollapse('labor-section-body', 'labor-toggle-icon')">
+              <span style="font-size: 11px; font-weight: bold; color: #581c87; display: flex; align-items: center; gap: 6px;">
+                <i id="labor-toggle-icon" class="fa-solid fa-chevron-down" style="font-size: 9px;"></i> 👤 Labor Rates:
+              </span>
+              <button onclick="event.stopPropagation(); openAddNewRateModal('labor')" class="btn btn-purple" style="padding: 3px 8px; font-size: 10px;">
+                <i class="fa-solid fa-plus"></i> Thêm Labor
+              </button>
+            </div>
+            <div id="labor-section-body" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px;">
+              <div id="labor-cards-container" style="display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
           </div>
 
         </div>
-
       </div>
-
-      <!-- FOOTER MODAL -->
-      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-between items-center shrink-0">
-        <button onclick="removeCostCenterFromNode()" class="px-3 py-1.5 text-xs bg-rose-100 text-rose-700 hover:bg-rose-200 rounded font-semibold flex items-center gap-1">
-          <i class="fa-solid fa-trash"></i> Xóa Cost Center khỏi Node
-        </button>
-        <div class="flex gap-2">
-          <button onclick="closeCostCenterModal()" class="px-4 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400 font-medium">Hủy</button>
-          <button onclick="saveCostCenterToNode()" class="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 font-bold flex items-center gap-1 shadow">
-            <i class="fa-solid fa-floppy-disk"></i> Lưu Cost Center
-          </button>
-        </div>
-      </div>
-
     </div>
+
   </div>
 
-  <!-- ================= MODAL: SQL FORMULA BUILDER ================= -->
-  <div id="modal-sql-builder" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] hidden">
-    <div class="bg-white rounded-xl shadow-2xl w-[760px] max-w-[95vw] overflow-hidden flex flex-col border border-slate-300">
+  <!-- ================= MODAL 1: CẤU HÌNH ĐỊNH MỨC GỐC & COSTING STRUCTURE ================= -->
+  <div id="modal-detailed-rate" class="modal-overlay hidden">
+    <div class="modal-container">
       
-      <!-- HEADER -->
-      <div class="p-3.5 bg-slate-800 text-white flex items-center justify-between border-b border-slate-700">
-        <h3 id="sql-modal-title" class="text-sm font-bold flex items-center gap-2">
-          <i class="fa-solid fa-database text-amber-400"></i> Thiết Lập Công Thức & Câu Lệnh SQL
-        </h3>
-        <button onclick="closeSqlBuilderModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <!-- BODY -->
-      <div class="p-4 space-y-3 overflow-auto max-h-[70vh] text-xs">
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Tên công thức (Formula Name):</label>
-          <input type="text" id="sql-f-name" placeholder="VD: CycleTime, SetupTime, MaterialCost..." class="w-full p-2 border border-slate-300 rounded font-semibold text-slate-800 outline-none">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Công thức tính (Expression):</label>
-          <input type="text" id="sql-f-expr" placeholder="VD: unit_price * quantity..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded font-mono font-bold text-blue-700 outline-none">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Câu lệnh SQL Query:</label>
-          <textarea id="sql-f-query" rows="4" class="w-full p-2 bg-slate-900 text-emerald-400 font-mono rounded outline-none text-[11px]" placeholder="SELECT value FROM table WHERE condition..."></textarea>
-        </div>
-
-        <div class="flex items-center gap-2 pt-1">
-          <button onclick="testSqlQuery()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded flex items-center gap-1 shadow-sm">
-            <i class="fa-solid fa-play"></i> Test SQL
-          </button>
-          <button onclick="addSqlFormula()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded flex items-center gap-1 shadow-sm">
-            <i class="fa-solid fa-plus"></i> Thêm Công Thức
-          </button>
-        </div>
-
-        <div class="pt-3 border-t border-slate-200">
-          <h4 class="font-bold text-slate-700 mb-2 uppercase tracking-wide">Danh sách các công thức SQL đã tạo:</h4>
-          <div id="sql-formulas-list" class="space-y-1.5 max-h-[160px] overflow-auto border border-slate-200 rounded p-2 bg-slate-50">
-            <!-- List render dynamically -->
-          </div>
-        </div>
-      </div>
-
-      <!-- FOOTER -->
-      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end">
-        <button onclick="closeSqlBuilderModal()" class="px-4 py-1.5 text-xs bg-slate-700 text-white font-semibold rounded hover:bg-slate-800">Đóng</button>
-      </div>
-
-    </div>
-  </div>
-
-  
-  <!-- ================= MODAL: DETAILED RATE & FORMULA CALCULATOR (EXCEL STYLE WITH CELL-LEVEL FORMULAS) ================= -->
-  <div id="modal-detailed-rate" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[70] hidden">
-    <div class="bg-white rounded-xl shadow-2xl w-[1120px] max-w-[96vw] h-[90vh] overflow-hidden flex flex-col border border-slate-300">
-      
-      <!-- HEADER -->
-      <div class="p-3.5 bg-slate-800 text-white flex items-center justify-between border-b border-slate-700 shrink-0">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-table-cells text-emerald-400 text-lg"></i>
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-table-cells" style="color: #34d399; font-size: 18px;"></i>
           <div>
-            <h3 id="detailed-rate-modal-title" class="text-sm font-bold">Chi Tiết Định Mức & Tính Toán Đơn Giá (Machine Hour / Labor Rate)</h3>
-            <p class="text-[10px] text-slate-300">Nhập liệu định mức chi tiết, thiết lập công thức động cho từng dòng hoặc cho tổng đơn giá.</p>
+            <h3 id="detailed-rate-modal-title" style="font-size: 14px; font-weight: bold;">Chi Tiết Định Mức & Tính Toán Machine Hour Rate (MHR)</h3>
+            <p style="font-size: 10px; color: #cbd5e1;">Khóa tiêu đề & đơn vị, chỉ nhập value khi không có công thức.</p>
           </div>
         </div>
-        <button onclick="closeDetailedRateModal()" class="text-slate-400 hover:text-white text-xl leading-none"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeDetailedRateModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <!-- BODY: CHIA ĐÔI BẢNG NHẬP LIỆU VÀ CÔNG THỨC / THẺ TAG -->
-      <div class="flex-1 flex overflow-hidden bg-slate-50">
+      <div class="modal-body">
         
-        <!-- BÊN TRÁI: BẢNG NHẬP LIỆU CHI TIẾT (CỘT SỐ, TIÊU ĐỀ, ĐƠN VỊ, INPUT, CÔNG THỨC & NÚT EDIT) -->
-        <div class="w-7/12 p-4 overflow-y-auto flex flex-col space-y-3 border-r border-slate-200">
-          <div class="flex items-center justify-between shrink-0">
-            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-              <i class="fa-solid fa-list-ol text-blue-600"></i> Bảng Thông Số Chi Tiết (Input Data Table):
-            </h4>
-            <button onclick="addDetailedRateRow()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1 shadow-sm">
+        <!-- BÊN TRÁI: BẢNG NHẬP LIỆU CHI TIẾT -->
+        <div style="width: 60%; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h4 style="font-size: 12px; font-weight: bold; color: #334155; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-list-ol" style="color: #2563eb;"></i> Bảng Thông Số Chi Tiết:
+              </h4>
+              <button id="toggle-reorder-btn" onclick="toggleRowReorderMode()" class="btn btn-light" style="padding: 4px 8px; font-size: 11px;">
+                <i class="fa-solid fa-arrows-up-down"></i> Kéo thả: <span id="reorder-status-text">Tắt</span>
+              </button>
+              <button id="toggle-del-col-btn" onclick="toggleDeleteColumn()" class="btn btn-light" style="padding: 4px 8px; font-size: 11px;">
+                Ẩn cột Xóa
+              </button>
+            </div>
+            <button onclick="addDetailedRateRow()" class="btn btn-emerald" style="padding: 6px 10px; font-size: 11px;">
               <i class="fa-solid fa-plus"></i> Thêm Hàng (+)
             </button>
           </div>
 
-          <div class="flex-1 overflow-x-auto border border-slate-200 rounded-lg bg-white shadow-sm">
-            <table class="w-full text-left text-xs border-collapse">
+          <div id="detailed-table-scroll-container" style="flex: 1; overflow-x: auto; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; max-height: 55vh;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
               <thead>
-                <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 sticky top-0 z-10">
-                  <th class="p-2 border border-slate-200 w-10 text-center">Nr.</th>
-                  <th class="p-2 border border-slate-200">Tiêu đề (Titel)</th>
-                  <th class="p-2 border border-slate-200 w-24">Đơn vị</th>
-                  <th class="p-2 border border-slate-200 w-32 bg-amber-50">Value (Input / Fx)</th>
-                  <th class="p-2 border border-slate-200 w-16 text-center">Công thức</th>
-                  <th class="p-2 border border-slate-200 w-12 text-center">Xóa</th>
+                <tr style="background: #f1f5f9; color: #334155; border-bottom: 1px solid #cbd5e1; position: sticky; top: 0; z-index: 10;">
+                  <th style="padding: 6px; border: 1px solid #cbd5e1; width: 45px; text-align: center;">Nr.</th>
+                  <th style="padding: 6px; border: 1px solid #cbd5e1; width: 50px; text-align: center; color: #4338ca; background: #e0e7ff; font-weight: bold;" title="Số hàng tham chiếu">Ref</th>
+                  <th style="padding: 6px; border: 1px solid #cbd5e1;">Tiêu đề (Title)</th>
+                  <th style="padding: 6px; border: 1px solid #cbd5e1; width: 70px;">Đơn vị</th>
+                  <th style="padding: 6px; border: 1px solid #cbd5e1; width: 140px; background: #fef3c7;">Value (Input / Fx)</th>
+                  <th style="padding: 6px; border: 1px solid #cbd5e1; width: 140px; background: #fae8ff; color: #581c87;">Công thức (Formula)</th>
+                  <th style="padding: 6px; border: 1px solid #cbd5e1; width: 60px; text-align: center;">Fx / Edit</th>
+                  <th id="th-delete-col" style="padding: 6px; border: 1px solid #cbd5e1; width: 40px; text-align: center;">Xóa</th>
                 </tr>
               </thead>
-              <tbody id="detailed-rate-tbody">
-                <!-- Dynamic rows -->
-              </tbody>
+              <tbody id="detailed-rate-tbody"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- BÊN PHẢI: KHUNG SOẠN THẢO CÔNG THỨC & DANH SÁCH THẺ TAG KÉO THẢ -->
-        <div class="w-5/12 p-4 bg-slate-100 overflow-y-auto flex flex-col space-y-3">
+        <!-- BÊN PHẢI: TRÌNH SOẠN THẢO CÔNG THỨC & THẺ TAGS -->
+        <div style="width: 40%; padding: 16px; background: #f1f5f9; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           
-          <!-- KHUNG CHỌN MỤC TIÊU ÁP DỤNG CÔNG THỨC (TỔNG ĐƠN GIÁ Hoặc HÀNG CỤ THỂ) -->
-          <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm space-y-2 shrink-0">
-            <div class="flex items-center justify-between">
-              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-                <i class="fa-solid fa-calculator text-purple-600"></i> Trình Soạn Thảo Công Thức:
+          <div style="background: #fff; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <h4 style="font-size: 12px; font-weight: bold; color: #334155; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-calculator" style="color: #7c3aed;"></i> Trình Soạn Thảo Công Thức:
               </h4>
-              <span id="target-row-badge" class="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">Mục tiêu: Total Rate</span>
+              <span id="target-row-badge" style="font-size: 10px; background: #fae8ff; color: #581c87; padding: 2px 6px; border-radius: 4px; font-weight: bold;">Mục tiêu: Total Rate</span>
             </div>
 
             <div>
-              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Áp dụng công thức này cho:</label>
-              <select id="detailed-formula-target-select" onchange="switchFormulaTarget(this.value)" class="w-full text-xs p-1.5 bg-slate-50 border border-slate-300 rounded font-bold text-purple-900 outline-none">
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 2px;">Áp dụng công thức này cho:</label>
+              <select id="detailed-formula-target-select" onchange="switchFormulaTarget(this.value)" class="form-input" style="font-weight: bold; color: #581c87; background: #f8fafc;">
                 <option value="TOTAL_RATE">-- TỔNG ĐƠN GIÁ CHÍNH (Overall Total Rate) --</option>
-                <!-- Filled dynamically with row items -->
               </select>
             </div>
 
-            <div class="drop-zone p-2.5 bg-slate-50 border border-dashed border-purple-300 rounded space-y-2" ondrop="handleDropDetailedFormula(event)" ondragover="allowDropRate(event)">
-              <textarea id="detailed-formula-textarea" rows="3" placeholder="Kéo thả các thẻ tiêu đề bên dưới hoặc nhấp nút để chèn công thức..." class="w-full text-xs p-2 bg-white border border-slate-300 rounded font-mono text-purple-800 font-bold outline-none resize-none"></textarea>
+            <div class="drop-zone" style="padding: 10px; background: #f8fafc; border: 1px dashed #d8b4fe; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;" ondrop="handleDropDetailedFormula(event)" ondragover="allowDropRate(event)" ondragleave="this.classList.remove('drag-over')">
+              <textarea id="detailed-formula-textarea" rows="3" placeholder="Kéo thả các thẻ tiêu đề bên dưới hoặc nhấp nút để chèn công thức..." class="form-input" style="font-family: monospace; color: #581c87; font-weight: bold; resize: none;"></textarea>
               
-              <div class="flex flex-wrap gap-1 text-[10px] items-center">
-                <span class="text-slate-500 font-medium mr-1">Phép toán:</span>
-                <button onclick="appendDetailedToken(' + ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 font-bold rounded">+</button>
-                <button onclick="appendDetailedToken(' - ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 font-bold rounded">-</button>
-                <button onclick="appendDetailedToken(' * ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 font-bold rounded">*</button>
-                <button onclick="appendDetailedToken(' / ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 font-bold rounded">/</button>
-                <button onclick="appendDetailedToken(' ( ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 font-bold rounded">(</button>
-                <button onclick="appendDetailedToken(' ) ')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 font-bold rounded">)</button>
-                <button onclick="clearCurrentFormula()" class="ml-auto px-2 py-1 bg-rose-100 text-rose-700 font-semibold rounded hover:bg-rose-200">Xóa công thức</button>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 10px;">
+                <span style="color: #64748b; font-weight: 500; margin-right: 4px;">Phép toán:</span>
+                <button onclick="appendDetailedToken(' + ')" class="btn btn-light" style="padding: 4px 8px;">+</button>
+                <button onclick="appendDetailedToken(' - ')" class="btn btn-light" style="padding: 4px 8px;">-</button>
+                <button onclick="appendDetailedToken(' * ')" class="btn btn-light" style="padding: 4px 8px;">*</button>
+                <button onclick="appendDetailedToken(' / ')" class="btn btn-light" style="padding: 4px 8px;">/</button>
+                <button onclick="appendDetailedToken(' ( ')" class="btn btn-light" style="padding: 4px 8px;">(</button>
+                <button onclick="appendDetailedToken(' ) ')" class="btn btn-light" style="padding: 4px 8px;">)</button>
+                <button onclick="clearCurrentFormula()" class="btn btn-rose" style="margin-left: auto; padding: 4px 8px; font-size: 10px;">Xóa công thức</button>
               </div>
             </div>
 
-            <div class="flex justify-end pt-1">
-              <button onclick="saveFormulaForSelectedTarget()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow-sm">
+            <div style="display: flex; justify-content: flex-end;">
+              <button onclick="saveFormulaForSelectedTarget()" class="btn btn-purple" style="padding: 6px 12px; font-size: 11px;">
                 <i class="fa-solid fa-check-double"></i> Lưu & Áp Dụng Công Thức
               </button>
             </div>
           </div>
 
-          <!-- DANH SÁCH THẺ TAG LÀ CÁC TIÊU ĐỀ ĐÃ TẠO -->
-          <div class="flex-1 bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2 flex items-center justify-between">
+          <div style="flex: 1; background: #fff; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden;">
+            <span style="font-size: 12px; font-weight: bold; color: #334155; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
               <span>🏷️ THẺ TIÊU ĐỀ (TAGS):</span>
-              <span class="text-[10px] text-slate-400 font-normal">Kéo thả hoặc Click để chèn</span>
+              <span style="font-size: 10px; color: #94a3b8; font-weight: normal;">Kéo thả hoặc Click để chèn</span>
             </span>
-            <div id="detailed-tags-container" class="flex-1 overflow-y-auto space-y-1.5 pr-1">
-              <!-- Render tags dynamically based on table titles -->
-            </div>
+            <div id="detailed-tags-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;"></div>
           </div>
 
         </div>
 
       </div>
 
-      <!-- FOOTER -->
-      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-between items-center shrink-0">
-        <button onclick="saveDetailedRateAsDefault()" class="px-3 py-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded font-bold flex items-center gap-1.5 shadow-sm">
+      <div class="modal-footer">
+        <button onclick="saveDetailedRateAsDefault()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
           <i class="fa-solid fa-bookmark"></i> Lưu Mặc Định (Save Default)
         </button>
-        <div class="flex gap-2">
-          <button onclick="closeDetailedRateModal()" class="px-4 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400 font-medium">Hủy</button>
-          <button onclick="applyDetailedRateModal()" class="px-4 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold flex items-center gap-1.5 shadow">
+        <div style="display: flex; gap: 8px;">
+          <button onclick="closeDetailedRateModal()" class="btn btn-light" style="padding: 6px 12px; font-size: 11px;">Hủy</button>
+          <button onclick="applyDetailedRateModal()" class="btn btn-emerald" style="padding: 6px 12px; font-size: 11px;">
             <i class="fa-solid fa-check"></i> Xác Nhận & Áp Dụng
           </button>
         </div>
@@ -569,233 +490,122 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: MA TRẬN FROM-TO & PHƯƠNG TIỆN ================= -->
-  <div id="modal-fromto" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-xl shadow-2xl w-[960px] max-w-[96vw] h-[90vh] overflow-hidden flex flex-col border border-slate-300">
-      <div class="p-3.5 bg-slate-800 text-white flex items-center justify-between border-b border-slate-700 shrink-0">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-table-cells text-purple-400 text-lg"></i>
-          <h3 class="text-sm font-bold">Ma Trận From-To & Quản Lý Phương Tiện Di Chuyển</h3>
+  <!-- ================= MODAL 2: THÊM MỚI / CHỈNH SỬA RATE ================= -->
+  <div id="modal-add-new-rate" class="modal-overlay hidden">
+    <div class="modal-container" style="width: 800px; height: 85vh;">
+      
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-table-cells" style="color: #34d399; font-size: 18px;"></i>
+          <div>
+            <h3 id="add-rate-modal-title" style="font-size: 14px; font-weight: bold;">Thêm Machine Hour Rate Mới & Cấu Hình Định Mức</h3>
+            <p style="font-size: 10px; color: #cbd5e1;">Nhập tên rate mới, cấu hình thông số chi tiết và công thức tính.</p>
+          </div>
         </div>
-        <button onclick="closeFromToModal()" class="text-slate-400 hover:text-white text-xl leading-none"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeAddNewRateModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="p-3 bg-purple-50 border-b border-purple-200 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="font-bold text-purple-900 flex items-center gap-1"><i class="fa-solid fa-calculator"></i> Quy đổi Tỷ lệ:</span>
-          <label class="text-slate-600 font-medium">Từ Trạm:</label>
-          <select id="scale-from-ws" class="p-1.5 bg-white border border-slate-300 rounded outline-none text-xs font-semibold text-slate-800 max-w-[150px]"></select>
-          <label class="text-slate-600 font-medium">Đến Trạm:</label>
-          <select id="scale-to-ws" class="p-1.5 bg-white border border-slate-300 rounded outline-none text-xs font-semibold text-slate-800 max-w-[150px]"></select>
-          <label class="text-slate-600 font-medium">Thực tế (m):</label>
-          <input type="number" id="scale-real-meters" placeholder="VD: 15.5" class="w-20 p-1.5 bg-white border border-slate-300 rounded outline-none font-bold text-blue-600">
-          <button onclick="applyScaleConversion()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded shadow flex items-center gap-1 text-xs">
-            <i class="fa-solid fa-arrows-rotate"></i> Tính Tỷ Lệ
+      <div style="padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; background: #f8fafc;">
+        
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; background: #fff; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div>
+            <label class="form-label">Mã Định Mức / ID:</label>
+            <input type="text" id="new-rate-id-input" class="form-input" style="font-weight: bold; color: #2563eb;" placeholder="MHR-001">
+          </div>
+          <div>
+            <label class="form-label">Tên Mô Tả Định Mức Mới:</label>
+            <input type="text" id="new-rate-name-input" class="form-input" style="font-weight: bold;" placeholder="Tên mô tả định mức...">
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h4 style="font-size: 12px; font-weight: bold; color: #334155; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-list-ol" style="color: #2563eb;"></i> Bảng Thông Số Chi Tiết (Setting Data):
+          </h4>
+        </div>
+
+        <div style="flex: 1; overflow-x: auto; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+            <thead>
+              <tr style="background: #f1f5f9; color: #334155; border-bottom: 1px solid #cbd5e1; position: sticky; top: 0; z-index: 10;">
+                <th style="padding: 6px; border: 1px solid #cbd5e1; width: 35px; text-align: center;">Nr.</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1; width: 50px; text-align: center; color: #4338ca; background: #e0e7ff; font-weight: bold;">Ref</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1;">Tiêu đề (Title)</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1; width: 80px;">Đơn vị</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1; width: 140px; background: #fef3c7;">Value (Input / Fx)</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1; width: 180px; background: #fae8ff; color: #581c87;">Công thức (Formula)</th>
+              </tr>
+            </thead>
+            <tbody id="add-new-rate-tbody"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <div style="font-size: 12px; font-weight: bold; color: #334155;">
+          Đơn giá tính toán: <span id="new-calculated-rate-text" style="color: #059669; font-size: 14px;">0 VND/h</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="closeAddNewRateModal()" class="btn btn-light" style="padding: 6px 12px; font-size: 11px;">Hủy</button>
+          <button id="btn-save-new-rate-action" onclick="saveNewRateItemFromModal()" class="btn btn-emerald" style="padding: 6px 14px; font-size: 11px;">
+            <i class="fa-solid fa-plus"></i> Lưu & Thêm Mới
           </button>
         </div>
-        <div id="scale-info-badge" class="bg-white px-2.5 py-1 border border-purple-300 rounded text-purple-800 font-mono text-[11px] font-semibold">
-          Tỷ lệ: Chưa thiết lập
-        </div>
       </div>
 
-      <div class="flex-1 overflow-auto p-4 space-y-4 bg-slate-50">
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide"><i class="fa-solid fa-route text-blue-600 mr-1"></i> Bảng Ma Trận Di Chuyển:</h4>
-          </div>
-          <div id="fromto-matrix-table-container" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto"></div>
-        </div>
-
-        <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm space-y-3">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-              <i class="fa-solid fa-truck-fast text-emerald-600"></i> Cấu hình Phương tiện di chuyển:
-            </h4>
-            <button onclick="addVehicleRow()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1">
-              <i class="fa-solid fa-plus"></i> Thêm Phương Tiện
-            </button>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
-                  <th class="p-2 border border-slate-200">Tên Phương Tiện</th>
-                  <th class="p-2 border border-slate-200 w-36">Thời Gian Chuẩn</th>
-                  <th class="p-2 border border-slate-200 w-32">Đơn Vị</th>
-                  <th class="p-2 border border-slate-200 w-20 text-center">Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody id="vehicles-table-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 shrink-0">
-        <span>* Công thức tính: Khoảng cách tâm trạm x Định mức phương tiện (s/m)</span>
-        <button onclick="closeFromToModal()" class="px-4 py-1.5 bg-slate-700 text-white font-semibold rounded hover:bg-slate-800">Đóng</button>
-      </div>
     </div>
   </div>
 
   <!-- ================= MODAL: THÊM / CHỈNH SỬA RESOURCE ================= -->
-  <div id="modal-node" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl w-[640px] max-w-[95vw] overflow-hidden flex flex-col border border-slate-300">
-      <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
-        <h3 id="modal-title" class="text-sm font-bold flex items-center gap-2">
-          <i class="fa-solid fa-pen-to-square text-blue-400"></i> <span>Thêm Resource Mới</span>
+  <div id="modal-node" class="modal-overlay hidden">
+    <div class="modal-container" style="width: 550px; height: auto; max-height: 85vh;">
+      <div class="modal-header">
+        <h3 id="modal-title" style="font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-pen-to-square" style="color: #60a5fa;"></i> <span>Thêm Resource Mới</span>
         </h3>
-        <button onclick="closeModalNode()" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeModalNode()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <div class="p-4 space-y-3 overflow-auto max-h-[78vh]">
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 70vh;">
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Parent Resource (Chọn Node cha):</label>
-          <input type="text" id="parent-search-input" oninput="filterParentTree()" placeholder="🔍 Gõ để lọc danh sách parent..." 
-                 class="w-full text-xs p-2 border border-slate-300 rounded mb-2 focus:ring-2 focus:ring-blue-500 outline-none">
-          <div class="border border-slate-200 rounded max-h-[110px] overflow-auto p-2 bg-slate-50 text-xs border-l border-dashed border-slate-300" id="parent-tree-select-container"></div>
-        </div>
-
-        <div id="node-type-selector-wrapper" class="hidden p-3 bg-blue-50 border border-blue-200 rounded">
-          <label class="block text-xs font-bold text-blue-900 mb-1">Chọn loại (Type) khởi tạo dưới Workcenter:</label>
-          <select id="input-sub-type-choice" onchange="updateModalFormFieldsBasedOnParentAndType()" class="w-full text-xs p-2 bg-white border border-blue-300 rounded font-semibold text-blue-800 outline-none">
-            <option value="WORKSTATION">WORKSTATION (Trạm làm việc)</option>
-            <option value="OPERATION">OPERATION (Công đoạn)</option>
-          </select>
+          <label class="form-label">Parent Resource (Chọn Node cha):</label>
+          <input type="text" id="parent-search-input" oninput="filterParentTree()" placeholder="🔍 Gõ để lọc danh sách parent..." class="form-input" style="margin-bottom: 6px;">
+          <div style="border: 1px solid #cbd5e1; border-radius: 6px; max-height: 120px; overflow-y: auto; padding: 6px; background: #f8fafc;" id="parent-tree-select-container"></div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Tên Resource (Name):</label>
-          <input type="text" id="input-node-name" class="w-full text-xs p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nhập tên...">
+          <label class="form-label">Tên Resource (Name):</label>
+          <input type="text" id="input-node-name" class="form-input" placeholder="Nhập tên...">
         </div>
-
-        <div id="resources-input-wrapper" class="p-3 bg-purple-50 border border-purple-200 rounded space-y-2 hidden">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
-              <i class="fa-solid fa-users-gear text-purple-600"></i> Danh sách Nguồn lực (Máy & Người vận hành):
-            </span>
-            <button onclick="addResourceInputRow()" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-[11px] font-semibold flex items-center gap-1 shadow-sm">
-              <i class="fa-solid fa-plus"></i> Thêm Nguồn lực
-            </button>
-          </div>
-          <div id="resources-input-container" class="space-y-2 max-h-[120px] overflow-auto pr-1"></div>
-        </div>
-
-        <div id="tools-input-wrapper" class="p-3 bg-sky-50 border border-sky-200 rounded space-y-2 hidden">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-sky-900 flex items-center gap-1.5">
-              <i class="fa-solid fa-toolbox text-sky-600"></i> Danh sách Dụng cụ / Công cụ (Tools):
-            </span>
-            <button onclick="addToolInputRow()" class="px-2 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded text-[11px] font-semibold flex items-center gap-1 shadow-sm">
-              <i class="fa-solid fa-plus"></i> Thêm Tool
-            </button>
-          </div>
-          <div id="tools-input-container" class="space-y-2 max-h-[100px] overflow-auto pr-1"></div>
-        </div>
-
-        <div id="operation-props-wrapper" class="p-3 bg-indigo-50 border border-indigo-200 rounded space-y-2.5 hidden">
-          <div class="flex items-center gap-1.5 text-indigo-900 font-bold text-xs">
-            <i class="fa-solid fa-gears text-indigo-600"></i> Thuộc tính Sub Operation / Task:
-          </div>
-          <div class="grid grid-cols-2 gap-2.5">
-            <div>
-              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Standard Time (Thời gian chuẩn):</label>
-              <input type="text" id="input-op-time" placeholder="VD: 5.0s" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-semibold text-indigo-700">
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Operation Type:</label>
-              <select id="input-op-type" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-semibold">
-                <option value="Setup (Chuẩn bị)">Setup (Chuẩn bị)</option>
-                <option value="Processing (Gia công/Thực hiện)">Processing (Gia công / Thực hiện)</option>
-                <option value="Inspection (Kiểm tra KCS)">Inspection (Kiểm tra KCS)</option>
-                <option value="Transport (Vận chuyển)">Transport (Vận chuyển)</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Công thức tính toán (Formula):</label>
-            <input type="text" id="input-op-formula" placeholder="VD: CycleTime * 1.0" class="w-full text-xs p-1.5 bg-white border border-slate-300 rounded outline-none font-mono text-slate-700">
-          </div>
-        </div>
-
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded space-y-2">
-          <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-slate-700">Tọa độ & Hiển thị trên Layout:</label>
-            <button type="button" id="node-visibility-btn" onclick="toggleNodeVisibility()" class="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-xs font-bold flex items-center gap-1.5 transition-colors">
-              <i id="node-visibility-icon" class="fa-solid fa-eye"></i> <span id="node-visibility-text">Đang hiện</span>
-            </button>
-          </div>
-          <div class="grid grid-cols-4 gap-2">
-            <div>
-              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">X:</label>
-              <input type="number" id="input-node-x" class="w-full text-xs p-1.5 border border-slate-300 rounded outline-none" value="50">
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Y:</label>
-              <input type="number" id="input-node-y" class="w-full text-xs p-1.5 border border-slate-300 rounded outline-none" value="50">
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Rộng W:</label>
-              <input type="number" id="input-node-w" class="w-full text-xs p-1.5 border border-slate-300 rounded outline-none" value="120">
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Cao H:</label>
-              <input type="number" id="input-node-h" class="w-full text-xs p-1.5 border border-slate-300 rounded outline-none" value="80">
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-end space-x-2">
-        <button onclick="closeModalNode()" class="px-3 py-1.5 text-xs bg-slate-300 text-slate-700 rounded hover:bg-slate-400">Hủy</button>
-        <button onclick="saveNodeModal()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Lưu thay đổi</button>
+      <div class="modal-footer">
+        <button onclick="closeModalNode()" class="btn btn-light" style="padding: 6px 12px; font-size: 11px;">Hủy</button>
+        <button onclick="saveNodeModal()" class="btn btn-primary" style="padding: 6px 14px; font-size: 11px;">Lưu thay đổi</button>
       </div>
     </div>
   </div>
 
   <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    const availableMachineCatalog = [
-      "Robot hàn tự động Panasonic",
-      "Khuôn dập thủy lực 200T",
-      "Máy phay CNC 5 trục Mazak",
-      "Băng tải tự động PVC",
-      "Máy ép nhựa trung tâm",
-      "Cánh tay robot gắp sản phẩm"
-    ];
-
-    const availableHumanCatalog = [
-      "Thợ vận hành máy bậc 3/7",
-      "Kỹ sư lập trình CNC",
-      "Công nhân kiểm tra KCS",
-      "Kỹ thuật viên bảo trì"
-    ];
-
-    // DANH SÁCH THẺ MHR VÀ LABOR RATE MẪU
-    const sampleMachineHourRates = [
+    let sampleMachineHourRates = [
       { id: "MHR-CNC01", name: "Máy phay CNC Mazak 5-axis", rate: 250000, unit: "VND/h" },
       { id: "MHR-WELD01", name: "Robot hàn tự động Panasonic", rate: 180000, unit: "VND/h" },
       { id: "MHR-PRESS01", name: "Khuôn dập thủy lực 200T", rate: 320000, unit: "VND/h" },
       { id: "MHR-CONV01", name: "Băng tải phân loại PVC", rate: 80000, unit: "VND/h" }
     ];
 
-    const sampleLaborRates = [
+    let sampleLaborRates = [
       { id: "LBR-TECH3", name: "Thợ vận hành CNC bậc 3/7", rate: 95000, unit: "VND/h" },
       { id: "LBR-ENG", name: "Kỹ sư lập trình & Setup", rate: 150000, unit: "VND/h" },
       { id: "LBR-KCS", name: "Công nhân kiểm định KCS", rate: 70000, unit: "VND/h" }
     ];
 
-    // CÔNG THỨC SQL MẶC ĐỊNH HOẶC ĐÃ TẠO
-    let createdSqlFormulas = [
-      { id: "sql-1", name: "CycleTime", expr: "SELECT cycle_time FROM operations", query: "SELECT cycle_time FROM operations WHERE op_id = #{op_id}" },
-      { id: "sql-2", name: "SetupTime", expr: "SELECT setup_time FROM operations", query: "SELECT setup_time FROM operations WHERE op_id = #{op_id}" },
-      { id: "sql-3", name: "MaterialRate", expr: "SELECT unit_price FROM materials", query: "SELECT unit_price FROM materials WHERE mat_id = #{mat_id}" }
-    ];
+    let selectedNodeId = "SUB-WS-01";
+    let selectedParentId = null;
+    let isLibraryEditMode = false;
 
-    let activeSqlTargetPath = null; // Lưu target input id chuẩn bị chèn token
-
-    // DỮ LIỆU CÂY MẪU BOR
     let borData = [
       {
         id: "PLANT-01",
@@ -803,13 +613,6 @@
         type: "PLANT",
         locked: false,
         expanded: true,
-        x: 40, y: 40, w: 520, h: 340,
-        hasMainRegion: true,
-        cadX: null, cadY: null, cadW: null, cadH: null,
-        hasCadRegion: false,
-        visible: true,
-        costCenter: null,
-        resourcesList: [], tools: [], operationProps: null,
         children: [
           {
             id: "WS-SHOP-01",
@@ -817,11 +620,6 @@
             type: "WORKSHOP",
             locked: false,
             expanded: true,
-            x: 50, y: 60, w: 500, h: 300,
-            hasMainRegion: true,
-            visible: true,
-            costCenter: null,
-            resourcesList: [], tools: [], operationProps: null,
             children: [
               {
                 id: "WC-101",
@@ -829,9 +627,6 @@
                 type: "WORKCENTER",
                 locked: false,
                 expanded: true,
-                x: 70, y: 80, w: 220, h: 260,
-                hasMainRegion: true,
-                visible: true,
                 costCenter: {
                   name: "CC-101: Trung tâm chi phí Gia công Gầm",
                   directFormula: "150000",
@@ -840,7 +635,6 @@
                   ovhPercent: 10,
                   ovhFixed: 5000
                 },
-                resourcesList: [], tools: [], operationProps: null,
                 children: [
                   {
                     id: "WS-101",
@@ -848,16 +642,6 @@
                     type: "WORKSTATION",
                     locked: false,
                     expanded: true,
-                    x: 90, y: 110, w: 180, h: 50,
-                    hasMainRegion: true,
-                    visible: true,
-                    costCenter: null,
-                    resourcesList: [
-                      { type: "MACHINE", name: "Robot hàn tự động Panasonic", quantity: 2 },
-                      { type: "HUMAN", name: "Thợ vận hành máy bậc 3/7", quantity: 1 }
-                    ],
-                    tools: [{ name: "Đồ gá hàn khung xe", code: "JIG-01" }],
-                    operationProps: null,
                     children: [
                       {
                         id: "OP-WS-01",
@@ -865,11 +649,6 @@
                         type: "OPERATION",
                         locked: false,
                         expanded: true,
-                        x: 95, y: 120, w: 170, h: 40,
-                        hasMainRegion: false,
-                        visible: true,
-                        costCenter: null,
-                        resourcesList: [], tools: [], operationProps: null,
                         children: [
                           {
                             id: "SUB-WS-01",
@@ -877,13 +656,6 @@
                             type: "SUB_OPERATION",
                             locked: false,
                             expanded: true,
-                            x: 100, y: 130, w: 160, h: 30,
-                            hasMainRegion: false,
-                            visible: true,
-                            costCenter: null,
-                            resourcesList: [],
-                            tools: [{ name: "Súng siết lực", code: "TOOL-T01" }],
-                            operationProps: { stdTime: "2.5s", opType: "Setup (Chuẩn bị)", formula: "CycleTime * 1.0" },
                             children: []
                           }
                         ]
@@ -898,59 +670,24 @@
       }
     ];
 
-    let transportVehicles = [
-      { id: "veh-1", name: "Xe nâng tay (Pallet Jack)", stdTime: 1.2, unit: "s/m" },
-      { id: "veh-2", name: "Xe tự hành AGV", stdTime: 0.8, unit: "s/m" },
-      { id: "veh-3", name: "Công nhân đi bộ", stdTime: 2.5, unit: "s/m" }
-    ];
-
-    let selectedVehicles = {};
-    let selectedNodeId = "WC-101";
-    let editingNode = null;
-    let selectedParentId = null;
-    let activeCadTool = "SELECT"; 
-    let activeDrawingPane = "main"; 
-    let showAllRegionsMode = false;
-    let currentModalVisibility = true;
-
-    let scaleMetersPerPixel = null; 
-    let loadedCadImage = null; 
-    let loadedMainImage = null; 
-    let hideMainImage = false;
-    let hideCadImage = false;
-
-    let zoomLevel = 1.0, panX = 0, panY = 0;
-    let isPanning = false, startPanX = 0, startPanY = 0;
-    let isDraggingBox = false, boxStartX = 0, boxStartY = 0, boxEndX = 0, boxEndY = 0;
-    let tempRegion = null;
-
-    let cadZoomLevel = 1.0, cadPanX = 0, cadPanY = 0;
-    let cadIsPanning = false, cadStartPanX = 0, cadStartPanY = 0;
-    let cadIsDraggingBox = false, cadBoxStartX = 0, cadBoxStartY = 0, cadBoxEndX = 0, cadBoxEndY = 0;
-    let cadTempRegion = null;
-
     window.addEventListener("DOMContentLoaded", () => {
       updateTreeOnly();
-      initLayoutCanvas();
-      initCadCanvas();
       setupResizers();
-      drawCanvas();
-      drawCadCanvas();
-      renderCostRateCards();
-      renderSqlShortcutsInCostModal();
+      renderRateCardsInMainView();
+      loadCostCenterIntoMainPanel(selectedNodeId);
     });
 
     function getNodeIconHTML(type, isSelected = false) {
       let iconHTML = "";
-      if (type === "PLANT") iconHTML = `<i class="fa-solid fa-industry text-emerald-500"></i>`;
-      else if (type === "WORKSHOP") iconHTML = `<i class="fa-solid fa-building text-indigo-500"></i>`;
-      else if (type === "WORKCENTER") iconHTML = `<i class="fa-solid fa-gear text-amber-500"></i>`;
-      else if (type === "WORKSTATION") iconHTML = `<i class="fa-solid fa-desktop text-sky-500"></i>`;
-      else if (type === "OPERATION") iconHTML = `<i class="fa-solid fa-gears text-purple-500"></i>`;
-      else if (type === "SUB_OPERATION") iconHTML = `<i class="fa-solid fa-list-check text-blue-500"></i>`;
-      else iconHTML = `<i class="fa-solid fa-cubes text-slate-400"></i>`;
+      if (type === "PLANT") iconHTML = `<i class="fa-solid fa-industry" style="color: #10b981;"></i>`;
+      else if (type === "WORKSHOP") iconHTML = `<i class="fa-solid fa-building" style="color: #6366f1;"></i>`;
+      else if (type === "WORKCENTER") iconHTML = `<i class="fa-solid fa-gear" style="color: #f59e0b;"></i>`;
+      else if (type === "WORKSTATION") iconHTML = `<i class="fa-solid fa-desktop" style="color: #0ea5e9;"></i>`;
+      else if (type === "OPERATION") iconHTML = `<i class="fa-solid fa-gears" style="color: #a855f7;"></i>`;
+      else if (type === "SUB_OPERATION") iconHTML = `<i class="fa-solid fa-list-check" style="color: #3b82f6;"></i>`;
+      else iconHTML = `<i class="fa-solid fa-cubes" style="color: #94a3b8;"></i>`;
 
-      if (isSelected) iconHTML = iconHTML.replace(/text-[a-z]+-500/g, "text-white");
+      if (isSelected) iconHTML = iconHTML.replace(/color: #[a-z0-9]+;/g, "color: #fff !important;");
       return iconHTML;
     }
 
@@ -992,43 +729,35 @@
       div.className = "relative select-none";
 
       const isSelected = node.id === selectedNodeId;
-      const bgClass = isSelected ? "bg-blue-600 text-white font-medium" : "hover:bg-slate-100 text-slate-700";
-      const isVisible = node.visible !== false;
+      const itemClass = isSelected ? "tree-node-item selected" : "tree-node-item";
 
       let iconHTML = getNodeIconHTML(node.type, isSelected);
       const hasChildren = node.children && node.children.length > 0;
-      const linkBadge = (node.hasMainRegion || node.hasCadRegion) ? `<span class="text-[11px] text-amber-400 font-bold ml-1" title="Đã có vị trí">📍</span>` : '';
-      const eyeIcon = isVisible ? `<i class="fa-solid fa-eye text-emerald-500 ml-1 text-[10px]"></i>` : `<i class="fa-solid fa-eye-slash text-slate-400 ml-1 text-[10px]"></i>`;
-      const costBadge = node.costCenter ? `<span class="text-[11px] text-emerald-500 font-bold ml-1" title="Đã thiết lập Cost Center: ${node.costCenter.name}">💰</span>` : '';
+      const costBadge = node.costCenter ? `<span style="font-size: 11px; margin-left: 4px;" title="Đã thiết lập Cost Center">💰</span>` : '';
 
       div.innerHTML = `
-        <div class="flex items-center justify-between p-1 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
-             style="padding-left: ${level * 16 + 4}px;"
-             onclick="selectBorNode('${node.id}')"
-             title="${node.name}">
-          <div class="flex items-center gap-1.5 min-w-0 flex-1">
-            <button onclick="event.stopPropagation(); toggleLockNode('${node.id}')" class="p-0.5 text-[10px] opacity-70 hover:opacity-100" title="Khóa/Mở khóa">
-              <i class="fa-solid ${node.locked ? 'fa-lock text-rose-500' : 'fa-lock-open text-slate-400'}"></i>
+        <div class="${itemClass}" style="padding-left: ${level * 14 + 4}px;" onclick="selectBorNode('${node.id}')" title="${node.name}">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; overflow: hidden;">
+            <button onclick="event.stopPropagation(); toggleLockNode('${node.id}')" style="background:none; border:none; cursor:pointer; font-size: 10px; opacity: 0.7;" title="Khóa/Mở khóa">
+              <i class="fa-solid ${node.locked ? 'fa-lock' : 'fa-lock-open'}" style="color: ${node.locked ? '#e11d48' : '#94a3b8'};"></i>
             </button>
             
             ${hasChildren ? `
-              <button onclick="event.stopPropagation(); toggleExpandNode('${node.id}')" class="w-4 h-4 flex items-center justify-center text-[10px] text-slate-400 hover:text-slate-600">
+              <button onclick="event.stopPropagation(); toggleExpandNode('${node.id}')" style="background:none; border:none; cursor:pointer; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b;">
                 <i class="fa-solid ${node.expanded ? 'fa-minus' : 'fa-plus'}"></i>
               </button>
-            ` : `<span class="w-4"></span>`}
+            ` : `<span style="width: 14px;"></span>`}
 
-            <span class="text-xs">${iconHTML}</span>
-            <span class="tree-node-text text-xs tracking-tight">${node.name}</span>
+            <span style="font-size: 12px;">${iconHTML}</span>
+            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;">${node.name}</span>
             ${costBadge}
-            ${linkBadge}
-            ${eyeIcon}
           </div>
         </div>
       `;
 
       if (hasChildren && node.expanded) {
         const childContainer = document.createElement("div");
-        childContainer.className = "relative border-l border-dashed border-slate-200 ml-3";
+        childContainer.style.cssText = "position: relative; border-left: 1px dashed #cbd5e1; margin-left: 12px; padding-left: 2px;";
         node.children.forEach(child => {
           childContainer.appendChild(createTreeNodeElement(child, level + 1));
         });
@@ -1040,13 +769,8 @@
 
     function selectBorNode(id) {
       selectedNodeId = id;
-      tempRegion = null;
-      cadTempRegion = null;
-      document.getElementById("save-region-btn").classList.add("hidden");
-
       updateTreeOnly();
-      drawCanvas();
-      drawCadCanvas();
+      loadCostCenterIntoMainPanel(id);
     }
 
     function toggleLockNode(id) {
@@ -1084,8 +808,7 @@
         res.parentArray.splice(res.index, 1);
         selectedNodeId = borData.length > 0 ? borData[0].id : null;
         updateTreeOnly();
-        drawCanvas();
-        drawCadCanvas();
+        if (selectedNodeId) loadCostCenterIntoMainPanel(selectedNodeId);
       }
     }
 
@@ -1101,53 +824,20 @@
 
     function updatePropertiesPanel() {
       const panel = document.getElementById("prop-panel-details");
-      const label = document.getElementById("selected-layout-label");
       const node = findNodeById(borData, selectedNodeId);
 
       if (!node) {
-        panel.innerHTML = `<p class="text-slate-400 italic">Không tìm thấy dữ liệu.</p>`;
-        label.innerText = `Chọn: Tất cả`;
+        panel.innerHTML = `<p style="color: #94a3b8; font-style: italic;">Không tìm thấy dữ liệu.</p>`;
         return;
       }
 
-      label.innerText = `Chọn: ${node.name}`;
-      let visBadge = node.visible !== false ? '<span class="text-emerald-600 font-bold">Hiện (Visible)</span>' : '<span class="text-rose-500 font-bold">Ẩn (Hidden)</span>';
-
-      let costCenterHtml = "";
-      if (node.costCenter) {
-        costCenterHtml = `
-          <div class="mt-2 pt-2 border-t border-slate-200">
-            <b class="text-slate-800 block mb-1 flex items-center justify-between">
-              <span class="text-emerald-700"><i class="fa-solid fa-sack-dollar mr-1"></i> Cost Center:</span>
-              <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Active</span>
-            </b>
-            <div class="bg-emerald-50/70 border border-emerald-200 p-2 rounded space-y-1 text-[11px]">
-              <div><b class="text-slate-700">Tên:</b> <span class="text-emerald-900 font-semibold">${node.costCenter.name}</span></div>
-              <div><b class="text-slate-700">Direct Material Cost:</b> <span class="font-mono text-emerald-700">${node.costCenter.directFormula || '0'}</span></div>
-              <div><b class="text-slate-700">Indirect Material Cost:</b> <span class="font-mono text-purple-700">${node.costCenter.indirectFormula || '0'}</span></div>
-              <div><b class="text-slate-700">Operation Cost:</b> <span class="font-mono text-blue-700 font-bold">${node.costCenter.opFormula || 'N/A'}</span></div>
-              <div><b class="text-slate-700">OVH Cost:</b> <span class="font-mono text-amber-700">${node.costCenter.ovhPercent}% + ${node.costCenter.ovhFixed} VND</span></div>
-            </div>
-          </div>
-        `;
-      } else {
-        costCenterHtml = `
-          <div class="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between">
-            <span class="text-slate-500 text-[11px]"><i class="fa-solid fa-circle-exclamation mr-1 text-amber-500"></i> Chưa cấu hình Cost Center</span>
-            <button onclick="openCostCenterModal()" class="text-[10px] text-emerald-600 font-bold hover:underline">Thêm ngay +</button>
-          </div>
-        `;
-      }
-
       panel.innerHTML = `
-        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-slate-600">
-          <div><b class="text-slate-800">Node ID:</b> ${node.id}</div>
-          <div><b class="text-slate-800">Type:</b> <span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-mono text-[10px]">${node.type}</span></div>
-          <div class="col-span-2"><b class="text-slate-800">Tên:</b> ${node.name}</div>
-          <div><b class="text-slate-800">Trạng thái:</b> ${visBadge}</div>
-          <div><b class="text-slate-800">Tọa độ:</b> X=${node.x || 0}, Y=${node.y || 0}</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: #475569; font-size: 11px;">
+          <div><b style="color: #1e293b;">Node ID:</b> ${node.id}</div>
+          <div><b style="color: #1e293b;">Type:</b> <span style="background: #e0f2fe; color: #0369a1; padding: 1px 4px; border-radius: 3px; font-family: monospace;">${node.type}</span></div>
+          <div style="grid-column: span 2;"><b style="color: #1e293b;">Tên:</b> ${node.name}</div>
+          <div><b style="color: #1e293b;">Trạng thái:</b> <span style="color: #059669; font-weight: bold;">Hiện (Visible)</span></div>
         </div>
-        ${costCenterHtml}
       `;
     }
 
@@ -1163,15 +853,68 @@
       }
     }
 
-    // ================= MODAL COST CENTER LOGIC (DRAG & DROP & SQL) =================
-    function openCostCenterModal() {
-      const node = findNodeById(borData, selectedNodeId);
-      if (!node) {
-        alert("Vui lòng chọn một nhánh Nguồn lực (Resource) trên cây trước!");
-        return;
+    // Toggle collapse section helper
+    function toggleSectionCollapse(bodyId, iconId) {
+      const body = document.getElementById(bodyId);
+      const icon = document.getElementById(iconId);
+      if (body.style.display === "none") {
+        body.style.display = "flex";
+        icon.className = "fa-solid fa-chevron-down";
+      } else {
+        body.style.display = "none";
+        icon.className = "fa-solid fa-chevron-right";
+      }
+    }
+
+    function filterLibraryCards(keyword) {
+      const query = keyword.toLowerCase();
+      document.querySelectorAll(".rate-card").forEach(card => {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(query) ? "flex" : "none";
+      });
+    }
+
+    // Toggle Edit cho từng phần trong Form Cost Center (Mặc định disabled)
+    function toggleSectionEdit(inputId, btnEl, extraInputId = null) {
+      const input = document.getElementById(inputId);
+      const isCurrentlyDisabled = input.disabled;
+      
+      input.disabled = !isCurrentlyDisabled;
+      if (extraInputId) {
+        document.getElementById(extraInputId).disabled = !isCurrentlyDisabled;
       }
 
+      if (isCurrentlyDisabled) {
+        btnEl.innerHTML = `<i class="fa-solid fa-lock-open"></i> Khóa`;
+        btnEl.className = "btn btn-amber";
+        input.focus();
+      } else {
+        btnEl.innerHTML = `<i class="fa-solid fa-pen"></i> Sửa`;
+        btnEl.className = "btn btn-light";
+      }
+    }
+
+    // ================= MAIN COST CENTER PANEL LOGIC =================
+    function loadCostCenterIntoMainPanel(nodeId) {
+      const node = findNodeById(borData, nodeId);
+      if (!node) return;
+
       document.getElementById("cost-modal-node-name").innerText = `${node.name} (${node.id})`;
+
+      const warningBanner = document.getElementById("cost-warning-banner");
+      const isSubOp = node.type === 'SUB_OPERATION';
+
+      if (!isSubOp) {
+        warningBanner.style.display = "flex";
+      } else {
+        warningBanner.style.display = "none";
+      }
+
+      // Reset all inputs to disabled when changing nodes
+      ['cost-center-name-input', 'cost-direct-formula', 'cost-indirect-formula', 'cost-op-formula', 'cost-ovh-percent', 'cost-ovh-fixed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+      });
 
       if (node.costCenter) {
         document.getElementById("cost-center-name-input").value = node.costCenter.name || "";
@@ -1188,30 +931,41 @@
         document.getElementById("cost-ovh-percent").value = 10;
         document.getElementById("cost-ovh-fixed").value = 0;
       }
-
-      renderSqlShortcutsInCostModal();
-      document.getElementById("modal-cost-center").classList.remove("hidden");
     }
 
-    function closeCostCenterModal() {
-      document.getElementById("modal-cost-center").classList.add("hidden");
+    function toggleLibraryEditMode() {
+      isLibraryEditMode = !isLibraryEditMode;
+      document.getElementById("lib-edit-status").innerText = isLibraryEditMode ? "Bật" : "Tắt";
+      const btn = document.getElementById("lib-edit-mode-btn");
+      btn.className = isLibraryEditMode ? "btn btn-amber" : "btn btn-light";
+      renderRateCardsInMainView();
     }
 
-    function renderCostRateCards() {
+    function renderRateCardsInMainView() {
       const mhrContainer = document.getElementById("mhr-cards-container");
       mhrContainer.innerHTML = "";
       sampleMachineHourRates.forEach(item => {
         const card = document.createElement("div");
-        card.className = "rate-card p-2 bg-white border border-blue-200 rounded shadow-sm hover:border-blue-400 flex items-center justify-between";
+        card.className = "rate-card";
         card.draggable = true;
         card.ondragstart = (e) => e.dataTransfer.setData("text/plain", item.id);
-        card.onclick = () => appendToken('cost-op-formula', item.id);
+        
+        let editActionHTML = isLibraryEditMode ? `
+          <button onclick="event.stopPropagation(); openEditRateModal('mhr', '${item.id}')" class="btn btn-purple" style="padding: 2px 6px; font-size: 10px;" title="Chỉnh sửa định mức">
+            <i class="fa-solid fa-pen"></i> Sửa
+          </button>` : '';
+
         card.innerHTML = `
-          <div>
-            <div class="font-bold text-xs text-slate-800">${item.name}</div>
-            <div class="text-[10px] text-blue-600 font-mono">Mã: ${item.id}</div>
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;" onclick="appendToken('cost-op-formula', '${item.id}')">
+            <div>
+              <div style="font-weight: bold; font-size: 11px; color: #1e293b;">${item.name}</div>
+              <div style="font-size: 10px; color: #2563eb; font-family: monospace;">Mã: ${item.id}</div>
+            </div>
           </div>
-          <span class="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200">${item.rate.toLocaleString('vi-VN')} ${item.unit}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; font-weight: bold; background: #eff6ff; color: #1d4ed8; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe;">${item.rate.toLocaleString('vi-VN')} ${item.unit}</span>
+            ${editActionHTML}
+          </div>
         `;
         mhrContainer.appendChild(card);
       });
@@ -1220,19 +974,65 @@
       laborContainer.innerHTML = "";
       sampleLaborRates.forEach(item => {
         const card = document.createElement("div");
-        card.className = "rate-card p-2 bg-white border border-purple-200 rounded shadow-sm hover:border-purple-400 flex items-center justify-between";
+        card.className = "rate-card";
         card.draggable = true;
         card.ondragstart = (e) => e.dataTransfer.setData("text/plain", item.id);
-        card.onclick = () => appendToken('cost-op-formula', item.id);
+
+        let editActionHTML = isLibraryEditMode ? `
+          <button onclick="event.stopPropagation(); openEditRateModal('labor', '${item.id}')" class="btn btn-purple" style="padding: 2px 6px; font-size: 10px;" title="Chỉnh sửa định mức">
+            <i class="fa-solid fa-pen"></i> Sửa
+          </button>` : '';
+
         card.innerHTML = `
-          <div>
-            <div class="font-bold text-xs text-slate-800">${item.name}</div>
-            <div class="text-[10px] text-purple-600 font-mono">Mã: ${item.id}</div>
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;" onclick="appendToken('cost-op-formula', '${item.id}')">
+            <div>
+              <div style="font-weight: bold; font-size: 11px; color: #1e293b;">${item.name}</div>
+              <div style="font-size: 10px; color: #7c3aed; font-family: monospace;">Mã: ${item.id}</div>
+            </div>
           </div>
-          <span class="text-xs font-bold bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-200">${item.rate.toLocaleString('vi-VN')} ${item.unit}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; font-weight: bold; background: #faf5ff; color: #6d28d9; padding: 2px 6px; border-radius: 4px; border: 1px solid #ddd6fe;">${item.rate.toLocaleString('vi-VN')} ${item.unit}</span>
+            ${editActionHTML}
+          </div>
         `;
         laborContainer.appendChild(card);
       });
+    }
+
+    function saveCostCenterToNode() {
+      const node = findNodeById(borData, selectedNodeId);
+      if (!node) return;
+
+      if (node.type !== 'SUB_OPERATION') {
+        alert("Chỉ các nhánh Sub-Operation mới được phép tạo và lưu Cost Center!");
+        return;
+      }
+
+      const name = document.getElementById("cost-center-name-input").value.trim();
+      if (!name) { alert("Vui lòng nhập tên Cost Center!"); return; }
+
+      node.costCenter = {
+        name: name,
+        directFormula: document.getElementById("cost-direct-formula").value.trim(),
+        indirectFormula: document.getElementById("cost-indirect-formula").value.trim(),
+        opFormula: document.getElementById("cost-op-formula").value.trim(),
+        ovhPercent: parseFloat(document.getElementById("cost-ovh-percent").value) || 0,
+        ovhFixed: parseFloat(document.getElementById("cost-ovh-fixed").value) || 0
+      };
+
+      updateTreeOnly();
+      alert("Đã lưu Cost Center cho nhánh Sub-Operation thành công!");
+    }
+
+    function removeCostCenterFromNode() {
+      const node = findNodeById(borData, selectedNodeId);
+      if (node && node.costCenter) {
+        if (confirm("Bạn có chắc muốn xóa Cost Center khỏi nguồn lực này?")) {
+          node.costCenter = null;
+          loadCostCenterIntoMainPanel(selectedNodeId);
+          updateTreeOnly();
+        }
+      }
     }
 
     function allowDropRate(e) {
@@ -1244,13 +1044,15 @@
       e.preventDefault();
       e.currentTarget.classList.remove("drag-over");
       const rateId = e.dataTransfer.getData("text/plain");
-      if (rateId) {
-        appendToken(targetInputId, rateId);
-      }
+      if (rateId) appendToken(targetInputId, rateId);
     }
 
     function appendToken(inputId, token) {
       const input = document.getElementById(inputId);
+      if (input.disabled) {
+        alert("Vui lòng bấm nút 'Sửa' ở phần này trước khi nhập công thức!");
+        return;
+      }
       let val = input.value.trim();
       if (val === "") {
         input.value = token;
@@ -1260,835 +1062,12 @@
       }
     }
 
-    // ================= SQL FORMULA BUILDER LOGIC =================
-    function openSqlBuilderModal(sectionTitle, targetInputId) {
-      activeSqlTargetPath = targetInputId;
-      document.getElementById("sql-modal-title").innerHTML = `<i class="fa-solid fa-database text-amber-400"></i> Thiết lập SQL & Công thức cho ${sectionTitle}`;
-      document.getElementById("sql-f-name").value = "";
-      document.getElementById("sql-f-expr").value = "";
-      document.getElementById("sql-f-query").value = "SELECT * FROM db_table WHERE id = #{item_id}";
-      renderSqlFormulasList();
-      document.getElementById("modal-sql-builder").classList.remove("hidden");
-    }
-
-    function closeSqlBuilderModal() {
-      document.getElementById("modal-sql-builder").classList.add("hidden");
-    }
-
-    function testSqlQuery() {
-      const q = document.getElementById("sql-f-query").value;
-      if (!q.trim()) { alert("Vui lòng nhập câu lệnh SQL để test!"); return; }
-      alert("✅ Test SQL Thành công!\nKết quả giả lập trả về hợp lệ cho câu lệnh:\n" + q);
-    }
-
-    function addSqlFormula() {
-      const name = document.getElementById("sql-f-name").value.trim();
-      const expr = document.getElementById("sql-f-expr").value.trim();
-      const query = document.getElementById("sql-f-query").value.trim();
-
-      if (!name) { alert("Vui lòng nhập tên công thức!"); return; }
-
-      createdSqlFormulas.push({
-        id: "sql-" + Date.now(),
-        name: name,
-        expr: expr || name,
-        query: query
-      });
-
-      document.getElementById("sql-f-name").value = "";
-      document.getElementById("sql-f-expr").value = "";
-      renderSqlFormulasList();
-      renderSqlShortcutsInCostModal();
-      alert(`Đã thêm công thức SQL "${name}" thành công!`);
-    }
-
-    function deleteSqlFormula(id) {
-      createdSqlFormulas = createdSqlFormulas.filter(f => f.id !== id);
-      renderSqlFormulasList();
-      renderSqlShortcutsInCostModal();
-    }
-
-    function renderSqlFormulasList() {
-      const listContainer = document.getElementById("sql-formulas-list");
-      listContainer.innerHTML = "";
-      if (createdSqlFormulas.length === 0) {
-        listContainer.innerHTML = `<div class="text-slate-400 italic p-2 text-center">Chưa có công thức SQL nào được tạo.</div>`;
-        return;
-      }
-
-      createdSqlFormulas.forEach(f => {
-        const div = document.createElement("div");
-        div.className = "p-2 bg-white border border-slate-200 rounded flex items-center justify-between shadow-sm";
-        div.innerHTML = `
-          <div>
-            <div class="font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-code text-blue-600"></i> ${f.name}</div>
-            <div class="text-[10px] text-blue-700 font-mono">Biểu thức: ${f.expr}</div>
-            <div class="text-[10px] text-emerald-700 font-mono truncate max-w-[400px]">SQL: ${f.query}</div>
-          </div>
-          <div class="flex items-center gap-1">
-            <button onclick="insertSqlFormulaToTarget('${f.name}')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-bold">Chèn</button>
-            <button onclick="deleteSqlFormula('${f.id}')" class="p-1 px-2 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        `;
-        listContainer.appendChild(div);
-      });
-    }
-
-    function insertSqlFormulaToTarget(formulaName) {
-      if (activeSqlTargetPath) {
-        appendToken(activeSqlTargetPath, formulaName);
-        closeSqlBuilderModal();
-      }
-    }
-
-    function renderSqlShortcutsInCostModal() {
-      ['cost-direct-formula', 'cost-indirect-formula', 'cost-op-formula'].forEach(inputId => {
-        const container = document.getElementById("shortcuts-" + inputId);
-        if (!container) return;
-        container.innerHTML = "";
-        
-        createdSqlFormulas.forEach(f => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded text-[10px] shadow-sm flex items-center gap-1";
-          btn.innerHTML = `<i class="fa-solid fa-bolt text-emerald-600 text-[9px]"></i> ${f.name}`;
-          btn.onclick = () => appendToken(inputId, f.name);
-          container.appendChild(btn);
-        });
-      });
-    }
-
-    function saveCostCenterToNode() {
-      const node = findNodeById(borData, selectedNodeId);
-      if (!node) return;
-
-      const name = document.getElementById("cost-center-name-input").value.trim();
-      if (!name) {
-        alert("Vui lòng nhập tên Cost Center!");
-        return;
-      }
-
-      node.costCenter = {
-        name: name,
-        directFormula: document.getElementById("cost-direct-formula").value.trim(),
-        indirectFormula: document.getElementById("cost-indirect-formula").value.trim(),
-        opFormula: document.getElementById("cost-op-formula").value.trim(),
-        ovhPercent: parseFloat(document.getElementById("cost-ovh-percent").value) || 0,
-        ovhFixed: parseFloat(document.getElementById("cost-ovh-fixed").value) || 0
-      };
-
-      closeCostCenterModal();
-      updateTreeOnly();
-      alert("Đã thiết lập và lưu Cost Center thành công!");
-    }
-
-    function removeCostCenterFromNode() {
-      const node = findNodeById(borData, selectedNodeId);
-      if (node && node.costCenter) {
-        if (confirm("Bạn có chắc muốn xóa Cost Center khỏi nguồn lực này?")) {
-          node.costCenter = null;
-          closeCostCenterModal();
-          updateTreeOnly();
-        }
-      }
-    }
-
-    // ================= DUAL CANVAS VIEWPORTS LOGIC =================
-    function setCadTool(tool) {
-      activeCadTool = tool;
-      document.getElementById("tool-select-btn").className = tool === 'SELECT' ? "px-2 py-1 bg-blue-600 text-white rounded text-[11px] font-medium flex items-center gap-1" : "px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
-      document.getElementById("tool-pan-btn").className = tool === 'PAN' ? "px-2 py-1 bg-amber-600 text-white rounded text-[11px] font-medium flex items-center gap-1" : "px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[11px] font-medium flex items-center gap-1";
-    }
-
-    let canvas, ctx;
-    function initLayoutCanvas() {
-      const wrapper = document.querySelector("#pane-original .canvas-bg");
-      canvas = document.getElementById("factory-canvas");
-      ctx = canvas.getContext("2d");
-
-      resizeCanvases();
-      window.addEventListener("resize", resizeCanvases);
-
-      wrapper.addEventListener("mousedown", (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left - panX) / zoomLevel;
-        const mouseY = (e.clientY - rect.top - panY) / zoomLevel;
-
-        if (e.button === 0 && activeCadTool === 'PAN') {
-          isPanning = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY;
-          wrapper.style.cursor = "grabbing";
-        } else if (e.button === 0 && activeCadTool === 'SELECT') {
-          activeDrawingPane = 'main'; isDraggingBox = true;
-          boxStartX = mouseX; boxStartY = mouseY; boxEndX = mouseX; boxEndY = mouseY;
-        }
-      });
-
-      window.addEventListener("mousemove", (e) => {
-        if (isPanning) {
-          panX = e.clientX - startPanX; panY = e.clientY - startPanY; drawCanvas();
-        } else if (isDraggingBox) {
-          const rect = canvas.getBoundingClientRect();
-          boxEndX = (e.clientX - rect.left - panX) / zoomLevel;
-          boxEndY = (e.clientY - rect.top - panY) / zoomLevel;
-          drawCanvas();
-        }
-      });
-
-      window.addEventListener("mouseup", () => {
-        if (isPanning) { isPanning = false; wrapper.style.cursor = "crosshair"; }
-        if (isDraggingBox) {
-          isDraggingBox = false;
-          let minX = Math.min(boxStartX, boxEndX), maxX = Math.max(boxStartX, boxEndX);
-          let minY = Math.min(boxStartY, boxEndY), maxY = Math.max(boxStartY, boxEndY);
-          let w = Math.abs(maxX - minX), h = Math.abs(maxY - minY);
-
-          if (w > 15 && h > 15) {
-            tempRegion = { x: Math.round(minX), y: Math.round(minY), w: Math.round(w), h: Math.round(h) };
-            document.getElementById("save-region-btn").classList.remove("hidden");
-          }
-          drawCanvas();
-        }
-      });
-
-      wrapper.addEventListener("wheel", (e) => {
-        e.preventDefault(); zoomLayout('main', e.deltaY < 0 ? 1.05 : 0.95);
-      });
-    }
-
-    let cadCanvas, cadCtx;
-    function initCadCanvas() {
-      const wrapper = document.querySelector("#pane-cad .canvas-bg");
-      cadCanvas = document.getElementById("cad-file-canvas");
-      cadCtx = cadCanvas.getContext("2d");
-
-      resizeCanvases();
-
-      wrapper.addEventListener("mousedown", (e) => {
-        const rect = cadCanvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left - cadPanX) / cadZoomLevel;
-        const mouseY = (e.clientY - rect.top - cadPanY) / cadZoomLevel;
-
-        if (e.button === 0 && activeCadTool === 'PAN') {
-          cadIsPanning = true; cadStartPanX = e.clientX - cadPanX; cadStartPanY = e.clientY - cadPanY;
-          wrapper.style.cursor = "grabbing";
-        } else if (e.button === 0 && activeCadTool === 'SELECT') {
-          activeDrawingPane = 'cad'; cadIsDraggingBox = true;
-          cadBoxStartX = mouseX; cadBoxStartY = mouseY; cadBoxEndX = mouseX; cadBoxEndY = mouseY;
-        }
-      });
-
-      window.addEventListener("mousemove", (e) => {
-        if (cadIsPanning) {
-          cadPanX = e.clientX - cadStartPanX; cadPanY = e.clientY - cadStartPanY; drawCadCanvas();
-        } else if (cadIsDraggingBox) {
-          const rect = cadCanvas.getBoundingClientRect();
-          cadBoxEndX = (e.clientX - rect.left - cadPanX) / cadZoomLevel;
-          cadBoxEndY = (e.clientY - rect.top - cadPanY) / cadZoomLevel;
-          drawCadCanvas();
-        }
-      });
-
-      window.addEventListener("mouseup", () => {
-        if (cadIsPanning) { cadIsPanning = false; wrapper.style.cursor = "crosshair"; }
-        if (cadIsDraggingBox) {
-          cadIsDraggingBox = false;
-          let minX = Math.min(cadBoxStartX, cadBoxEndX), maxX = Math.max(cadBoxStartX, cadBoxEndX);
-          let minY = Math.min(cadBoxStartY, cadBoxEndY), maxY = Math.max(cadBoxStartY, cadBoxEndY);
-          let w = Math.abs(maxX - minX), h = Math.abs(maxY - minY);
-
-          if (w > 15 && h > 15) {
-            cadTempRegion = { x: Math.round(minX), y: Math.round(minY), w: Math.round(w), h: Math.round(h) };
-            document.getElementById("save-region-btn").classList.remove("hidden");
-          }
-          drawCadCanvas();
-        }
-      });
-
-      wrapper.addEventListener("wheel", (e) => {
-        e.preventDefault(); zoomLayout('cad', e.deltaY < 0 ? 1.05 : 0.95);
-      });
-    }
-
-    function resizeCanvases() {
-      const wrapMain = document.querySelector("#pane-original .canvas-bg");
-      if (wrapMain && canvas) { canvas.width = wrapMain.clientWidth; canvas.height = wrapMain.clientHeight; drawCanvas(); }
-
-      const wrapCad = document.querySelector("#pane-cad .canvas-bg");
-      if (wrapCad && cadCanvas) { cadCanvas.width = wrapCad.clientWidth; cadCanvas.height = wrapCad.clientHeight; drawCadCanvas(); }
-    }
-
-    function saveSelectedRegion() {
-      let activeRegion = activeDrawingPane === 'main' ? tempRegion : cadTempRegion;
-      if (!activeRegion) return;
-
-      let selectedNode = findNodeById(borData, selectedNodeId);
-      if (!selectedNode) { alert("Vui lòng chọn một nhánh trên Cây nguồn lực trước!"); return; }
-
-      if (activeDrawingPane === 'main') {
-        selectedNode.x = activeRegion.x; selectedNode.y = activeRegion.y;
-        selectedNode.w = activeRegion.w; selectedNode.h = activeRegion.h;
-        selectedNode.hasMainRegion = true; tempRegion = null;
-      } else {
-        selectedNode.cadX = activeRegion.x; selectedNode.cadY = activeRegion.y;
-        selectedNode.cadW = activeRegion.w; selectedNode.cadH = activeRegion.h;
-        selectedNode.hasCadRegion = true; cadTempRegion = null;
-      }
-
-      selectedNode.visible = true;
-      document.getElementById("save-region-btn").classList.add("hidden");
-      updateTreeOnly(); drawCanvas(); drawCadCanvas();
-    }
-
-    function toggleHideMainImage() {
-      hideMainImage = !hideMainImage;
-      const btn = document.getElementById("hide-main-img-btn");
-      btn.innerHTML = hideMainImage ? `<i class="fa-solid fa-image-slash"></i> Hide Image: Đã ẩn` : `<i class="fa-solid fa-image"></i> Hide Image: Hiện`;
-      btn.className = hideMainImage ? "px-2 py-0.5 bg-amber-600 hover:bg-amber-500 text-white rounded text-[10px] font-semibold flex items-center gap-1" : "px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-semibold flex items-center gap-1";
-      drawCanvas();
-    }
-
-    function toggleHideCadImage() {
-      hideCadImage = !hideCadImage;
-      const btn = document.getElementById("hide-cad-img-btn");
-      btn.innerHTML = hideCadImage ? `<i class="fa-solid fa-image-slash"></i> Hide Image: Đã ẩn` : `<i class="fa-solid fa-image"></i> Hide Image: Hiện`;
-      btn.className = hideCadImage ? "px-2 py-0.5 bg-amber-600 hover:bg-amber-500 text-white rounded text-[10px] font-semibold flex items-center gap-1" : "px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-semibold flex items-center gap-1";
-      drawCadCanvas();
-    }
-
-    function toggleShowAllRegions() {
-      showAllRegionsMode = !showAllRegionsMode;
-      const btn = document.getElementById("show-all-btn");
-      btn.innerHTML = showAllRegionsMode ? `<i class="fa-solid fa-eye"></i> Show: Đang bật` : `<i class="fa-solid fa-eye-slash"></i> Show: Tắt`;
-      btn.className = showAllRegionsMode ? "px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[11px] font-semibold flex items-center gap-1" : "px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-semibold flex items-center gap-1";
-      drawCanvas(); drawCadCanvas();
-    }
-
-    function drawCanvas() {
-      if (!ctx || !canvas) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.save();
-      ctx.translate(panX, panY);
-      ctx.scale(zoomLevel, zoomLevel);
-
-      if (loadedMainImage && !hideMainImage) ctx.drawImage(loadedMainImage, 0, 0);
-
-      if (showAllRegionsMode) {
-        function drawAllNodesRecursively(nodes) {
-          nodes.forEach(n => {
-            if (n.visible !== false && n.x !== null && n.y !== null && n.x !== undefined) drawNodeRectAndText(n, ctx, 'main');
-            if (n.children) drawAllNodesRecursively(n.children);
-          });
-        }
-        drawAllNodesRecursively(borData);
-      } else {
-        let selectedNode = findNodeById(borData, selectedNodeId);
-        if (selectedNode && selectedNode.visible !== false) drawNodeRectAndText(selectedNode, ctx, 'main');
-      }
-
-      if (isDraggingBox) {
-        ctx.save(); ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 1.5; ctx.fillStyle = "rgba(59, 130, 246, 0.25)";
-        let bw = boxEndX - boxStartX, bh = boxEndY - boxStartY;
-        ctx.fillRect(boxStartX, boxStartY, bw, bh); ctx.strokeRect(boxStartX, boxStartY, bw, bh); ctx.restore();
-      }
-
-      if (tempRegion) {
-        ctx.save(); ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
-        ctx.fillRect(tempRegion.x, tempRegion.y, tempRegion.w, tempRegion.h); ctx.strokeRect(tempRegion.x, tempRegion.y, tempRegion.w, tempRegion.h); ctx.restore();
-      }
-      ctx.restore();
-    }
-
-    function drawCadCanvas() {
-      if (!cadCtx || !cadCanvas) return;
-      cadCtx.clearRect(0, 0, cadCanvas.width, cadCanvas.height);
-
-      cadCtx.save();
-      cadCtx.translate(cadPanX, cadPanY);
-      cadCtx.scale(cadZoomLevel, cadZoomLevel);
-
-      if (loadedCadImage && !hideCadImage) cadCtx.drawImage(loadedCadImage, 0, 0);
-
-      if (showAllRegionsMode) {
-        function drawAllCadNodesRecursively(nodes) {
-          nodes.forEach(n => {
-            if (n.visible !== false && n.cadX !== null && n.cadY !== null && n.cadX !== undefined) drawNodeRectAndText(n, cadCtx, 'cad');
-            if (n.children) drawAllCadNodesRecursively(n.children);
-          });
-        }
-        drawAllCadNodesRecursively(borData);
-      } else {
-        let selectedNode = findNodeById(borData, selectedNodeId);
-        if (selectedNode && selectedNode.visible !== false) drawNodeRectAndText(selectedNode, cadCtx, 'cad');
-      }
-
-      if (cadIsDraggingBox) {
-        cadCtx.save(); cadCtx.strokeStyle = "#3b82f6"; cadCtx.lineWidth = 1.5; cadCtx.fillStyle = "rgba(59, 130, 246, 0.25)";
-        let bw = cadBoxEndX - cadBoxStartX, bh = cadBoxEndY - cadBoxStartY;
-        cadCtx.fillRect(cadBoxStartX, cadBoxStartY, bw, bh); cadCtx.strokeRect(cadBoxStartX, cadBoxStartY, bw, bh); cadCtx.restore();
-      }
-
-      if (cadTempRegion) {
-        cadCtx.save(); cadCtx.strokeStyle = "#f59e0b"; cadCtx.lineWidth = 2; cadCtx.setLineDash([4, 4]); cadCtx.fillStyle = "rgba(245, 158, 11, 0.2)";
-        cadCtx.fillRect(cadTempRegion.x, cadTempRegion.y, cadTempRegion.w, cadTempRegion.h); cadCtx.strokeRect(cadTempRegion.x, cadTempRegion.y, cadTempRegion.w, cadTempRegion.h); cadCtx.restore();
-      }
-      cadCtx.restore();
-    }
-
-    function drawNodeRectAndText(node, context, paneType) {
-      let nx = paneType === 'main' ? node.x : node.cadX;
-      let ny = paneType === 'main' ? node.y : node.cadY;
-      let nw = paneType === 'main' ? node.w : node.cadW;
-      let nh = paneType === 'main' ? node.h : node.cadH;
-
-      if (nx === null || ny === null || nx === undefined || ny === undefined) return;
-      const isSelected = node.id === selectedNodeId;
-
-      context.save();
-      if (node.type === "PLANT") {
-        context.strokeStyle = isSelected ? "#3b82f6" : "#64748b"; context.lineWidth = isSelected ? 3 : 1.5;
-        context.fillStyle = isSelected ? "rgba(59, 130, 246, 0.25)" : "rgba(30, 41, 59, 0.4)";
-        context.strokeRect(nx, ny, nw, nh); context.fillRect(nx, ny, nw, nh);
-        context.fillStyle = "#cbd5e1"; context.font = "bold 11px sans-serif"; context.fillText(node.name, nx + 8, ny + 18);
-      } else if (node.type === "WORKSHOP") {
-        context.strokeStyle = isSelected ? "#6366f1" : "#4f46e5"; context.lineWidth = isSelected ? 3 : 1.5;
-        context.fillStyle = isSelected ? "rgba(99, 102, 241, 0.3)" : "rgba(79, 70, 229, 0.15)";
-        context.strokeRect(nx, ny, nw, nh); context.fillRect(nx, ny, nw, nh);
-        context.fillStyle = "#c7d2fe"; context.font = "bold 10px sans-serif"; context.fillText(node.name, nx + 7, ny + 16);
-      } else if (node.type === "WORKCENTER") {
-        context.strokeStyle = isSelected ? "#f59e0b" : "#d97706"; context.lineWidth = isSelected ? 3 : 1.5;
-        context.fillStyle = isSelected ? "rgba(245, 158, 11, 0.35)" : "rgba(180, 83, 9, 0.15)";
-        context.strokeRect(nx, ny, nw, nh); context.fillRect(nx, ny, nw, nh);
-        context.fillStyle = "#fbbf24"; context.font = "10px sans-serif"; context.fillText(node.name, nx + 6, ny + 14);
-      } else {
-        context.strokeStyle = isSelected ? "#a855f7" : "#9333ea"; context.lineWidth = isSelected ? 3 : 1;
-        context.fillStyle = isSelected ? "rgba(168, 85, 247, 0.4)" : "rgba(126, 34, 206, 0.2)";
-        context.fillRect(nx, ny, nw, nh); context.strokeRect(nx, ny, nw, nh);
-        context.fillStyle = "#e9d5ff"; context.font = "9px sans-serif"; context.fillText(node.name, nx + 5, ny + 15);
-      }
-
-      if (isSelected) {
-        context.shadowColor = "#3b82f6"; context.shadowBlur = 18; context.strokeStyle = "#60a5fa"; context.lineWidth = 3;
-        context.strokeRect(nx - 2, ny - 2, nw + 4, nh + 4);
-      }
-      context.restore();
-    }
-
-    function calculateWorkstationDistanceMatrix(nodes) {
-      let workstations = [];
-      function collectWorkstations(list, parentWorkCenterName = "N/A") {
-        list.forEach(n => {
-          let currentWC = parentWorkCenterName;
-          if (n.type === "WORKCENTER") currentWC = n.name;
-          if (n.type === "WORKSTATION" && n.visible !== false && n.x !== null && n.y !== null) {
-            workstations.push({ ...n, workCenterName: currentWC });
-          }
-          if (n.children) collectWorkstations(n.children, currentWC);
-        });
-      }
-      collectWorkstations(nodes);
-
-      let distanceMatrix = {};
-      workstations.forEach(ws1 => {
-        distanceMatrix[ws1.id] = {};
-        let cx1 = (ws1.x || 0) + (ws1.w || 0) / 2; let cy1 = (ws1.y || 0) + (ws1.h || 0) / 2;
-
-        workstations.forEach(ws2 => {
-          let cx2 = (ws2.x || 0) + (ws2.w || 0) / 2; let cy2 = (ws2.y || 0) + (ws2.h || 0) / 2;
-          let manhattanCenterDistance = Math.abs(cx2 - cx1) + Math.abs(cy2 - cy1);
-          distanceMatrix[ws1.id][ws2.id] = {
-            from: ws1.name, to: ws2.name,
-            pixelDistance: Math.round(manhattanCenterDistance)
-          };
-        });
-      });
-      return { workstations, distanceMatrix };
-    }
-
-    function openFromToModal() {
-      document.getElementById("modal-fromto").classList.remove("hidden");
-      let data = calculateWorkstationDistanceMatrix(borData);
-      let workstations = data.workstations;
-
-      const fromSelect = document.getElementById("scale-from-ws");
-      const toSelect = document.getElementById("scale-to-ws");
-      fromSelect.innerHTML = ""; toSelect.innerHTML = "";
-
-      workstations.forEach(ws => {
-        let opt1 = document.createElement("option"); opt1.value = ws.id; opt1.innerText = `${ws.name}`; fromSelect.appendChild(opt1);
-        let opt2 = document.createElement("option"); opt2.value = ws.id; opt2.innerText = `${ws.name}`; toSelect.appendChild(opt2);
-      });
-      if (workstations.length >= 2) toSelect.selectedIndex = 1;
-
-      renderVehiclesTable(); renderFromToMatrixTable();
-    }
-
-    function closeFromToModal() { document.getElementById("modal-fromto").classList.add("hidden"); }
-
-    function addVehicleRow(name = "Phương tiện mới", stdTime = 1.0, unit = "s/m") {
-      transportVehicles.push({ id: "veh-" + Date.now(), name, stdTime, unit });
-      renderVehiclesTable(); renderFromToMatrixTable();
-    }
-
-    function updateVehicleData(vehId, field, val) {
-      let veh = transportVehicles.find(v => v.id === vehId);
-      if (veh) {
-        if (field === 'stdTime') veh.stdTime = parseFloat(val) || 0;
-        else if (field === 'name') veh.name = val;
-        else if (field === 'unit') veh.unit = val;
-        renderFromToMatrixTable();
-      }
-    }
-
-    function removeVehicle(vehId) {
-      if (transportVehicles.length <= 1) return;
-      transportVehicles = transportVehicles.filter(v => v.id !== vehId);
-      renderVehiclesTable(); renderFromToMatrixTable();
-    }
-
-    function renderVehiclesTable() {
-      const tbody = document.getElementById("vehicles-table-tbody");
-      tbody.innerHTML = "";
-      transportVehicles.forEach(veh => {
-        const tr = document.createElement("tr");
-        tr.className = "border-b border-slate-200 hover:bg-slate-50";
-        tr.innerHTML = `
-          <td class="p-2 border border-slate-200"><input type="text" value="${veh.name}" oninput="updateVehicleData('${veh.id}', 'name', this.value)" class="w-full text-xs p-1 bg-white border border-slate-300 rounded outline-none font-medium"></td>
-          <td class="p-2 border border-slate-200"><input type="number" step="0.1" value="${veh.stdTime}" oninput="updateVehicleData('${veh.id}', 'stdTime', this.value)" class="w-full text-xs p-1 bg-white border border-slate-300 rounded outline-none font-bold text-emerald-600"></td>
-          <td class="p-2 border border-slate-200"><input type="text" value="${veh.unit}" oninput="updateVehicleData('${veh.id}', 'unit', this.value)" class="w-full text-xs p-1 bg-white border border-slate-300 rounded outline-none font-mono"></td>
-          <td class="p-2 border border-slate-200 text-center"><button onclick="removeVehicle('${veh.id}')" class="px-2 py-1 bg-rose-100 text-rose-600 rounded text-xs"><i class="fa-solid fa-trash"></i></button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function applyScaleConversion() {
-      const fromId = document.getElementById("scale-from-ws").value;
-      const toId = document.getElementById("scale-to-ws").value;
-      const realMeters = parseFloat(document.getElementById("scale-real-meters").value);
-
-      if (!fromId || !toId || fromId === toId || isNaN(realMeters) || realMeters <= 0) return;
-
-      let data = calculateWorkstationDistanceMatrix(borData);
-      let pixelDist = data.distanceMatrix[fromId][toId].pixelDistance;
-      if (pixelDist === 0) return;
-
-      scaleMetersPerPixel = realMeters / pixelDist;
-      const badge = document.getElementById("scale-info-badge");
-      badge.innerText = `Tỷ lệ: 1 px = ${scaleMetersPerPixel.toFixed(4)} m`;
-      badge.className = "bg-emerald-100 border border-emerald-300 text-emerald-800 px-2.5 py-1 rounded font-mono text-[11px] font-bold";
-
-      renderFromToMatrixTable();
-    }
-
-    function handleCellVehicleChange(ws1Id, ws2Id, vehId) {
-      selectedVehicles[`${ws1Id}_${ws2Id}`] = vehId;
-      renderFromToMatrixTable();
-    }
-
-    function renderFromToMatrixTable() {
-      const container = document.getElementById("fromto-matrix-table-container");
-      let data = calculateWorkstationDistanceMatrix(borData);
-      let workstations = data.workstations;
-      let matrix = data.distanceMatrix;
-
-      if (workstations.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center text-slate-400 italic">Không có Workstation hiển thị.</div>`;
-        return;
-      }
-
-      let tableHTML = `<table class="w-full text-center border-collapse text-xs"><thead><tr class="bg-slate-800 text-white font-bold"><th class="p-2.5 border border-slate-700 text-left min-w-[200px]">From \\ To</th>`;
-      workstations.forEach(ws => { tableHTML += `<th class="p-2.5 border border-slate-700 min-w-[150px] font-semibold text-slate-200">${ws.name}</th>`; });
-      tableHTML += `</tr></thead><tbody>`;
-
-      workstations.forEach(ws1 => {
-        tableHTML += `<tr class="hover:bg-purple-50/50"><td class="p-2 border border-slate-200 bg-slate-100 text-left font-bold text-slate-800">${ws1.name}</td>`;
-        workstations.forEach(ws2 => {
-          let cellData = matrix[ws1.id][ws2.id];
-          let isSelf = ws1.id === ws2.id;
-          let distanceVal = cellData.pixelDistance;
-          let unitLabel = "px";
-
-          if (scaleMetersPerPixel !== null) { distanceVal = distanceVal * scaleMetersPerPixel; unitLabel = "m"; }
-
-          if (isSelf) {
-            tableHTML += `<td class="p-2 border border-slate-200 bg-slate-200/60 font-mono text-slate-400">-</td>`;
-          } else {
-            let currentVehId = selectedVehicles[`${ws1.id}_${ws2.id}`] || (transportVehicles[0] ? transportVehicles[0].id : null);
-            let activeVeh = transportVehicles.find(v => v.id === currentVehId) || transportVehicles[0];
-            let travelTime = activeVeh ? (distanceVal * activeVeh.stdTime).toFixed(1) : 0;
-            let vehOptions = transportVehicles.map(v => `<option value="${v.id}" ${v.id === currentVehId ? 'selected' : ''}>${v.name}</option>`).join('');
-
-            tableHTML += `
-              <td class="p-2 border border-slate-200">
-                <div class="font-bold text-blue-700 mb-1">${distanceVal.toFixed(1)} ${unitLabel}</div>
-                <select onchange="handleCellVehicleChange('${ws1.id}', '${ws2.id}', this.value)" class="w-full p-1 bg-white border border-slate-300 rounded text-[10px] outline-none mb-1">${vehOptions}</select>
-                <div class="text-[11px] font-bold text-emerald-700 bg-emerald-50 py-0.5 px-1 rounded border border-emerald-200">⏱️ ${travelTime} s</div>
-              </td>
-            `;
-          }
-        });
-        tableHTML += `</tr>`;
-      });
-      tableHTML += `</tbody></table>`;
-      container.innerHTML = tableHTML;
-    }
-
-    function saveAndSyncToMain() {
-      if (loadedCadImage) loadedMainImage = loadedCadImage;
-      function syncNodeData(node) {
-        if (node.cadX !== null && node.cadY !== null) {
-          node.x = node.cadX; node.y = node.cadY; node.w = node.cadW; node.h = node.cadH; node.hasMainRegion = true;
-        }
-        if (node.children) node.children.forEach(c => syncNodeData(c));
-      }
-      borData.forEach(n => syncNodeData(n));
-
-      document.getElementById("pane-cad").classList.add("hidden");
-      document.getElementById("resizer-dual").classList.add("hidden");
-      document.getElementById("pane-original").style.flex = "1";
-      resizeCanvases();
-      alert("Đã đồng bộ dữ liệu vị trí CAD và BOR thành công!");
-      drawCanvas();
-    }
-
-    function zoomLayout(pane, factor) {
-      if (pane === 'main') {
-        zoomLevel = Math.max(0.3, Math.min(3.0, zoomLevel * factor));
-        document.getElementById("main-zoom-text").innerText = `${Math.round(zoomLevel * 100)}%`; drawCanvas();
-      } else {
-        cadZoomLevel = Math.max(0.3, Math.min(3.0, cadZoomLevel * factor));
-        document.getElementById("cad-zoom-text").innerText = `${Math.round(cadZoomLevel * 100)}%`; drawCadCanvas();
-      }
-    }
-
-    function resetZoomLayout() {
-      zoomLevel = 1.0; panX = 0; panY = 0; cadZoomLevel = 1.0; cadPanX = 0; cadPanY = 0;
-      document.getElementById("main-zoom-text").innerText = "100%"; document.getElementById("cad-zoom-text").innerText = "100%";
-      drawCanvas(); drawCadCanvas();
-    }
-
-    function importCadFile(e) {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          loadedCadImage = img;
-          document.getElementById("cad-empty-state").classList.add("hidden");
-          document.getElementById("pane-cad").classList.remove("hidden");
-          document.getElementById("resizer-dual").classList.remove("hidden");
-          document.getElementById("pane-original").style.flex = "0 0 50%";
-          document.getElementById("pane-cad").style.flex = "1";
-          resizeCanvases();
-        };
-        img.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function addResourceInputRow(resType = "MACHINE", resName = "", resQty = 1) {
-      const container = document.getElementById("resources-input-container");
-      const rowId = "res-row-" + Date.now() + Math.random().toString(36).substr(2, 4);
-      let catalogList = resType === 'MACHINE' ? availableMachineCatalog : availableHumanCatalog;
-      let datalistId = "dl-" + rowId;
-      let optionsHTML = catalogList.map(item => `<option value="${item}">`).join('');
-
-      const div = document.createElement("div");
-      div.className = "flex items-center gap-2 res-row bg-white p-1.5 border border-purple-200 rounded shadow-sm";
-      div.id = rowId;
-      div.innerHTML = `
-        <select onchange="updateResCatalogDropdown('${rowId}', this.value)" class="res-type-select text-xs p-1.5 bg-slate-100 border border-slate-300 rounded outline-none font-semibold w-28">
-          <option value="MACHINE" ${resType === 'MACHINE' ? 'selected' : ''}>🤖 Máy</option>
-          <option value="HUMAN" ${resType === 'HUMAN' ? 'selected' : ''}>👤 Người</option>
-        </select>
-        <input type="text" list="${datalistId}" placeholder="🔍 Tên nguồn lực..." value="${resName}" class="res-name-input flex-1 text-xs p-1.5 border border-slate-300 rounded outline-none">
-        <datalist id="${datalistId}" class="res-datalist">${optionsHTML}</datalist>
-        <input type="number" min="1" value="${resQty}" class="res-qty-input w-16 text-xs p-1.5 border border-slate-300 rounded outline-none font-bold text-purple-700 text-center">
-        <button onclick="document.getElementById('${rowId}').remove()" class="p-1.5 px-2 bg-rose-100 text-rose-600 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
-      `;
-      container.appendChild(div);
-    }
-
-    function updateResCatalogDropdown(rowId, newType) {
-      const row = document.getElementById(rowId);
-      const datalist = row.querySelector(".res-datalist");
-      let catalogList = newType === 'MACHINE' ? availableMachineCatalog : availableHumanCatalog;
-      datalist.innerHTML = catalogList.map(item => `<option value="${item}">`).join('');
-    }
-
-    function addToolInputRow(toolName = "", toolCode = "") {
-      const container = document.getElementById("tools-input-container");
-      const rowId = "tool-row-" + Date.now() + Math.random().toString(36).substr(2, 4);
-      const div = document.createElement("div");
-      div.className = "flex items-center gap-2 tool-row";
-      div.id = rowId;
-      div.innerHTML = `
-        <input type="text" placeholder="Tên dụng cụ..." value="${toolName}" class="tool-name-input flex-1 text-xs p-1.5 border border-slate-300 rounded outline-none">
-        <input type="text" placeholder="Mã code..." value="${toolCode}" class="tool-code-input w-28 text-xs p-1.5 border border-slate-300 rounded outline-none font-mono">
-        <button onclick="document.getElementById('${rowId}').remove()" class="p-1.5 px-2 bg-rose-100 text-rose-600 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
-      `;
-      container.appendChild(div);
-    }
-
-    function toggleNodeVisibility() { currentModalVisibility = !currentModalVisibility; updateVisibilityButtonUI(); }
-
-    function updateVisibilityButtonUI() {
-      const btn = document.getElementById("node-visibility-btn");
-      const icon = document.getElementById("node-visibility-icon");
-      const text = document.getElementById("node-visibility-text");
-      if (currentModalVisibility) {
-        btn.className = "px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-xs font-bold flex items-center gap-1.5";
-        icon.className = "fa-solid fa-eye"; text.innerText = "Đang hiện";
-      } else {
-        btn.className = "px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded text-xs font-bold flex items-center gap-1.5";
-        icon.className = "fa-solid fa-eye-slash"; text.innerText = "Đang ẩn";
-      }
-    }
-
-    function updateModalFormFieldsBasedOnParentAndType() {
-      const typeSelectorWrapper = document.getElementById("node-type-selector-wrapper");
-      const resWrapper = document.getElementById("resources-input-wrapper");
-      const toolsWrapper = document.getElementById("tools-input-wrapper");
-      const opPropsWrapper = document.getElementById("operation-props-wrapper");
-      const subTypeSelect = document.getElementById("input-sub-type-choice");
-
-      let parentNode = selectedParentId ? findNodeById(borData, selectedParentId) : null;
-      let targetType = "PLANT";
-
-      if (!parentNode) targetType = "PLANT";
-      else if (parentNode.type === "PLANT") targetType = "WORKSHOP";
-      else if (parentNode.type === "WORKSHOP") targetType = "WORKCENTER";
-      else if (parentNode.type === "WORKCENTER") { typeSelectorWrapper.classList.remove("hidden"); targetType = subTypeSelect.value; }
-      else if (parentNode.type === "WORKSTATION") targetType = "OPERATION";
-      else if (parentNode.type === "OPERATION") targetType = "SUB_OPERATION";
-
-      if (parentNode?.type !== "WORKCENTER") typeSelectorWrapper.classList.add("hidden");
-
-      if (targetType === "WORKSTATION") {
-        resWrapper.classList.remove("hidden"); toolsWrapper.classList.remove("hidden"); opPropsWrapper.classList.add("hidden");
-      } else if (targetType === "SUB_OPERATION") {
-        resWrapper.classList.add("hidden"); toolsWrapper.classList.remove("hidden"); opPropsWrapper.classList.remove("hidden");
-      } else {
-        resWrapper.classList.add("hidden"); toolsWrapper.classList.add("hidden"); opPropsWrapper.classList.add("hidden");
-      }
-    }
-
-    function openAddNodeModal() {
-      editingNode = null;
-      document.getElementById("modal-title").innerText = "Thêm Resource Mới";
-      document.getElementById("input-node-name").value = "";
-      currentModalVisibility = true; updateVisibilityButtonUI();
-
-      document.getElementById("resources-input-container").innerHTML = ""; addResourceInputRow("MACHINE", "", 1);
-      document.getElementById("tools-input-container").innerHTML = ""; addToolInputRow();
-
-      selectedParentId = selectedNodeId || null;
-      renderParentTreeSelect(); updateModalFormFieldsBasedOnParentAndType();
-      document.getElementById("modal-node").classList.remove("hidden");
-    }
-
-    function closeModalNode() { document.getElementById("modal-node").classList.add("hidden"); }
-
-    function renderParentTreeSelect(filterText = "") {
-      const container = document.getElementById("parent-tree-select-container");
-      container.innerHTML = "";
-
-      const rootOption = document.createElement("div");
-      rootOption.className = `p-1.5 hover:bg-blue-50 rounded cursor-pointer flex items-center gap-2 ${selectedParentId === null ? 'bg-blue-100 font-bold text-blue-700' : 'text-slate-700'}`;
-      rootOption.innerHTML = `<i class="fa-solid fa-folder-open text-amber-500"></i> <span>-- Gốc (Root / Plant mới) --</span>`;
-      rootOption.onclick = () => selectParentNodeOption(null);
-      container.appendChild(rootOption);
-
-      function renderParentNode(node, level) {
-        if (filterText && !node.name.toLowerCase().includes(filterText.toLowerCase())) {
-          if (node.children) node.children.forEach(c => renderParentNode(c, level + 1));
-          return;
-        }
-        const isSelected = selectedParentId === node.id;
-        const div = document.createElement("div");
-        div.className = `p-1.5 hover:bg-blue-50 rounded cursor-pointer my-0.5 flex items-center gap-2 ${isSelected ? 'bg-blue-100 text-blue-700 font-bold' : 'text-slate-700'}`;
-        div.style.paddingLeft = `${level * 16 + 8}px`;
-        div.innerHTML = `<span class="w-4"></span> ${getNodeIconHTML(node.type)} <span class="truncate">${node.name}</span>`;
-        div.onclick = () => selectParentNodeOption(node.id);
-        container.appendChild(div);
-
-        if (node.children) node.children.forEach(c => renderParentNode(c, level + 1));
-      }
-      borData.forEach(n => renderParentNode(n, 0));
-    }
-
-    function filterParentTree() { renderParentTreeSelect(document.getElementById("parent-search-input").value); }
-    function selectParentNodeOption(id) { selectedParentId = id; filterParentTree(); updateModalFormFieldsBasedOnParentAndType(); }
-
-    function saveNodeModal() {
-      const name = document.getElementById("input-node-name").value;
-      const x = parseInt(document.getElementById("input-node-x").value) || 50;
-      const y = parseInt(document.getElementById("input-node-y").value) || 50;
-      const w = parseInt(document.getElementById("input-node-w").value) || 120;
-      const h = parseInt(document.getElementById("input-node-h").value) || 80;
-
-      if (!name) { alert("Vui lòng nhập tên Resource!"); return; }
-
-      let parentNode = selectedParentId ? findNodeById(borData, selectedParentId) : null;
-      let calculatedType = "PLANT";
-
-      if (!parentNode) calculatedType = "PLANT";
-      else if (parentNode.type === "PLANT") calculatedType = "WORKSHOP";
-      else if (parentNode.type === "WORKSHOP") calculatedType = "WORKCENTER";
-      else if (parentNode.type === "WORKCENTER") calculatedType = document.getElementById("input-sub-type-choice").value;
-      else if (parentNode.type === "WORKSTATION") calculatedType = "OPERATION";
-      else if (parentNode.type === "OPERATION") calculatedType = "SUB_OPERATION";
-
-      const newNode = {
-        id: "RES-" + Date.now().toString().slice(-4),
-        name: name, type: calculatedType,
-        visible: currentModalVisibility, locked: false, expanded: true,
-        x: x, y: y, w: w, h: h,
-        cadX: null, cadY: null, cadW: null, cadH: null,
-        hasMainRegion: true, hasCadRegion: false,
-        costCenter: null, resourcesList: [], tools: [], operationProps: null, children: []
-      };
-
-      if (selectedParentId) {
-        const parent = findNodeById(borData, selectedParentId);
-        if (parent) { if (!parent.children) parent.children = []; parent.children.push(newNode); }
-      } else { borData.push(newNode); }
-
-      closeModalNode(); updateTreeOnly(); drawCanvas(); drawCadCanvas();
-    }
-
-    function setupResizers() {
-      const resizerH = document.getElementById("resizer-bor-layout");
-      const leftContainer = document.getElementById("left-bor-container");
-      let isDraggingH = false;
-
-      resizerH.addEventListener("mousedown", () => { isDraggingH = true; resizerH.classList.add("active"); });
-      window.addEventListener("mousemove", (e) => {
-        if (isDraggingH && e.clientX > 280 && e.clientX < window.innerWidth * 0.7) {
-          leftContainer.style.width = `${e.clientX}px`; resizeCanvases();
-        }
-      });
-      window.addEventListener("mouseup", () => { isDraggingH = false; resizerH.classList.remove("active"); });
-
-      const resizerDual = document.getElementById("resizer-dual");
-      const paneOriginal = document.getElementById("pane-original");
-      let isDraggingDual = false;
-
-      resizerDual.addEventListener("mousedown", () => { isDraggingDual = true; resizerDual.classList.add("active"); });
-      window.addEventListener("mousemove", (e) => {
-        if (isDraggingDual) {
-          const containerRect = document.getElementById("dual-viewports-container").getBoundingClientRect();
-          let percent = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-          if (percent > 20 && percent < 80) { paneOriginal.style.flex = `0 0 ${percent}%`; resizeCanvases(); }
-        }
-      });
-      window.addEventListener("mouseup", () => { isDraggingDual = false; resizerDual.classList.remove("active"); });
-    }
-  
-    // ================= DETAILED RATE & FORMULA CALCULATOR LOGIC (EXCEL CELL FORMULA CAPABILITY) =================
+    // ================= MODAL 1: CẤU HÌNH ĐỊNH MỨC GỐC & COSTING STRUCTURE =================
     let currentDetailedRateType = 'mhr';
-    let currentActiveTargetIndex = 'TOTAL_RATE'; // 'TOTAL_RATE' or row index number
+    let currentActiveTargetIndex = 'TOTAL_RATE'; 
+    let isRowReorderEnabled = false; 
+    let draggedRowIndex = null;
+    let isDeleteColumnVisible = true;
 
     let detailedRateRowsData = {
       mhr: [
@@ -2104,41 +1083,37 @@
         { nr: 10, title: "Power consumption", unit: "kw", value: 25, formula: "" },
         { nr: 11, title: "Cost per kwh", unit: "VND/kwh", value: 2500, formula: "" },
         { nr: 12, title: "total investment", unit: "VND", value: 0, formula: "Investment + Additional cost + Additional tools" },
-        { nr: 13, title: "New Item 13", unit: "VND", value: 0, formula: "" }
+        { nr: 13, title: "maintenance cost", unit: "VND", value: 0, formula: "Maintenance Rate * total investment" }
       ],
       labor: [
         { nr: 1, title: "FTE Full time equivalent", unit: "pax", value: 2, formula: "" },
         { nr: 2, title: "Yearly salary", unit: "VND/pa", value: 125000000, formula: "" },
         { nr: 3, title: "Yearly additional cost", unit: "VND/pa", value: 27500000, formula: "" },
         { nr: 4, title: "Working hours per year", unit: "h/pa", value: 2000, formula: "" }
+      ],
+      costing_structure: [
+        { nr: 1, title: "Direct Operation Cost", unit: "VND/h", value: 250000, formula: "" },
+        { nr: 2, title: "Indirect Operation Cost", unit: "VND/h", value: 50000, formula: "" },
+        { nr: 3, title: "Direct Material Cost", unit: "VND", value: 1000000, formula: "" },
+        { nr: 4, title: "Indirect Material Cost", unit: "VND", value: 150000, formula: "" }
       ]
     };
 
     let detailedRateFormulas = {
       mhr: "(total investment / Depreciation period) / Yearly running hours + (Power consumption * Cost per kwh)",
-      labor: "(Yearly salary + Yearly additional cost) * FTE Full time equivalent / Working hours per year"
+      labor: "(Yearly salary + Yearly additional cost) * FTE Full time equivalent / Working hours per year",
+      costing_structure: "Direct Operation Cost + Indirect Operation Cost + Direct Material Cost + Indirect Material Cost"
     };
 
     function openDetailedRateModal(type) {
       currentDetailedRateType = type;
       currentActiveTargetIndex = 'TOTAL_RATE';
+      isRowReorderEnabled = false;
 
       const titleEl = document.getElementById("detailed-rate-modal-title");
-      if (type === 'mhr') {
-        titleEl.innerText = "Chi Tiết Định Mức & Tính Toán Machine Hour Rate (MHR)";
-      } else {
-        titleEl.innerText = "Chi Tiết Định Mức & Tính Toán Labor Rate (Nhân công)";
-      }
-
-      // Load from localStorage if saved
-      const savedData = localStorage.getItem("bor_detailed_rate_" + type);
-      if (savedData) {
-        try {
-          let parsed = JSON.parse(savedData);
-          detailedRateRowsData[type] = parsed.rows || detailedRateRowsData[type];
-          detailedRateFormulas[type] = parsed.formula || detailedRateFormulas[type];
-        } catch(e) {}
-      }
+      if (type === 'mhr') titleEl.innerText = "Chi Tiết Định Mức & Tính Toán Machine Hour Rate (MHR)";
+      else if (type === 'labor') titleEl.innerText = "Chi Tiết Định Mức & Tính Toán Labor Rate (Nhân công)";
+      else titleEl.innerText = "Cấu Trúc Giá (Costing Structure Setup)";
 
       recalculateAllRowsData();
       populateTargetSelectOptions();
@@ -2152,60 +1127,77 @@
       document.getElementById("modal-detailed-rate").classList.add("hidden");
     }
 
-    // TÍNH TOÁN CÔNG THỨC TOÀN BỘ BẢNG (Dây chuyền phụ thuộc công thức)
+    function toggleRowReorderMode() {
+      isRowReorderEnabled = !isRowReorderEnabled;
+      document.getElementById("reorder-status-text").innerText = isRowReorderEnabled ? "Bật" : "Tắt";
+      renderDetailedRateTable();
+    }
+
+    function toggleDeleteColumn() {
+      isDeleteColumnVisible = !isDeleteColumnVisible;
+      const btn = document.getElementById("toggle-del-col-btn");
+      if (btn) btn.innerText = isDeleteColumnVisible ? "Ẩn cột Xóa" : "Hiện cột Xóa";
+      renderDetailedRateTable();
+    }
+
     function recalculateAllRowsData() {
       let rows = detailedRateRowsData[currentDetailedRateType];
       if (!rows) return;
-
-      // Thực hiện lặp lại để giải quyết các phụ thuộc công thức đa tầng (multilevel dependency)
+      rows.forEach((r, idx) => { r.nr = idx + 1; });
       for (let iteration = 0; iteration < 3; iteration++) {
-        rows.forEach((row, idx) => {
+        rows.forEach((row) => {
           if (row.formula && row.formula.trim() !== "") {
             let calculatedVal = evaluateRowFormula(row.formula, rows);
-            if (!isNaN(calculatedVal)) {
-              row.value = calculatedVal;
-            }
+            if (!isNaN(calculatedVal)) row.value = calculatedVal;
           }
         });
       }
     }
 
-    // ĐÁNH GIÁ BIỂU THỨC CÔNG THỨC TỪ BẢNG TIÊU ĐỀ
     function evaluateRowFormula(exprStr, rowsList) {
       if (!exprStr || !exprStr.trim()) return 0;
       let cleanExpr = exprStr;
-
-      // Thay thế tên các tiêu đề dài ngắn khác nhau bằng giá trị tương ứng (sắp xếp độ dài giảm dần để tránh đè từ)
       let sortedRows = [...rowsList].sort((a, b) => b.title.length - a.title.length);
-
       sortedRows.forEach(r => {
         if (r.title && r.title.trim()) {
           let escapedTitle = r.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          let regex = new RegExp(escapedTitle, 'g');
-          cleanExpr = cleanExpr.replace(regex, `(${r.value || 0})`);
+          let regex = new RegExp(`\\b${escapedTitle}\\b`);
+          let valExpr = (r.unit && r.unit.trim() === '%') ? `(${r.value || 0} / 100)` : `(${r.value || 0})`;
+          cleanExpr = cleanExpr.replace(regex, valExpr);
         }
       });
-
       try {
-        // Chỉ cho phép các toán tử toán học cơ bản và số an toàn
         let safeExpr = cleanExpr.replace(/[^0-9.\-+\/*() ]/g, '');
         if (!safeExpr.trim()) return 0;
         let result = Function(`"use strict"; return (${safeExpr})`)();
         return isNaN(result) ? 0 : Math.round(result * 100) / 100;
-      } catch (e) {
-        return 0;
-      }
+      } catch (e) { return 0; }
+    }
+
+    function getReferencedRowNumbers(row, rowsList) {
+      if (!row.formula || !row.formula.trim()) return '-';
+      let refs = [];
+      let sortedRows = [...rowsList].sort((a, b) => b.title.length - a.title.length);
+      sortedRows.forEach(r => {
+        if (r.title && r.title.trim() && r.title !== row.title) {
+          let escapedTitle = r.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          let regex = new RegExp(`\\b${escapedTitle}\\b`);
+          if (regex.test(row.formula)) {
+            if (!refs.includes(r.nr)) refs.push(r.nr);
+          }
+        }
+      });
+      return refs.length > 0 ? refs.map(n => `(${n})`).join(', ') : '-';
     }
 
     function populateTargetSelectOptions() {
       const select = document.getElementById("detailed-formula-target-select");
       select.innerHTML = `<option value="TOTAL_RATE">-- TỔNG ĐƠN GIÁ CHÍNH (Overall Total Rate) --</option>`;
-
       let rows = detailedRateRowsData[currentDetailedRateType];
       rows.forEach((row, index) => {
         const opt = document.createElement("option");
         opt.value = index;
-        opt.innerText = `[Hàng ${row.nr || index + 1}] ${row.title || 'Chưa đặt tên'}`;
+        opt.innerText = `[Hàng ${row.nr}] ${row.title || 'Chưa đặt tên'}`;
         select.appendChild(opt);
       });
     }
@@ -2217,14 +1209,12 @@
 
       if (targetVal === 'TOTAL_RATE') {
         badge.innerText = "Mục tiêu: Total Rate";
-        badge.className = "text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold";
         textarea.value = detailedRateFormulas[currentDetailedRateType] || "";
       } else {
         let index = parseInt(targetVal);
         let rows = detailedRateRowsData[currentDetailedRateType];
         if (rows[index]) {
-          badge.innerText = `Mục tiêu: Hàng #${rows[index].nr || index + 1} (${rows[index].title})`;
-          badge.className = "text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold border border-amber-300";
+          badge.innerText = `Mục tiêu: Hàng #${rows[index].nr} (${rows[index].title})`;
           textarea.value = rows[index].formula || "";
         }
       }
@@ -2236,72 +1226,132 @@
       switchFormulaTarget(index.toString());
     }
 
+    function handleDropDetailedFormula(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove("drag-over");
+      const token = e.dataTransfer.getData("text/plain");
+      if (token) {
+        appendDetailedToken(token);
+      }
+    }
+
     function renderDetailedRateTable() {
       const tbody = document.getElementById("detailed-rate-tbody");
       tbody.innerHTML = "";
       let rows = detailedRateRowsData[currentDetailedRateType];
 
+      const thDel = document.getElementById("th-delete-col");
+      if (thDel) thDel.style.display = isDeleteColumnVisible ? "" : "none";
+
       rows.forEach((row, index) => {
+        row.nr = index + 1;
         const tr = document.createElement("tr");
         const hasFormula = row.formula && row.formula.trim() !== "";
         const isTargeted = currentActiveTargetIndex === index.toString();
 
-        let rowBg = isTargeted ? "bg-amber-100/70" : (hasFormula ? "bg-purple-50/50" : "hover:bg-slate-50");
-        tr.className = `border-b border-slate-200 ${rowBg} transition-colors`;
+        tr.style.background = isTargeted ? "#fef3c7" : (hasFormula ? "#faf5ff" : "#fff");
+        tr.style.borderBottom = "1px solid #e2e8f0";
 
-        let valueInputHtml = "";
-        if (hasFormula) {
-          valueInputHtml = `
-            <div class="relative flex items-center">
-              <input type="number" readonly value="${row.value}" class="w-full text-xs p-1 bg-purple-100/80 border border-purple-300 rounded outline-none font-bold text-purple-900 cursor-not-allowed" title="Giá trị tính theo công thức: ${row.formula}">
-              <span class="absolute right-1 text-[10px] text-purple-700 font-bold bg-white/80 px-1 rounded shadow-xs" title="${row.formula}">fx</span>
-            </div>
-          `;
-        } else {
-          valueInputHtml = `
-            <input type="number" step="any" value="${row.value}" oninput="updateDetailedRowData(${index}, 'value', this.value)" class="w-full text-xs p-1 bg-white border border-amber-300 rounded outline-none font-bold text-amber-700">
-          `;
+        if (isRowReorderEnabled) {
+          tr.draggable = true;
+          tr.style.cursor = "grab";
+          
+          tr.ondragstart = (e) => { 
+            draggedRowIndex = index; 
+            e.dataTransfer.effectAllowed = 'move'; 
+          };
+          
+          tr.ondragover = (e) => { 
+            e.preventDefault(); 
+            e.dataTransfer.dropEffect = 'move';
+            tr.style.borderTop = "2px solid #2563eb";
+          };
+
+          tr.ondragleave = (e) => {
+            tr.style.borderTop = "1px solid #e2e8f0";
+          };
+
+          tr.ondrop = (e) => {
+            e.preventDefault();
+            tr.style.borderTop = "1px solid #e2e8f0";
+            if (draggedRowIndex !== null && draggedRowIndex !== index) {
+              let movedItem = rows.splice(draggedRowIndex, 1)[0];
+              rows.splice(index, 0, movedItem);
+              draggedRowIndex = null;
+              recalculateAllRowsData();
+              populateTargetSelectOptions();
+              renderDetailedRateTable();
+              renderDetailedRateTags();
+            }
+          };
         }
 
-        let formulaBtnClass = hasFormula ? "bg-purple-600 text-white font-bold" : "bg-slate-200 text-slate-600 hover:bg-slate-300";
+        let displayVal = (row.value !== undefined && row.value !== null && !isNaN(row.value)) ? Number(row.value).toLocaleString('en-US') : '';
+
+        let valueInputHtml = hasFormula ? 
+          `<input type="text" readonly value="${displayVal}" style="width: 100%; padding: 4px; font-size: 11px; background: #e9d5ff; color: #581c87; border: 1px solid #d8b4fe; border-radius: 3px; font-weight: bold;" title="Tính tự động">` :
+          `<input type="text" value="${displayVal}" oninput="updateDetailedRowInputText(${index}, this)" style="width: 100%; padding: 4px; font-size: 11px; background: #fff; color: #b45309; border: 1px solid #fde68a; border-radius: 3px; font-weight: bold;">`;
+
+        let refDisplay = getReferencedRowNumbers(row, rows);
+        let dragHandleHtml = isRowReorderEnabled ? `<i class="fa-solid fa-grip-vertical" style="color: #94a3b8; margin-right: 4px;"></i>` : '';
+
+        let delCellHtml = isDeleteColumnVisible ? `
+          <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">
+            <button onclick="confirmAndDeleteRow(${index})" class="btn btn-rose" style="padding: 2px 6px; font-size: 10px;"><i class="fa-solid fa-trash"></i></button>
+          </td>` : '';
 
         tr.innerHTML = `
-          <td class="p-2 border border-slate-200 text-center font-mono font-bold text-slate-600">${row.nr || index + 1}</td>
-          <td class="p-2 border border-slate-200"><input type="text" value="${row.title}" oninput="updateDetailedRowData(${index}, 'title', this.value)" class="w-full text-xs p-1 bg-white border border-slate-300 rounded outline-none font-semibold text-slate-800"></td>
-          <td class="p-2 border border-slate-200"><input type="text" value="${row.unit}" oninput="updateDetailedRowData(${index}, 'unit', this.value)" class="w-full text-xs p-1 bg-white border border-slate-300 rounded outline-none font-mono text-slate-600"></td>
-          <td class="p-2 border border-slate-200 bg-amber-50/30">${valueInputHtml}</td>
-          <td class="p-2 border border-slate-200 text-center">
-            <button onclick="editRowFormulaDirectly(${index})" class="px-2 py-1 ${formulaBtnClass} rounded text-[11px] flex items-center justify-center gap-1 mx-auto shadow-xs" title="${hasFormula ? 'Công thức: ' + row.formula : 'Nhấp để gán công thức cho hàng này'}">
+          <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center; font-family: monospace; font-weight: bold;">${dragHandleHtml}${row.nr}</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center; font-family: monospace; font-weight: bold; color: #4338ca; background: #e0e7ff;">${refDisplay}</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;"><input type="text" value="${row.title}" oninput="updateDetailedRowData(${index}, 'title', this.value)" style="width: 100%; padding: 4px; font-size: 11px; background: #fff; border: 1px solid #cbd5e1; border-radius: 3px;"></td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;"><input type="text" value="${row.unit}" oninput="updateDetailedRowData(${index}, 'unit', this.value)" style="width: 100%; padding: 4px; font-size: 11px; background: #fff; border: 1px solid #cbd5e1; border-radius: 3px; font-family: monospace;"></td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;">${valueInputHtml}</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 10px; color: #581c87;">${row.formula || '-'}</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">
+            <button onclick="editRowFormulaDirectly(${index})" class="btn ${hasFormula ? 'btn-purple' : 'btn-light'}" style="padding: 2px 6px; font-size: 10px;">
               <i class="fa-solid fa-square-root-variable"></i> ${hasFormula ? 'Fx' : 'Edit'}
             </button>
           </td>
-          <td class="p-2 border border-slate-200 text-center"><button onclick="deleteDetailedRateRow(${index})" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded text-xs"><i class="fa-solid fa-trash"></i></button></td>
+          ${delCellHtml}
         `;
         tbody.appendChild(tr);
       });
     }
 
+    function updateDetailedRowInputText(index, inputEl) {
+      let rawVal = inputEl.value.replace(/,/g, '');
+      let numVal = parseFloat(rawVal) || 0;
+      let rows = detailedRateRowsData[currentDetailedRateType];
+      if (rows[index]) {
+        rows[index].value = numVal;
+        recalculateAllRowsData();
+        renderDetailedRateTags();
+      }
+    }
+
+    function confirmAndDeleteRow(index) {
+      let rows = detailedRateRowsData[currentDetailedRateType];
+      let rowTitle = rows[index] ? rows[index].title : `hàng #${index + 1}`;
+      if (confirm(`Bạn có chắc chắn muốn xóa hàng "${rowTitle}" không?`)) {
+        deleteDetailedRateRow(index);
+      }
+    }
+
     function updateDetailedRowData(index, field, val) {
       let rows = detailedRateRowsData[currentDetailedRateType];
       if (rows[index]) {
-        if (field === 'value') {
-          rows[index].value = parseFloat(val) || 0;
-        } else if (field === 'title') {
-          rows[index].title = val;
-          populateTargetSelectOptions();
-          renderDetailedRateTags();
-        } else if (field === 'unit') {
-          rows[index].unit = val;
-        }
+        if (field === 'value') rows[index].value = parseFloat(val) || 0;
+        else if (field === 'title') rows[index].title = val;
+        else if (field === 'unit') rows[index].unit = val;
+
         recalculateAllRowsData();
-        renderDetailedRateTable();
         renderDetailedRateTags();
       }
     }
 
     function addDetailedRateRow() {
       let rows = detailedRateRowsData[currentDetailedRateType];
-      let newNr = rows.length > 0 ? (rows[rows.length - 1].nr || rows.length) + 1 : 1;
+      let newNr = rows.length + 1;
       rows.push({ nr: newNr, title: "New Item " + newNr, unit: "VND", value: 0, formula: "" });
       recalculateAllRowsData();
       populateTargetSelectOptions();
@@ -2312,9 +1362,7 @@
     function deleteDetailedRateRow(index) {
       let rows = detailedRateRowsData[currentDetailedRateType];
       rows.splice(index, 1);
-      if (currentActiveTargetIndex === index.toString()) {
-        switchFormulaTarget('TOTAL_RATE');
-      }
+      if (currentActiveTargetIndex === index.toString()) switchFormulaTarget('TOTAL_RATE');
       recalculateAllRowsData();
       populateTargetSelectOptions();
       renderDetailedRateTable();
@@ -2325,49 +1373,29 @@
       const container = document.getElementById("detailed-tags-container");
       container.innerHTML = "";
       let rows = detailedRateRowsData[currentDetailedRateType];
-
-      if (rows.length === 0) {
-        container.innerHTML = `<div class="text-slate-400 italic text-center p-2 text-xs">Chưa có tiêu đề nào.</div>`;
-        return;
-      }
-
       rows.forEach(row => {
         if (!row.title.trim()) return;
         const tag = document.createElement("div");
-        tag.className = "rate-card p-2 bg-white border border-purple-200 rounded shadow-sm hover:border-purple-400 flex items-center justify-between cursor-grab text-xs";
+        tag.style.cssText = "background: #fff; border: 1px solid #d8b4fe; border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; cursor: grab; font-size: 11px;";
         tag.draggable = true;
         tag.ondragstart = (e) => e.dataTransfer.setData("text/plain", row.title);
         tag.onclick = () => appendDetailedToken(row.title);
+        let formattedTagVal = (row.value !== undefined && !isNaN(row.value)) ? Number(row.value).toLocaleString('en-US') : 0;
         tag.innerHTML = `
-          <div class="flex items-center gap-1.5 font-bold text-slate-800">
-            <i class="fa-solid fa-tag text-purple-600 text-[10px]"></i> ${row.title}
+          <div style="font-weight: bold; color: #334155; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-tag" style="color: #7c3aed; font-size: 10px;"></i> ${row.title}
           </div>
-          <span class="text-[10px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-mono border border-purple-200 font-bold">${row.value.toLocaleString('vi-VN')} ${row.unit}</span>
+          <span style="font-size: 10px; background: #fae8ff; color: #581c87; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-weight: bold;">${formattedTagVal} ${row.unit}</span>
         `;
         container.appendChild(tag);
       });
     }
 
-    function allowDropRate(e) {
-      e.preventDefault();
-      e.currentTarget.classList.add("drag-over");
-    }
-
-    function handleDropDetailedFormula(e) {
-      e.preventDefault();
-      e.currentTarget.classList.remove("drag-over");
-      const titleTag = e.dataTransfer.getData("text/plain");
-      if (titleTag) {
-        appendDetailedToken(titleTag);
-      }
-    }
-
     function appendDetailedToken(token) {
       const textarea = document.getElementById("detailed-formula-textarea");
       let val = textarea.value.trim();
-      if (val === "") {
-        textarea.value = token;
-      } else {
+      if (val === "") textarea.value = token;
+      else {
         if (!val.endsWith(" ") && !token.startsWith(" ")) textarea.value += " " + token;
         else textarea.value += token;
       }
@@ -2379,7 +1407,6 @@
 
     function saveFormulaForSelectedTarget() {
       const formulaVal = document.getElementById("detailed-formula-textarea").value.trim();
-
       if (currentActiveTargetIndex === 'TOTAL_RATE') {
         detailedRateFormulas[currentDetailedRateType] = formulaVal;
         alert("Đã lưu công thức cho TỔNG ĐƠN GIÁ CHÍNH!");
@@ -2398,33 +1425,256 @@
 
     function saveDetailedRateAsDefault() {
       saveFormulaForSelectedTarget();
-      const payload = {
-        rows: detailedRateRowsData[currentDetailedRateType],
-        formula: detailedRateFormulas[currentDetailedRateType]
-      };
-      localStorage.setItem("bor_detailed_rate_" + currentDetailedRateType, JSON.stringify(payload));
       alert(`Đã lưu cấu hình mặc định cho ${currentDetailedRateType.toUpperCase()} thành công!`);
     }
 
     function applyDetailedRateModal() {
       saveFormulaForSelectedTarget();
-      recalculateAllRowsData();
+      closeDetailedRateModal();
+      alert(`Đã áp dụng định mức và công thức ${currentDetailedRateType.toUpperCase()}!`);
+    }
 
-      const formula = detailedRateFormulas[currentDetailedRateType];
+    // ================= MODAL 2: THÊM MỚI / CHỈNH SỬA RATE (ĐÃ FIX LỖI TÍNH TOÁN 0 HOẶC ∞) =================
+    let addingRateType = 'mhr';
+    let tempNewRateRows = [];
+    let editingRateId = null; 
 
-      // Insert formula into cost-op-formula or update main cost field
-      const opFormulaInput = document.getElementById("cost-op-formula");
-      if (opFormulaInput) {
-        let currentText = opFormulaInput.value.trim();
-        if (currentText) {
-          opFormulaInput.value = currentText + " + (" + formula + ")";
-        } else {
-          opFormulaInput.value = formula;
-        }
+    function openAddNewRateModal(type) {
+      addingRateType = type;
+      editingRateId = null;
+      document.getElementById("add-rate-modal-title").innerText = type === 'mhr' ? "Thêm Machine Hour Rate Mới & Cấu Hình Định Mức" : "Thêm Labor Rate Mới & Cấu Hình Định Mức";
+      document.getElementById("new-rate-id-input").value = (type === 'mhr' ? 'MHR-' : 'LBR-') + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById("new-rate-name-input").value = "";
+      document.getElementById("new-rate-id-input").disabled = false;
+
+      let sourceRows = detailedRateRowsData[type];
+      tempNewRateRows = sourceRows.map(r => ({
+        nr: r.nr,
+        title: r.title,
+        unit: r.unit,
+        value: 0,
+        formula: r.formula
+      }));
+
+      document.getElementById("btn-save-new-rate-action").innerHTML = `<i class="fa-solid fa-plus"></i> Lưu & Thêm Mới`;
+      renderAddNewRateTable();
+      calculateNewRateTotal();
+      document.getElementById("modal-add-new-rate").classList.remove("hidden");
+    }
+
+    function openEditRateModal(type, id) {
+      addingRateType = type;
+      editingRateId = id;
+      
+      let collection = (type === 'mhr') ? sampleMachineHourRates : sampleLaborRates;
+      let item = collection.find(x => x.id === id);
+      if (!item) return;
+
+      document.getElementById("add-rate-modal-title").innerText = `Chỉnh Sửa Định Mức (${id})`;
+      document.getElementById("new-rate-id-input").value = item.id;
+      document.getElementById("new-rate-id-input").disabled = true; 
+      document.getElementById("new-rate-name-input").value = item.name;
+
+      // Reverse calculation để đặt giá trị ban đầu chính xác giúp công thức tính ra đúng item.rate
+      let sourceRows = JSON.parse(JSON.stringify(detailedRateRowsData[type]));
+      if (type === 'mhr') {
+        let depr = 10, hours = 2500;
+        let invRow = sourceRows.find(r => r.title.toLowerCase() === 'investment');
+        if (invRow) invRow.value = item.rate * depr * hours;
+      } else if (type === 'labor') {
+        let hours = 2000, fte = 2;
+        let salRow = sourceRows.find(r => r.title.toLowerCase().includes('salary'));
+        if (salRow) salRow.value = (item.rate * hours) / fte;
       }
 
-      closeDetailedRateModal();
-      alert(`Đã áp dụng định mức và công thức ${currentDetailedRateType.toUpperCase()} vào Cost Center thành công!`);
+      tempNewRateRows = sourceRows;
+      recalculateAllRowsDataForTemp();
+
+      document.getElementById("btn-save-new-rate-action").innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Lưu Cập Nhật`;
+      renderAddNewRateTable();
+      calculateNewRateTotal();
+      document.getElementById("modal-add-new-rate").classList.remove("hidden");
+    }
+
+    function recalculateAllRowsDataForTemp() {
+      for (let iteration = 0; iteration < 3; iteration++) {
+        tempNewRateRows.forEach((row) => {
+          if (row.formula && row.formula.trim() !== "") {
+            let calculatedVal = evaluateRowFormula(row.formula, tempNewRateRows);
+            if (!isNaN(calculatedVal)) row.value = calculatedVal;
+          }
+        });
+      }
+    }
+
+    function closeAddNewRateModal() {
+      document.getElementById("modal-add-new-rate").classList.add("hidden");
+    }
+
+    function renderAddNewRateTable() {
+      const tbody = document.getElementById("add-new-rate-tbody");
+      tbody.innerHTML = "";
+
+      tempNewRateRows.forEach((row, index) => {
+        const tr = document.createElement("tr");
+        const hasFormula = row.formula && row.formula.trim() !== "";
+        tr.style.borderBottom = "1px solid #e2e8f0";
+
+        let refDisplay = getReferencedRowNumbers(row, tempNewRateRows);
+        let displayVal = (row.value !== 0 && !isNaN(row.value) && row.value !== undefined) ? Number(row.value).toLocaleString('en-US') : '';
+
+        let valueInputHtml = hasFormula ? 
+          `<input type="text" readonly id="new-val-row-${index}" value="${displayVal}" style="width: 100%; padding: 4px; font-size: 11px; background: #e9d5ff; color: #581c87; border: 1px solid #d8b4fe; border-radius: 3px; font-weight: bold;" title="Tính tự động">` :
+          `<input type="text" id="new-val-row-${index}" placeholder="Nhập value..." value="${displayVal}" oninput="updateNewRateInputText(${index}, this)" style="width: 100%; padding: 4px; font-size: 11px; background: #fff; color: #b45309; border: 1px solid #fde68a; border-radius: 3px; font-weight: bold;">`;
+
+        tr.innerHTML = `
+          <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center; font-family: monospace; font-weight: bold; color: #64748b;">${row.nr}</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center; font-family: monospace; font-weight: bold; color: #4338ca; background: #e0e7ff;">${refDisplay}</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;"><input type="text" disabled value="${row.title}" style="width: 100%; padding: 4px; font-size: 11px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; color: #64748b;"></td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;"><input type="text" disabled value="${row.unit}" style="width: 100%; padding: 4px; font-size: 11px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; font-family: monospace; color: #64748b;"></td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1;">${valueInputHtml}</td>
+          <td style="padding: 6px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 10px; color: #581c87;">${row.formula || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateNewRateInputText(index, inputEl) {
+      let rawVal = inputEl.value.replace(/,/g, '');
+      tempNewRateRows[index].value = parseFloat(rawVal) || 0;
+      
+      for (let iteration = 0; iteration < 3; iteration++) {
+        tempNewRateRows.forEach((row, i) => {
+          if (row.formula && row.formula.trim() !== "") {
+            let calculatedVal = evaluateRowFormula(row.formula, tempNewRateRows);
+            if (!isNaN(calculatedVal)) {
+              row.value = calculatedVal;
+              let inputElTarget = document.getElementById(`new-val-row-${i}`);
+              if (inputElTarget && document.activeElement !== inputElTarget) {
+                inputElTarget.value = Number(calculatedVal).toLocaleString('en-US');
+              }
+            }
+          }
+        });
+      }
+
+      calculateNewRateTotal();
+    }
+
+    function calculateNewRateTotal() {
+      let mainFormula = detailedRateFormulas[addingRateType];
+      let finalVal = evaluateRowFormula(mainFormula, tempNewRateRows);
+      document.getElementById("new-calculated-rate-text").innerText = `${Number(finalVal).toLocaleString('en-US')} VND/h`;
+      return finalVal;
+    }
+
+    function saveNewRateItemFromModal() {
+      const id = document.getElementById("new-rate-id-input").value.trim();
+      const name = document.getElementById("new-rate-name-input").value.trim();
+      const totalRate = calculateNewRateTotal();
+
+      if (!id || !name) { alert("Vui lòng nhập đầy đủ Mã và Tên mô tả định mức!"); return; }
+
+      let collection = (addingRateType === 'mhr') ? sampleMachineHourRates : sampleLaborRates;
+
+      if (editingRateId) {
+        let existingItem = collection.find(x => x.id === editingRateId);
+        if (existingItem) {
+          existingItem.name = name;
+          existingItem.rate = totalRate;
+        }
+        alert(`Đã cập nhật định mức "${name}" (${id}) thành công!`);
+      } else {
+        const newItem = { id, name, rate: totalRate, unit: "VND/h" };
+        collection.push(newItem);
+        alert(`Đã thêm định mức mới "${name}" (${id}) thành công!`);
+      }
+
+      renderRateCardsInMainView();
+      closeAddNewRateModal();
+    }
+
+    // ================= ADD NODE MODAL =================
+    function openAddNodeModal() {
+      document.getElementById("modal-title").innerHTML = `<i class="fa-solid fa-pen-to-square" style="color: #60a5fa;"></i> Thêm Resource Mới`;
+      document.getElementById("input-node-name").value = "";
+      selectedParentId = selectedNodeId || null;
+      renderParentTreeSelect();
+      document.getElementById("modal-node").classList.remove("hidden");
+    }
+
+    function closeModalNode() { document.getElementById("modal-node").classList.add("hidden"); }
+
+    function renderParentTreeSelect(filterText = "") {
+      const container = document.getElementById("parent-tree-select-container");
+      container.innerHTML = "";
+
+      const rootOption = document.createElement("div");
+      rootOption.style.cssText = `padding: 6px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 11px; ${selectedParentId === null ? 'background: #e0f2fe; font-weight: bold; color: #0369a1;' : 'color: #334155;'}`;
+      rootOption.innerHTML = `<i class="fa-solid fa-folder-open" style="color: #f59e0b;"></i> <span>-- Gốc (Root / Plant mới) --</span>`;
+      rootOption.onclick = () => { selectedParentId = null; renderParentTreeSelect(); };
+      container.appendChild(rootOption);
+
+      function renderParentNode(node, level) {
+        if (filterText && !node.name.toLowerCase().includes(filterText.toLowerCase())) {
+          if (node.children) node.children.forEach(c => renderParentNode(c, level + 1));
+          return;
+        }
+        const isSelected = selectedParentId === node.id;
+        const div = document.createElement("div");
+        div.style.cssText = `padding: 6px; border-radius: 4px; cursor: pointer; margin: 2px 0; display: flex; align-items: center; gap: 8px; font-size: 11px; padding-left: ${level * 14 + 8}px; ${isSelected ? 'background: #e0f2fe; color: #0369a1; font-weight: bold;' : 'color: #334155;'}`;
+        div.innerHTML = `${getNodeIconHTML(node.type)} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${node.name}</span>`;
+        div.onclick = () => { selectedParentId = node.id; renderParentTreeSelect(); };
+        container.appendChild(div);
+
+        if (node.children) node.children.forEach(c => renderParentNode(c, level + 1));
+      }
+      borData.forEach(n => renderParentNode(n, 0));
+    }
+
+    function filterParentTree() { renderParentTreeSelect(document.getElementById("parent-search-input").value); }
+
+    function saveNodeModal() {
+      const name = document.getElementById("input-node-name").value.trim();
+      if (!name) { alert("Vui lòng nhập tên Resource!"); return; }
+
+      let parentNode = selectedParentId ? findNodeById(borData, selectedParentId) : null;
+      let calculatedType = "PLANT";
+
+      if (!parentNode) calculatedType = "PLANT";
+      else if (parentNode.type === "PLANT") calculatedType = "WORKSHOP";
+      else if (parentNode.type === "WORKSHOP") calculatedType = "WORKCENTER";
+      else if (parentNode.type === "WORKCENTER") calculatedType = "WORKSTATION";
+      else if (parentNode.type === "WORKSTATION") calculatedType = "OPERATION";
+      else if (parentNode.type === "OPERATION") calculatedType = "SUB_OPERATION";
+
+      const newNode = {
+        id: "RES-" + Date.now().toString().slice(-4),
+        name: name, type: calculatedType,
+        locked: false, expanded: true, costCenter: null, children: []
+      };
+
+      if (selectedParentId) {
+        const parent = findNodeById(borData, selectedParentId);
+        if (parent) { if (!parent.children) parent.children = []; parent.children.push(newNode); }
+      } else { borData.push(newNode); }
+
+      closeModalNode(); updateTreeOnly();
+      selectBorNode(newNode.id);
+    }
+
+    function setupResizers() {
+      const resizerH = document.getElementById("resizer-bor-layout");
+      const leftContainer = document.getElementById("left-bor-container");
+      let isDraggingH = false;
+
+      resizerH.addEventListener("mousedown", () => { isDraggingH = true; resizerH.classList.add("active"); });
+      window.addEventListener("mousemove", (e) => {
+        if (isDraggingH && e.clientX > 280 && e.clientX < window.innerWidth * 0.6) {
+          leftContainer.style.width = `${e.clientX}px`;
+        }
+      });
+      window.addEventListener("mouseup", () => { isDraggingH = false; resizerH.classList.remove("active"); });
     }
   </script>
 </body>
