@@ -39,7 +39,23 @@ def test_aps():
 
 @app.route('/BOM')
 def BOM():
-    return render_template('test gantt/test_bom_create.html')
+    return render_template('test gantt/BOM.html')
+
+@app.route('/ver_BOM')
+def BOM():
+    return render_template('test gantt/version BOM.html')
+
+@app.route('/Routine')
+def BOM():
+    return render_template('test gantt/Routine.html')
+
+@app.route('/BOR')
+def BOM():
+    return render_template('test gantt/BOR.html')
+
+@app.route('/BOP')
+def BOM():
+    return render_template('test gantt/BOP.html')
 
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
 @app.route('/login')
@@ -139,6 +155,7 @@ def import_stock():
 @app.route('/MRP')
 def MRP():
     return render_template('includes/MRP.html')
+
 
 # 3. qr
 @app.route('/QR')
