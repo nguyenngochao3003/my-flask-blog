@@ -629,9 +629,9 @@
       let hasChildren = node.children && node.children.length > 0;
       let expandIcon = hasChildren ? `<button onclick="event.stopPropagation(); toggleNodeExpand('bor', '${node.id}')" class="p-0.5 text-slate-400 hover:text-slate-700 text-xs"><i class="fa-solid ${node.expanded !== false ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></button>` : `<span class="w-3"></span>`;
 
-      let isOp = (node.type === 'OPERATION');
-      let checkboxHtml = isOp ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBorNode('${node.id}')" class="rounded accent-emerald-600 mr-1" title="Chọn để kéo thả">` : '';
-      let dragAttr = isOp ? `draggable="true" ondragstart="dragNodeStart(event, '${node.id}', 'BOR')"` : '';
+      let isDraggable = (node.type === 'OPERATION' || node.type === 'SUB_OPERATION');
+      let checkboxHtml = isDraggable ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBorNode('${node.id}')" class="rounded accent-emerald-600 mr-1" title="Chọn để kéo thả">` : '';
+      let dragAttr = isDraggable ? `draggable="true" ondragstart="dragNodeStart(event, '${node.id}', 'BOR')"` : '';
 
       div.innerHTML = `
         <div class="flex items-center justify-between p-1.5 rounded my-0.5 cursor-pointer text-xs ${bgClass}"
@@ -712,7 +712,7 @@
       let hasChildren = node.children && node.children.length > 0;
       let expandIcon = hasChildren ? `<button onclick="event.stopPropagation(); toggleNodeExpand('bop', '${node.id}')" class="p-0.5 text-slate-400 hover:text-slate-700 text-xs"><i class="fa-solid ${node.expanded !== false ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></button>` : `<span class="w-3"></span>`;
 
-      let isDraggable = (node.type === 'OPERATION' || node.type === 'PROCESS');
+      let isDraggable = (node.type === 'OPERATION' || node.type === 'PROCESS' || node.type === 'SUB_OPERATION');
       let checkboxHtml = isDraggable ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckBopNode('${node.id}')" class="rounded accent-purple-600 mr-1" title="Chọn để kéo thả">` : '';
       let dragAttr = isDraggable ? `draggable="true" ondragstart="dragNodeStart(event, '${node.id}', 'BOP')"` : '';
 
@@ -789,7 +789,7 @@
       if (!targetNode) return;
 
       let actualTargetNode = targetNode;
-      if (actualTargetNode.type === 'OPERATION') {
+      if (actualTargetNode.type === 'OPERATION' || actualTargetNode.type === 'SUB_OPERATION') {
         let parentNode = findParentNodeInBom(bomData, actualTargetNode.id);
         if (parentNode) {
           actualTargetNode = parentNode;
@@ -834,13 +834,37 @@
           if (clonedOp.children) clonedOp.children.forEach(cloneSubNodes);
 
           clonedNodes.push(clonedOp);
+        } else if (opNode.type === 'SUB_OPERATION') {
+          let clonedSub = JSON.parse(JSON.stringify(opNode));
+          clonedSub.id = "BOM-SUB-" + Date.now() + Math.random().toString(36).substr(2, 4);
+          clonedSub.type = 'SUB_OPERATION';
+          clonedSub.locked = true;
+          function cloneSubNodes(subNode) {
+            subNode.id = "BOM-SUB-" + Date.now() + Math.random().toString(36).substr(2, 4);
+            subNode.locked = true;
+            if (subNode.children) subNode.children.forEach(cloneSubNodes);
+          }
+          if (clonedSub.children) clonedSub.children.forEach(cloneSubNodes);
+          clonedNodes.push(clonedSub);
         }
       });
 
       if (clonedNodes.length === 0) return;
 
       if (!actualTargetNode.children) actualTargetNode.children = [];
-      actualTargetNode.children.push(...clonedNodes);
+
+      let existingBomChildren = actualTargetNode.children.filter(c => c.type !== 'OPERATION' && c.type !== 'SUB_OPERATION');
+      let existingOpChildren = actualTargetNode.children.filter(c => c.type === 'OPERATION' || c.type === 'SUB_OPERATION');
+
+      // Tẩy sạch mọi nhánh BOM con lỡ bị nén vào bên trong các Operation đã có
+      existingOpChildren.forEach(op => {
+        if (op.children) {
+          op.children = op.children.filter(c => c.type === 'SUB_OPERATION' || c.type === 'OPERATION');
+        }
+      });
+
+      // Sắp xếp: Toàn bộ Operations (cũ + mới kéo vào nối tiếp) nằm ở trên, nhánh BOM con nằm ở dưới cùng
+      actualTargetNode.children = [...existingOpChildren, ...clonedNodes, ...existingBomChildren];
       actualTargetNode.expanded = true;
 
       checkedBorIds.clear();
