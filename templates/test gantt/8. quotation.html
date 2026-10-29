@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siemens Teamcenter PLM - Detailed Selling Price & COGS Simulation Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    header { background-color: #0f172a; color: #fff; height: 50px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; flex-shrink: 0; }
+    .header-logo { background: #2563eb; color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+    .header-title { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-left: 10px; }
+    
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+    .resizer-h { cursor: col-resize; width: 6px; background: #cbd5e1; transition: background 0.2s; flex-shrink: 0; }
+    .resizer-h:hover, .resizer-h.active { background: #2563eb; }
+
+    /* Tree Node Styling */
+    .tree-node-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 11px; margin: 1px 0; }
+    .tree-node-item:hover { background-color: #f1f5f9; }
+    .tree-node-item.selected { background-color: #2563eb; color: #fff; }
+    .tree-node-item.selected i { color: #fff !important; }
+    .tree-node-item.selected span { color: #fff !important; }
+
+    /* Table & Card styling */
+    .cogs-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #fff; }
+    .cogs-table th { background: #f8fafc; color: #475569; padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; white-space: nowrap; }
+    .cogs-table td { padding: 6px 8px; border: 1px solid #e2e8f0; color: #334155; white-space: nowrap; }
+    .cogs-table tr:hover { background: #f8fafc; cursor: pointer; }
+    .cogs-table tr.selected-row { background: #eff6ff !important; border-color: #3b82f6; }
+    .cogs-table tr.highlight-row { background: #fef08a !important; transition: background 0.3s ease; }
+
+    /* Modal styling */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- ================= HEADER ================= -->
+  <header>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="header-logo">
+        <i class="fa-solid fa-calculator"></i> TEAMCENTER PLM
+      </div>
+      <span class="header-title">Detailed Selling Price & COGS Simulation Manager</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button onclick="openCurrencyModal()" style="background: #1e293b; border: 1px solid #334155; color: #38bdf8; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-coins"></i> Cài Đặt Tiền Tệ: <span id="current-currency-label" style="color: #fff;">VND (Đầy đủ)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <div class="main-container">
+    
+    <!-- CỘT 1: CẤU TRÚC GIÁ BÁN & COGS TREE -->
+    <div id="left-bom-container" style="width: 480px; min-width: 320px; max-width: 60%; background: #fff; border-right: 1px solid #cbd5e1; display: flex; flex-direction: column; flex-shrink: 0;">
+      <div style="padding: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #334155;">
+          <i class="fa-solid fa-sitemap" style="color: #2563eb;"></i>
+          <span>SELLING PRICE & COST STRUCTURE TREE</span>
+        </div>
+      </div>
+
+      <div style="background: #f1f5f9; padding: 6px 8px; border-bottom: 1px solid #cbd5e1; display: flex; font-size: 10px; font-weight: bold; color: #475569; flex-shrink: 0;">
+        <div style="flex: 1; min-width: 180px;">Cấu trúc Nhánh</div>
+        <div style="width: 90px; text-align: right;">Chi Phí</div>
+        <div style="width: 50px; text-align: center;">%</div>
+      </div>
+
+      <div id="bom-tree-root" style="flex: 1; overflow: auto; padding: 6px 4px;"></div>
+    </div>
+
+    <div id="resizer-1" class="resizer-h"></div>
+
+    <!-- CỘT 2: HIỂN THỊ DỮ LIỆU TƯƠNG ỨNG -->
+    <div id="mid-cogs-container" style="flex: 1; min-width: 380px; background: #f8fafc; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #cbd5e1;">
+      
+      <div style="padding: 10px 16px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-layer-group" style="color: #34d399;"></i>
+          <span style="font-size: 12px; font-weight: bold;">Màn Hình Chi Tiết: <span id="active-bom-name" style="color: #fbbf24;">Gốc: Giá bán sản phẩm</span></span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <div id="header-total-badge" style="font-size: 12px; font-weight: bold; background: #1e293b; padding: 4px 10px; border-radius: 4px; border: 1px solid #334155;">
+            Giá Bán Chuẩn: <span id="active-total-cogs" style="color: #34d399;">25.000.000 VND</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KHU VỰC HIỂN THỊ ĐỘNG -->
+      <div id="mid-main-view-body" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px;"></div>
+
+    </div>
+
+    <!-- CỘT 3: CHI TIẾT THÀNH PHẦN & BIỂU ĐỒ PHÂN TÍCH -->
+    <div id="right-detail-container" style="width: 440px; min-width: 320px; max-width: 50%; background: #fff; display: flex; flex-direction: column; flex-shrink: 0; border-left: 1px solid #cbd5e1;">
+      <div style="padding: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #334155;">
+          <i class="fa-solid fa-chart-pie" style="color: #7c3aed;"></i>
+          <span id="right-panel-title">Chi Tiết Cấu Thành & Biểu Đồ</span>
+        </div>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px;" id="right-panel-content"></div>
+    </div>
+
+  </div>
+
+  <!-- ================= MODAL: CÀI ĐẶT TIỀN TỆ ================= -->
+  <div id="modal-currency-settings" class="modal-overlay hidden">
+    <div style="background: #fff; border-radius: 8px; width: 420px; max-width: 90vw; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+      <div style="padding: 12px 16px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-coins" style="color: #38bdf8;"></i> <span>Cài Đặt Đơn Vị & Định Dạng Tiền Tệ</span>
+        </h3>
+        <button onclick="closeCurrencyModal()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #475569; display: block; margin-bottom: 6px;">Đơn Vị Tiền Tệ:</label>
+          <select id="select-currency-type" style="width: 100%; padding: 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; font-weight: bold;">
+            <option value="VND">VND (Việt Nam Đồng)</option>
+            <option value="USD">USD (Đô La Mỹ)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #475569; display: block; margin-bottom: 6px;">Kiểu Hiển Thị (Định Dạng):</label>
+          <select id="select-currency-format" style="width: 100%; padding: 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; font-weight: bold;">
+            <option value="full">Đầy đủ (Ví dụ: 25.000.000 VND)</option>
+            <option value="k">Rút gọn K (Ví dụ: 25.000K)</option>
+            <option value="m">Rút gọn M (Ví dụ: 25M)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="padding: 12px 16px; background: #f1f5f9; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 8px;">
+        <button onclick="closeCurrencyModal()" style="padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #334155; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Hủy</button>
+        <button onclick="saveCurrencySettings()" style="padding: 6px 14px; font-size: 11px; background: #2563eb; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Áp Dụng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    let currencyConfig = { type: "VND", format: "full" };
+    let generalPricingConfig = { generalProfitPercent: 20, indirectOvhPercent: 8, directOvhPercent: 12 };
+
+    // Khách hàng có thêm Website Bidding & Trạng Thái
+    let customerProfitList = [
+      { id: "CUST-A", name: "Khách hàng A (Tập đoàn Nissan)", profitPercent: 30, website: "https://bidding.nissan.com/rfp-2026", status: "Trúng thầu" },
+      { id: "CUST-B", name: "Khách hàng B (Toyota Motors)", profitPercent: 25, website: "https://supplier.toyota.com/portal", status: "Đã nộp hồ sơ" },
+      { id: "CUST-C", name: "Khách hàng C (VinFast Auto)", profitPercent: 18, website: "https://procurement.vinfast.vn", status: "Đang chuẩn bị" }
+    ];
+
+    let collapsedNodes = {};
+    let isTestMode = false;
+
+    let bomCogsTreeData = [
+      {
+        id: "BOM-ROOT",
+        name: "Hệ thống tổng thể xe điện",
+        type: "BOM Version",
+        materials: [
+          { name: "Khung hợp kim nhôm đúc nguyên khối", unitCost: 12000000, usage: 1, scrap: 0.05, recycle: 0.02, waste: 0.01 },
+          { name: "Sơn lót chống gỉ cao cấp", unitCost: 1500000, usage: 2.5, scrap: 0.1, recycle: 0, waste: 0.05 }
+        ],
+        operations: [
+          { name: "OP-01: Phun sơn tĩnh điện tự động", time: "1.5h", cost: 3750000, resources: [
+            { type: "Nhân công", name: "Kỹ thuật viên vận hành robot", usage: "1.5h", qty: 2, unitCost: 950000 },
+            { type: "Máy móc", name: "Robot phun sơn Fanuc P-250iB", usage: "1.5h", qty: 1, unitCost: 1500000 }
+          ]},
+          { name: "OP-02: Lắp ráp cụm gầm & hàn laser", time: "2.0h", cost: 5000000, resources: [
+            { type: "Nhân công", name: "Thợ hàn bậc 3/7", usage: "2.0h", qty: 2, unitCost: 950000 },
+            { type: "Thiết bị", name: "Máy hàn laser Panasonic", usage: "2.0h", qty: 1, unitCost: 3100000 }
+          ]}
+        ],
+        children: [
+          {
+            id: "BOM-01",
+            name: "khung gầm xe",
+            type: "Assembly",
+            materials: [
+              { name: "Thép chịu lực cường độ cao", unitCost: 4500000, usage: 4, scrap: 0.08, recycle: 0.03, waste: 0.02 },
+              { name: "Bu-lông cường độ cao M12", unitCost: 50000, usage: 20, scrap: 0.02, recycle: 0, waste: 0.01 }
+            ],
+            operations: [
+              { name: "OP-10: Cắt dập phôi thép gầm xe", time: "0.8h", cost: 2000000, resources: [
+                { type: "Nhân công", name: "Thợ đứng máy dập", usage: "0.8h", qty: 1, unitCost: 700000 },
+                { type: "Máy móc", name: "Khuôn dập thủy lực 200T", usage: "0.8h", qty: 1, unitCost: 1800000 }
+              ]}
+            ],
+            children: []
+          },
+          {
+            id: "BOM-02",
+            name: "cản trước",
+            type: "Assembly",
+            materials: [
+              { name: "Nhựa ABS tổng hợp nguyên sinh", unitCost: 850000, usage: 3, scrap: 0.04, recycle: 0.05, waste: 0.02 }
+            ],
+            operations: [
+              { name: "OP-20: Ép phun nhựa cản trước", time: "0.5h", cost: 1250000, resources: [
+                { type: "Nhân công", name: "Công nhân ép nhựa", usage: "0.5h", qty: 1, unitCost: 700000 },
+                { type: "Máy móc", name: "Máy ép nhựa 500T", usage: "0.5h", qty: 1, unitCost: 1800000 }
+              ]}
+            ],
+            children: []
+          },
+          {
+            id: "BOM-03",
+            name: "nóc xe",
+            type: "Assembly",
+            materials: [
+              { name: "Hợp kim nhôm mạ kẽm", unitCost: 3200000, usage: 2, scrap: 0.03, recycle: 0.01, waste: 0.01 }
+            ],
+            operations: [
+              { name: "OP-30: Cán định hình nhôm nóc xe", time: "0.6h", cost: 1500000, resources: [
+                { type: "Nhân công", name: "Kỹ thuật viên cán nhôm", usage: "0.6h", qty: 1, unitCost: 950000 },
+                { type: "Thiết bị", name: "Dây chuyền cán tôn định hình", usage: "0.6h", qty: 1, unitCost: 1500000 }
+              ]}
+            ],
+            children: [
+              {
+                id: "BOM-04",
+                name: "cụm giữa",
+                type: "Assembly",
+                materials: [
+                  { name: "Composite cốt sợi thủy tinh", unitCost: 2500000, usage: 1.5, scrap: 0.05, recycle: 0.02, waste: 0.01 }
+                ],
+                operations: [
+                  { name: "OP-40: Định hình tấm composite", time: "1.0h", cost: 2500000, resources: [
+                    { type: "Nhân công", name: "Thợ composite", usage: "1.0h", qty: 1, unitCost: 950000 },
+                    { type: "Máy móc", name: "Lò nhiệt ép composite", usage: "1.0h", qty: 1, unitCost: 1550000 }
+                  ]}
+                ],
+                children: [
+                  {
+                    id: "BOM-05",
+                    name: "cụm trước và cụm sau",
+                    type: "Assembly",
+                    materials: [
+                      { name: "Hợp kim nhôm 6061", unitCost: 1800000, usage: 2.2, scrap: 0.03, recycle: 0.01, waste: 0.01 }
+                    ],
+                    operations: [
+                      { name: "OP-50: Phay CNC chi tiết nhôm", time: "1.2h", cost: 3000000, resources: [
+                        { type: "Nhân công", name: "Thợ CNC bậc 3/7", usage: "1.2h", qty: 1, unitCost: 950000 },
+                        { type: "Máy móc", name: "Máy phay CNC 5-axis", usage: "1.2h", qty: 1, unitCost: 1650000 }
+                      ]}
+                    ],
+                    children: []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let selectedTreeNodeId = "ROOT-PRICE";
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderSellingPriceTree();
+      selectTreeNode(selectedTreeNodeId);
+      setupResizers();
+    });
+
+    function formatCurrency(val) {
+      let num = val;
+      if (currencyConfig.type === "USD") num = val / 25000;
+      if (currencyConfig.format === "k") {
+        let valK = Math.round(num / 1000);
+        return currencyConfig.type === "USD" ? `$${valK.toLocaleString()}K` : `${valK.toLocaleString()}K`;
+      } else if (currencyConfig.format === "m") {
+        let valM = (num / 1000000).toFixed(1);
+        return currencyConfig.type === "USD" ? `$${valM}M` : `${valM}M`;
+      } else {
+        let formatted = Math.round(num).toLocaleString('en-US');
+        return currencyConfig.type === "USD" ? `$${formatted}` : `${formatted} VND`;
+      }
+    }
+
+    function calculateNodeCogsDetails(node) {
+      let directMat = 0;
+      (node.materials || []).forEach(m => directMat += (m.unitCost * m.usage));
+      let indirectMat = Math.round(directMat * 0.1);
+      let directOp = 0;
+      (node.operations || []).forEach(o => directOp += o.cost);
+      let ovhMat = Math.round(directMat * 0.05);
+      let ovhOp = Math.round(directOp * 0.08);
+      let totalCogs = directMat + indirectMat + directOp + ovhMat + ovhOp;
+
+      return { directMat, indirectMat, ovhMat, directOp, ovhOp, totalCogs };
+    }
+
+    function calculateTotalSystemCogs(nodes) {
+      let sum = 0;
+      function traverse(list) {
+        list.forEach(n => {
+          let details = calculateNodeCogsDetails(n);
+          sum += details.totalCogs;
+          if (n.children) traverse(n.children);
+        });
+      }
+      traverse(nodes);
+      return sum;
+    }
+
+    function calculateSellingPriceFormula(totalCogs, profitPercent) {
+      let indirectOvhCost = totalCogs * (generalPricingConfig.indirectOvhPercent / 100);
+      let directOvhCost = totalCogs * (generalPricingConfig.directOvhPercent / 100);
+      let sellingPrice = (indirectOvhCost + directOvhCost + totalCogs) / (1 - (profitPercent / 100));
+      let profitCost = sellingPrice * (profitPercent / 100);
+
+      return { totalCogs, indirectOvhCost, directOvhCost, profitCost, sellingPrice };
+    }
+
+    function renderSellingPriceTree() {
+      const container = document.getElementById("bom-tree-root");
+      container.innerHTML = "";
+
+      let totalSystemCogs = calculateTotalSystemCogs(bomCogsTreeData);
+      let priceDetails = calculateSellingPriceFormula(totalSystemCogs, generalPricingConfig.generalProfitPercent);
+
+      let fullTreeStructure = [
+        {
+          id: "ROOT-PRICE",
+          name: "Giá bán sản phẩm (Selling Price)",
+          type: "RootPrice",
+          cost: priceDetails.sellingPrice,
+          percent: 100,
+          children: [
+            { id: "NODE-PROFIT", name: "Profit (Lợi Nhuận)", type: "ProfitCategory", cost: priceDetails.profitCost, percent: generalPricingConfig.generalProfitPercent },
+            { id: "NODE-DIRECT-OVH", name: "Direct OVH Cost", type: "OvhCategory", cost: priceDetails.directOvhCost, percent: ((priceDetails.directOvhCost / priceDetails.sellingPrice) * 100).toFixed(1) },
+            { id: "NODE-INDIRECT-OVH", name: "Indirect OVH Cost", type: "OvhCategory", cost: priceDetails.indirectOvhCost, percent: ((priceDetails.indirectOvhCost / priceDetails.sellingPrice) * 100).toFixed(1) },
+            { id: "NODE-COGS-ROOT", name: "Cost of Goods Sold (COGS)", type: "CogsCategory", cost: priceDetails.totalCogs, percent: ((priceDetails.totalCogs / priceDetails.sellingPrice) * 100).toFixed(1), children: bomCogsTreeData }
+          ]
+        }
+      ];
+
+      function renderNode(node, level) {
+        const div = document.createElement("div");
+        div.className = "relative select-none";
+        const isSelected = node.id === selectedTreeNodeId;
+        const itemClass = isSelected ? "tree-node-item selected" : "tree-node-item";
+
+        let costText = "-";
+        let percentText = "-";
+
+        if (node.cost !== undefined) {
+          costText = formatCurrency(node.cost);
+          percentText = node.percent + "%";
+        } else {
+          let details = calculateNodeCogsDetails(node);
+          costText = formatCurrency(details.totalCogs);
+          percentText = ((details.totalCogs / priceDetails.totalCogs) * 100).toFixed(1) + "%";
+        }
+
+        let hasChildren = node.children && node.children.length > 0;
+        let isCollapsed = collapsedNodes[node.id];
+        let toggleIcon = hasChildren ? (isCollapsed ? '<i class="fa-solid fa-caret-right" style="width: 12px; text-align: center;"></i>' : '<i class="fa-solid fa-caret-down" style="width: 12px; text-align: center;"></i>') : '<span style="width: 12px; display:inline-block;"></span>';
+
+        let iconClass = "fa-sitemap";
+        let iconColor = "#2563eb";
+        if (node.type === 'RootPrice') { iconClass = "fa-tag"; iconColor = "#059669"; }
+        else if (node.type === 'CogsCategory') { iconClass = "fa-boxes-stacked"; iconColor = "#2563eb"; }
+        else if (node.type === 'OvhCategory') { iconClass = "fa-building-flag"; iconColor = "#d97706"; }
+        else if (node.type === 'ProfitCategory') { iconClass = "fa-chart-line"; iconColor = "#7c3aed"; }
+
+        div.innerHTML = `
+          <div class="${itemClass}" onclick="handleNodeClick(event, '${node.id}')">
+            <div style="flex: 1; min-width: 180px; display: flex; align-items: center; gap: 4px; overflow: hidden; padding-left: ${level * 12}px;">
+              <span onclick="toggleNodeCollapse(event, '${node.id}')" style="cursor: pointer; padding: 2px;">${toggleIcon}</span>
+              <i class="fa-solid ${iconClass}" style="color: ${isSelected ? '#fff' : iconColor}; font-size: 11px;"></i>
+              <span style="font-size: 11px; font-weight: ${isSelected ? 'bold' : 'normal'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${node.name}</span>
+            </div>
+            <div style="width: 90px; text-align: right; font-family: monospace; font-weight: bold;">${costText}</div>
+            <div style="width: 50px; text-align: center; font-size: 10px; opacity: 0.8;">${percentText}</div>
+          </div>
+        `;
+
+        if (hasChildren && !isCollapsed) {
+          const childContainer = document.createElement("div");
+          childContainer.style.cssText = "position: relative; border-left: 1px dashed #cbd5e1; margin-left: 14px;";
+          node.children.forEach(child => childContainer.appendChild(renderNode(child, level + 1)));
+          div.appendChild(childContainer);
+        }
+        return div;
+      }
+
+      fullTreeStructure.forEach(n => container.appendChild(renderNode(n, 0)));
+    }
+
+    function toggleNodeCollapse(event, id) {
+      event.stopPropagation();
+      collapsedNodes[id] = !collapsedNodes[id];
+      renderSellingPriceTree();
+    }
+
+    function handleNodeClick(event, id) {
+      selectTreeNode(id);
+    }
+
+    function selectTreeNode(id) {
+      selectedTreeNodeId = id;
+      renderSellingPriceTree();
+
+      if (id === "ROOT-PRICE") {
+        renderRootPriceView();
+      } else if (id === "NODE-COGS-ROOT") {
+        renderCogsBarChartView();
+      } else if (id.startsWith("BOM-")) {
+        loadMiddlePanelData(id);
+      } else {
+        renderGenericCategoryView(id);
+      }
+    }
+
+    function renderRootPriceView() {
+      document.getElementById("active-bom-name").innerText = "Gốc: Giá bán sản phẩm";
+      let totalSystemCogs = calculateTotalSystemCogs(bomCogsTreeData);
+      let priceDetails = calculateSellingPriceFormula(totalSystemCogs, generalPricingConfig.generalProfitPercent);
+      document.getElementById("active-total-cogs").innerText = formatCurrency(priceDetails.sellingPrice);
+
+      const mainView = document.getElementById("mid-main-view-body");
+
+      let customerRowsHtml = "";
+      customerProfitList.forEach(cust => {
+        let custDetails = calculateSellingPriceFormula(totalSystemCogs, cust.profitPercent);
+        let statusBadgeClass = "bg-slate-100 text-slate-700";
+        if (cust.status === "Trúng thầu") statusBadgeClass = "bg-emerald-100 text-emerald-700 font-bold";
+        else if (cust.status === "Đã nộp hồ sơ") statusBadgeClass = "bg-blue-100 text-blue-700 font-bold";
+
+        customerRowsHtml += `
+          <tr>
+            <td style="font-weight: bold; color: #1e293b;">${cust.id}</td>
+            <td style="font-weight: bold; color: #2563eb;">${cust.name}</td>
+            <td style="text-align: center; font-weight: bold; color: #7c3aed;">${cust.profitPercent}%</td>
+            <td style="text-align: right; font-family: monospace; font-weight: bold; color: #059669; font-size: 12px;">${formatCurrency(custDetails.sellingPrice)}</td>
+            <td style="text-align: center;">
+              <a href="${cust.website}" target="_blank" style="color: #0284c7; font-size: 11px; text-decoration: underline;"><i class="fa-solid fa-globe"></i> Bidding Link</a>
+            </td>
+            <td style="text-align: center;">
+              <span class="px-2 py-0.5 rounded text-xs ${statusBadgeClass}">${cust.status}</span>
+            </td>
+          </tr>
+        `;
+      });
+
+      mainView.innerHTML = `
+        <div style="background: #fff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div>
+            <h4 style="font-size: 13px; font-weight: bold; color: #1e40af; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-sliders" style="color: #2563eb;"></i> Cấu Hình Tỷ Lệ Lợi Nhuận (% Profit) Cho Khách Hàng
+            </h4>
+            <p style="font-size: 11px; color: #64748b; margin-top: 2px;">Tỷ lệ profit chung hiện tại: <b style="color: #7c3aed;">${generalPricingConfig.generalProfitPercent}%</b> | Giá bán tiêu chuẩn: <b style="color: #059669;">${formatCurrency(priceDetails.sellingPrice)}</b></p>
+          </div>
+          <button onclick="exportBiddingCSV()" style="padding: 6px 12px; background: #059669; color: #fff; border: none; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-file-csv"></i> Xuất File CSV Đấu Thầu
+          </button>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <h4 style="font-size: 12px; font-weight: bold; color: #0f172a;"><i class="fa-solid fa-users" style="color: #0284c7; margin-right: 6px;"></i> Danh Sách Giá Bán & Trạng Thái Đấu Thầu Theo Khách Hàng</h4>
+          </div>
+          <table class="cogs-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Mã KH</th>
+                <th>Tên Khách Hàng</th>
+                <th style="width: 90px; text-align: center;">% Profit</th>
+                <th style="width: 120px; text-align: right;">Giá Bán Sản Phẩm</th>
+                <th style="width: 120px; text-align: center;">Website Đấu Thầu</th>
+                <th style="width: 110px; text-align: center;">Trạng Thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${customerRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      renderRootPriceRightPanel(priceDetails);
+    }
+
+    function exportBiddingCSV() {
+      let totalSystemCogs = calculateTotalSystemCogs(bomCogsTreeData);
+      let csvContent = "data:text/csv;charset=utf-8,Ma KH,Ten Khach Hang,Profit Percent,Gia Ban,Website Dau Thau,Trang Thai\n";
+
+      customerProfitList.forEach(cust => {
+        let custDetails = calculateSellingPriceFormula(totalSystemCogs, cust.profitPercent);
+        csvContent += `"${cust.id}","${cust.name}","${cust.profitPercent}%","${Math.round(custDetails.sellingPrice)}","${cust.website}","${cust.status}"\n`;
+      });
+
+      let encodedUri = encodeURI(csvContent);
+      let link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Teamcenter_Bidding_Prices.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function renderRootPriceRightPanel(priceDetails) {
+      document.getElementById("right-panel-title").innerText = "Biểu Đồ Phân Bổ Giá Bán";
+      const container = document.getElementById("right-panel-content");
+
+      let items = [
+        { label: "COGS", cost: priceDetails.totalCogs, color: "#2563eb" },
+        { label: "Direct OVH", cost: priceDetails.directOvhCost, color: "#d97706" },
+        { label: "Indirect OVH", cost: priceDetails.indirectOvhCost, color: "#f59e0b" },
+        { label: "Profit", cost: priceDetails.profitCost, color: "#10b981" }
+      ];
+
+      let totalAbs = items.reduce((sum, item) => sum + Math.abs(item.cost), 0) || 1;
+      let cumulativePercent = 0;
+      let svgSlices = "";
+
+      items.forEach((item, idx) => {
+        let p = Math.abs(item.cost) / totalAbs;
+        let startAngle = cumulativePercent * 360;
+        cumulativePercent += p;
+        let endAngle = cumulativePercent * 360;
+
+        let x1 = 50 + 40 * Math.cos((startAngle - 90) * Math.PI / 180);
+        let y1 = 50 + 40 * Math.sin((startAngle - 90) * Math.PI / 180);
+        let x2 = 50 + 40 * Math.cos((endAngle - 90) * Math.PI / 180);
+        let y2 = 50 + 40 * Math.sin((endAngle - 90) * Math.PI / 180);
+        let largeFlag = p > 0.5 ? 1 : 0;
+
+        let pathData = `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeFlag} 1 ${x2} ${y2} Z`;
+        svgSlices += `<path id="pie-slice-root-${idx}" d="${pathData}" fill="${item.color}" style="cursor: pointer; transition: transform 0.2s;" onclick="highlightRootDetailRow(${idx})"></path>`;
+      });
+
+      container.innerHTML = `
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px;">
+          <h5 style="font-size: 12px; font-weight: bold; color: #065f46; margin-bottom: 4px;">Tổng Quan Giá Bán Sản Phẩm</h5>
+          <p style="font-size: 11px; color: #047857;">Tổng giá trị: <b>${formatCurrency(priceDetails.sellingPrice)}</b></p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; display: flex; align-items: center; gap: 16px;">
+          <svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+            ${svgSlices}
+            <circle cx="50" cy="50" r="22" fill="#fff"></circle>
+          </svg>
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+            <span style="font-weight: bold; color: #334155; margin-bottom: 2px;">📊 Tỷ Trọng Các Khoản Mục:</span>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightRootDetailRow(0)"><span style="width: 10px; height: 10px; background: #2563eb; border-radius: 2px;"></span> COGS</div>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightRootDetailRow(1)"><span style="width: 10px; height: 10px; background: #d97706; border-radius: 2px;"></span> Direct OVH</div>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightRootDetailRow(2)"><span style="width: 10px; height: 10px; background: #f59e0b; border-radius: 2px;"></span> Indirect OVH</div>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightRootDetailRow(3)"><span style="width: 10px; height: 10px; background: #10b981; border-radius: 2px;"></span> Profit</div>
+          </div>
+        </div>
+
+        <div>
+          <h5 style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Cột Thành Phần Giá Bán:</h5>
+          <table class="cogs-table">
+            <thead>
+              <tr>
+                <th>Thành Phần</th>
+                <th style="width: 110px; text-align: right;">Giá Trị</th>
+                <th style="width: 60px; text-align: center;">Tỷ Lệ %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr id="root-detail-row-0" onclick="highlightRootDetailRow(0)">
+                <td>Cost of Goods Sold (COGS)</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #2563eb;">${formatCurrency(priceDetails.totalCogs)}</td>
+                <td style="text-align: center; font-weight: bold;">${((priceDetails.totalCogs/priceDetails.sellingPrice)*100).toFixed(1)}%</td>
+              </tr>
+              <tr id="root-detail-row-1" onclick="highlightRootDetailRow(1)">
+                <td>Direct OVH Cost</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #d97706;">${formatCurrency(priceDetails.directOvhCost)}</td>
+                <td style="text-align: center; font-weight: bold;">${((priceDetails.directOvhCost/priceDetails.sellingPrice)*100).toFixed(1)}%</td>
+              </tr>
+              <tr id="root-detail-row-2" onclick="highlightRootDetailRow(2)">
+                <td>Indirect OVH Cost</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #b45309;">${formatCurrency(priceDetails.indirectOvhCost)}</td>
+                <td style="text-align: center; font-weight: bold;">${((priceDetails.indirectOvhCost/priceDetails.sellingPrice)*100).toFixed(1)}%</td>
+              </tr>
+              <tr id="root-detail-row-3" onclick="highlightRootDetailRow(3)">
+                <td>Profit (Lợi Nhuận)</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; color: #059669;">${formatCurrency(priceDetails.profitCost)}</td>
+                <td style="text-align: center; font-weight: bold; color: #059669;">${generalPricingConfig.generalProfitPercent}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function highlightRootDetailRow(index) {
+      document.querySelectorAll("[id^='root-detail-row-']").forEach(tr => tr.classList.remove("highlight-row"));
+      document.querySelectorAll("svg path").forEach(p => p.style.transform = "scale(1)");
+
+      let targetRow = document.getElementById(`root-detail-row-${index}`);
+      if (targetRow) targetRow.classList.add("highlight-row");
+
+      let targetSlice = document.getElementById(`pie-slice-root-${index}`);
+      if (targetSlice) {
+        targetSlice.style.transform = "scale(1.08)";
+        targetSlice.style.transformOrigin = "50px 50px";
+      }
+    }
+
+    function renderCogsBarChartView() {
+      document.getElementById("active-bom-name").innerText = "Cost of Goods Sold (COGS) Phân Tích";
+      let totalSystemCogs = calculateTotalSystemCogs(bomCogsTreeData);
+      document.getElementById("active-total-cogs").innerText = formatCurrency(totalSystemCogs);
+
+      const mainView = document.getElementById("mid-main-view-body");
+
+      let rowsHtml = "";
+      bomCogsTreeData.forEach(node => {
+        let details = calculateNodeCogsDetails(node);
+        let percent = ((details.totalCogs / totalSystemCogs) * 100).toFixed(1);
+        rowsHtml += `
+          <tr>
+            <td style="font-weight: bold; color: #0f172a;"><i class="fa-solid fa-sitemap" style="color: #2563eb; margin-right: 6px;"></i> ${node.name}</td>
+            <td style="text-align: right; font-family: monospace; font-weight: bold; color: #047857;">${formatCurrency(details.totalCogs)}</td>
+            <td style="text-align: center; font-weight: bold;">${percent}%</td>
+            <td>
+              <div style="background: #e2e8f0; border-radius: 4px; height: 10px; width: 100%; overflow: hidden;">
+                <div style="background: #2563eb; height: 100%; width: ${percent}%;"></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      mainView.innerHTML = `
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <h4 style="font-size: 12px; font-weight: bold; color: #0f172a;"><i class="fa-solid fa-chart-bar" style="color: #2563eb; margin-right: 6px;"></i> Biểu Đồ Bar Chart Thành Phần Chi Phí COGS</h4>
+          </div>
+          <table class="cogs-table">
+            <thead>
+              <tr>
+                <th>Tên Nhánh BOM</th>
+                <th style="width: 120px; text-align: right;">Chi Phí</th>
+                <th style="width: 60px; text-align: center;">Tỷ Lệ</th>
+                <th style="width: 180px;">Biểu Đồ Thanh Bar Chart</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      loadMiddlePanelData("BOM-ROOT");
+    }
+
+    function renderGenericCategoryView(id) {
+      document.getElementById("active-bom-name").innerText = id;
+      const mainView = document.getElementById("mid-main-view-body");
+      mainView.innerHTML = `
+        <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; color: #64748b;">
+          <i class="fa-solid fa-circle-info" style="font-size: 24px; color: #3b82f6; margin-bottom: 8px;"></i>
+          <p>Chi tiết các tham số chi phí được tự động tính toán theo công thức tổng thể.</p>
+        </div>
+      `;
+    }
+
+    function loadMiddlePanelData(id) {
+      const node = findBomNode(bomCogsTreeData, id) || bomCogsTreeData[0];
+      if (!node) return;
+
+      document.getElementById("active-bom-name").innerText = node.name;
+
+      let details = calculateNodeCogsDetails(node);
+      document.getElementById("active-total-cogs").innerText = formatCurrency(details.totalCogs);
+
+      const mainView = document.getElementById("mid-main-view-body");
+
+      mainView.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+          <span style="font-size: 12px; font-weight: bold; color: #1e293b;"><i class="fa-solid fa-flask" style="color: #7c3aed;"></i> Chế Độ Chạy Test Giả Định Chi Phí (Simulation):</span>
+          <button onclick="toggleTestSimulation('${node.id}')" style="padding: 4px 10px; font-size: 11px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; background: ${isTestMode ? '#7c3aed' : '#cbd5e1'}; color: ${isTestMode ? '#fff' : '#334155'};">
+            ${isTestMode ? '🧪 Đang Bật Simulation (Click Để Tắt)' : '⚙️ Bật Simulation / Test Chi Phí'}
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+          <div style="background: #fff; border: 1px solid #a7f3d0; border-radius: 6px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <div style="font-size: 10px; font-weight: bold; color: #065f46; margin-bottom: 4px;"><i class="fa-solid fa-box"></i> Direct Material</div>
+            <div style="font-size: 12px; font-weight: bold; color: #047857;">${formatCurrency(details.directMat)}</div>
+          </div>
+          <div style="background: #fff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <div style="font-size: 10px; font-weight: bold; color: #581c87; margin-bottom: 4px;"><i class="fa-solid fa-boxes-packing"></i> Indirect Material</div>
+            <div style="font-size: 12px; font-weight: bold; color: #6d28d9;">${formatCurrency(details.indirectMat)}</div>
+          </div>
+          <div style="background: #fff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <div style="font-size: 10px; font-weight: bold; color: #1e40af; margin-bottom: 4px;"><i class="fa-solid fa-gears"></i> Direct Operation</div>
+            <div style="font-size: 12px; font-weight: bold; color: #1d4ed8;">${formatCurrency(details.directOp)}</div>
+          </div>
+          <div style="background: #fff; border: 1px solid #fde68a; border-radius: 6px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <div style="font-size: 10px; font-weight: bold; color: #78350f; margin-bottom: 4px;"><i class="fa-solid fa-warehouse"></i> OVH Material</div>
+            <div style="font-size: 12px; font-weight: bold; color: #b45309;">${formatCurrency(details.ovhMat)}</div>
+          </div>
+          <div style="background: #fff; border: 1px solid #fecdd3; border-radius: 6px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <div style="font-size: 10px; font-weight: bold; color: #9f1239; margin-bottom: 4px;"><i class="fa-solid fa-building-flag"></i> OVH Operation</div>
+            <div style="font-size: 12px; font-weight: bold; color: #be123c;">${formatCurrency(details.ovhOp)}</div>
+          </div>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="font-size: 12px; font-weight: bold; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-boxes-stacked" style="color: #059669;"></i> Nhánh Vật Tư (Material Direct & Indirect)
+            </h4>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="cogs-table">
+              <thead>
+                <tr>
+                  <th>Tên Vật Tư</th>
+                  <th style="width: 110px; text-align: right;">Đơn Giá</th>
+                  <th style="width: 90px; text-align: center;">Lượng Dùng</th>
+                  <th style="width: 120px; text-align: right;">Thành Tiền</th>
+                </tr>
+              </thead>
+              <tbody id="middle-material-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="font-size: 12px; font-weight: bold; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-screwdriver-wrench" style="color: #2563eb;"></i> Nhánh Quy Trình & Vận Hành (Operation & MHR)
+            </h4>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="cogs-table">
+              <thead>
+                <tr>
+                  <th>Tên Công Đoạn</th>
+                  <th style="width: 90px; text-align: center;">Thời Gian</th>
+                  <th style="width: 120px; text-align: right;">Chi Phí</th>
+                </tr>
+              </thead>
+              <tbody id="middle-operation-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      const matTbody = document.getElementById("middle-material-tbody");
+      matTbody.innerHTML = "";
+      if (!node.materials || node.materials.length === 0) {
+        matTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8; font-style: italic;">Không có vật tư trực tiếp ở nhánh này</td></tr>`;
+      } else {
+        node.materials.forEach((m, idx) => {
+          let totalCost = m.unitCost * m.usage;
+          const tr = document.createElement("tr");
+          tr.onclick = () => {
+            document.querySelectorAll(".cogs-table tr").forEach(el => el.classList.remove("selected-row"));
+            tr.classList.add("selected-row");
+            if (isTestMode) {
+              renderMaterialSimulationRight(node, m, totalCost);
+            } else {
+              renderMaterialDetailRight(m, totalCost, details.directMat);
+            }
+          };
+          tr.innerHTML = `
+            <td style="font-weight: bold; color: #0f172a;"><i class="fa-solid fa-box" style="color: #059669; margin-right: 6px;"></i> ${m.name}</td>
+            <td style="text-align: right; font-family: monospace;">${formatCurrency(m.unitCost)}</td>
+            <td style="text-align: center; font-weight: bold;">${m.usage}</td>
+            <td style="text-align: right; font-family: monospace; font-weight: bold; color: #047857;">${formatCurrency(totalCost)}</td>
+          `;
+          matTbody.appendChild(tr);
+          if (idx === 0) {
+            tr.classList.add("selected-row");
+            if (isTestMode) renderMaterialSimulationRight(node, m, totalCost);
+            else renderMaterialDetailRight(m, totalCost, details.directMat);
+          }
+        });
+      }
+
+      const opTbody = document.getElementById("middle-operation-tbody");
+      opTbody.innerHTML = "";
+      if (!node.operations || node.operations.length === 0) {
+        opTbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; font-style: italic;">Không có quy trình ở nhánh này</td></tr>`;
+      } else {
+        node.operations.forEach((o, idx) => {
+          const tr = document.createElement("tr");
+          tr.onclick = () => {
+            document.querySelectorAll(".cogs-table tr").forEach(el => el.classList.remove("selected-row"));
+            tr.classList.add("selected-row");
+            if (isTestMode) {
+              renderOperationSimulationRight(node, o);
+            } else {
+              renderOperationDetailRight(o, details.directOp);
+            }
+          };
+          tr.innerHTML = `
+            <td style="font-weight: bold; color: #0f172a;"><i class="fa-solid fa-gears" style="color: #2563eb; margin-right: 6px;"></i> ${o.name}</td>
+            <td style="text-align: center; font-weight: bold; color: #475569;">${o.time}</td>
+            <td style="text-align: right; font-family: monospace; font-weight: bold; color: #1d4ed8;">${formatCurrency(o.cost)}</td>
+          `;
+          opTbody.appendChild(tr);
+          if (idx === 0 && (!node.materials || node.materials.length === 0)) {
+            tr.classList.add("selected-row");
+            if (isTestMode) renderOperationSimulationRight(node, o);
+            else renderOperationDetailRight(o, details.directOp);
+          }
+        });
+      }
+    }
+
+    function toggleTestSimulation(nodeId) {
+      isTestMode = !isTestMode;
+      loadMiddlePanelData(nodeId);
+    }
+
+    function renderMaterialSimulationRight(node, m, currentCost) {
+      document.getElementById("right-panel-title").innerText = "🧪 Simulation: So Sánh Giá Vật Tư";
+      const container = document.getElementById("right-panel-content");
+
+      let totalSystemCogsCurrent = calculateTotalSystemCogs(bomCogsTreeData);
+      let priceCurrent = calculateSellingPriceFormula(totalSystemCogsCurrent, generalPricingConfig.generalProfitPercent);
+
+      container.innerHTML = `
+        <div style="background: #f3e8ff; border: 1px solid #d8b4fe; border-radius: 6px; padding: 12px;">
+          <h5 style="font-size: 12px; font-weight: bold; color: #6b21a8;"><i class="fa-solid fa-vial"></i> Đang Test Giả Định Cho: ${m.name}</h5>
+          <p style="font-size: 11px; color: #7e22ce; margin-top: 2px;">Đơn giá hiện tại: <b>${formatCurrency(m.unitCost)}</b> | Lượng dùng: <b>${m.usage}</b></p>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+          <h5 style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">1. Chọn Vật Tư Thay Thế Hoặc Nhập Số Ước Lượng:</h5>
+          
+          <div>
+            <label style="font-size: 10px; color: #64748b;">Danh sách vật tư tương đương trong CSDL:</label>
+            <select id="sim-mat-select" onchange="applyMaterialSimPreset(this.value, ${m.usage})" style="width:100%; padding: 4px 6px; font-size: 11px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+              <option value="">-- Tùy chỉnh tự do --</option>
+              <option value="10000000">Nhôm định hình cao cấp Al-6061T6 (10.000.000 VND)</option>
+              <option value="8000000">Thép mạ kẽm cường độ cao S45C (8.000.000 VND)</option>
+              <option value="15000000">Sợi Carbon đúc tổng hợp (15.000.000 VND)</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label style="font-size: 10px; color: #64748b;">Đơn giá mới ước lượng:</label>
+              <input type="number" id="sim-mat-unitcost" value="${m.unitCost}" oninput="updateMatSimComparison('${node.id}', ${m.unitCost}, ${m.usage})" style="width:100%; padding:4px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+            </div>
+            <div>
+              <label style="font-size: 10px; color: #64748b;">Lượng dùng ước lượng:</label>
+              <input type="number" id="sim-mat-usage" value="${m.usage}" oninput="updateMatSimComparison('${node.id}', ${m.unitCost}, ${m.usage})" style="width:100%; padding:4px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+            </div>
+          </div>
+        </div>
+
+        <div id="sim-mat-comparison-result"></div>
+      `;
+
+      updateMatSimComparison(node.id, m.unitCost, m.usage);
+    }
+
+    function applyMaterialSimPreset(val, currentUsage) {
+      if (val) {
+        document.getElementById("sim-mat-unitcost").value = val;
+        let event = new Event('input');
+        document.getElementById("sim-mat-unitcost").dispatchEvent(event);
+      }
+    }
+
+    function updateMatSimComparison(nodeId, oldUnitCost, oldUsage) {
+      let newUnitCost = parseFloat(document.getElementById("sim-mat-unitcost").value) || 0;
+      let newUsage = parseFloat(document.getElementById("sim-mat-usage").value) || 0;
+
+      let oldCost = oldUnitCost * oldUsage;
+      let newCost = newUnitCost * newUsage;
+      let diffCost = newCost - oldCost;
+
+      let totalSystemCogsCurrent = calculateTotalSystemCogs(bomCogsTreeData);
+      let priceCurrent = calculateSellingPriceFormula(totalSystemCogsCurrent, generalPricingConfig.generalProfitPercent);
+
+      let totalSystemCogsSim = totalSystemCogsCurrent + diffCost;
+      let priceSim = calculateSellingPriceFormula(totalSystemCogsSim, generalPricingConfig.generalProfitPercent);
+
+      let diffPrice = priceSim.sellingPrice - priceCurrent.sellingPrice;
+      let isSave = diffCost <= 0;
+
+      document.getElementById("sim-mat-comparison-result").innerHTML = `
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <h5 style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">2. Bảng So Sánh Hai Phương Án:</h5>
+          
+          <table class="cogs-table">
+            <thead>
+              <tr>
+                <th>Mục So Sánh</th>
+                <th style="text-align:right;">Hiện Tại</th>
+                <th style="text-align:right;">Giả Định</th>
+                <th style="text-align:right;">Chênh Lệch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Chi phí vật tư này</td>
+                <td style="text-align:right;">${formatCurrency(oldCost)}</td>
+                <td style="text-align:right; font-weight:bold; color:#7c3aed;">${formatCurrency(newCost)}</td>
+                <td style="text-align:right; font-weight:bold; color: ${isSave ? '#059669' : '#dc2626'};">${formatCurrency(diffCost)}</td>
+              </tr>
+              <tr>
+                <td>Tổng COGS sản phẩm</td>
+                <td style="text-align:right;">${formatCurrency(totalSystemCogsCurrent)}</td>
+                <td style="text-align:right; font-weight:bold; color:#2563eb;">${formatCurrency(totalSystemCogsSim)}</td>
+                <td style="text-align:right; font-weight:bold; color: ${isSave ? '#059669' : '#dc2626'};">${formatCurrency(diffCost)}</td>
+              </tr>
+              <tr>
+                <td><b>Giá Bán Sản Phẩm</b></td>
+                <td style="text-align:right;">${formatCurrency(priceCurrent.sellingPrice)}</td>
+                <td style="text-align:right; font-weight:bold; color:#059669;">${formatCurrency(priceSim.sellingPrice)}</td>
+                <td style="text-align:right; font-weight:bold; color: ${isSave ? '#059669' : '#dc2626'};">${formatCurrency(diffPrice)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="background: ${isSave ? '#f0fdf4' : '#fef2f2'}; border: 1px solid ${isSave ? '#bbf7d0' : '#fecaca'}; padding: 8px; border-radius: 4px; font-size: 11px; color: ${isSave ? '#166534' : '#991b1b'};">
+            ${isSave ? '💡 <b>Tối Ưu:</b> Phương án mới giúp tiết kiệm chi phí giá bán!' : '⚠️ <b>Cảnh Báo:</b> Phương án mới làm gia tăng tổng giá bán sản phẩm.'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderOperationSimulationRight(node, o) {
+      document.getElementById("right-panel-title").innerText = "🧪 Simulation: So Sánh Vận Hành & Máy Móc";
+      const container = document.getElementById("right-panel-content");
+
+      container.innerHTML = `
+        <div style="background: #f3e8ff; border: 1px solid #d8b4fe; border-radius: 6px; padding: 12px;">
+          <h5 style="font-size: 12px; font-weight: bold; color: #6b21a8;"><i class="fa-solid fa-vial"></i> Đang Test Simulation Cho: ${o.name}</h5>
+          <p style="font-size: 11px; color: #7e22ce; margin-top: 2px;">Thời gian hiện tại: <b>${o.time}</b> | Chi phí hiện tại: <b>${formatCurrency(o.cost)}</b></p>
+        </div>
+
+        <div style="background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+          <h5 style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">1. Chọn Trạm Máy Thay Thế Hoặc Nhập Chi Phí Mới:</h5>
+          
+          <div>
+            <label style="font-size: 10px; color: #64748b;">Danh sách trạm máy/xưởng gia công thay thế:</label>
+            <select id="sim-op-select" onchange="applyOpSimPreset(this.value)" style="width:100%; padding: 4px 6px; font-size: 11px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+              <option value="">-- Tùy chỉnh tự do --</option>
+              <option value="2000000">Robot tự động hóa thế hệ mới (2.000.000 VND)</option>
+              <option value="1500000">Xưởng gia công ngoài Outsourcing (1.500.000 VND)</option>
+              <option value="5000000">Dây chuyền thủ công bậc cao (5.000.000 VND)</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size: 10px; color: #64748b;">Chi phí gia công mới ước lượng (VND):</label>
+            <input type="number" id="sim-op-cost" value="${o.cost}" oninput="updateOpSimComparison('${node.id}', ${o.cost})" style="width:100%; padding:4px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+          </div>
+        </div>
+
+        <div id="sim-op-comparison-result"></div>
+      `;
+
+      updateOpSimComparison(node.id, o.cost);
+    }
+
+    function applyOpSimPreset(val) {
+      if (val) {
+        document.getElementById("sim-op-cost").value = val;
+        let event = new Event('input');
+        document.getElementById("sim-op-cost").dispatchEvent(event);
+      }
+    }
+
+    function updateOpSimComparison(nodeId, oldOpCost) {
+      let newOpCost = parseFloat(document.getElementById("sim-op-cost").value) || 0;
+      let diffCost = newOpCost - oldOpCost;
+
+      let totalSystemCogsCurrent = calculateTotalSystemCogs(bomCogsTreeData);
+      let priceCurrent = calculateSellingPriceFormula(totalSystemCogsCurrent, generalPricingConfig.generalProfitPercent);
+
+      let totalSystemCogsSim = totalSystemCogsCurrent + diffCost;
+      let priceSim = calculateSellingPriceFormula(totalSystemCogsSim, generalPricingConfig.generalProfitPercent);
+
+      let diffPrice = priceSim.sellingPrice - priceCurrent.sellingPrice;
+      let isSave = diffCost <= 0;
+
+      document.getElementById("sim-op-comparison-result").innerHTML = `
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <h5 style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase;">2. Bảng So Sánh Hai Phương Án Vận Hành:</h5>
+          
+          <table class="cogs-table">
+            <thead>
+              <tr>
+                <th>Mục So Sánh</th>
+                <th style="text-align:right;">Hiện Tại</th>
+                <th style="text-align:right;">Giả Định</th>
+                <th style="text-align:right;">Chênh Lệch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Chi phí vận hành này</td>
+                <td style="text-align:right;">${formatCurrency(oldOpCost)}</td>
+                <td style="text-align:right; font-weight:bold; color:#7c3aed;">${formatCurrency(newOpCost)}</td>
+                <td style="text-align:right; font-weight:bold; color: ${isSave ? '#059669' : '#dc2626'};">${formatCurrency(diffCost)}</td>
+              </tr>
+              <tr>
+                <td>Tổng COGS sản phẩm</td>
+                <td style="text-align:right;">${formatCurrency(totalSystemCogsCurrent)}</td>
+                <td style="text-align:right; font-weight:bold; color:#2563eb;">${formatCurrency(totalSystemCogsSim)}</td>
+                <td style="text-align:right; font-weight:bold; color: ${isSave ? '#059669' : '#dc2626'};">${formatCurrency(diffCost)}</td>
+              </tr>
+              <tr>
+                <td><b>Giá Bán Sản Phẩm</b></td>
+                <td style="text-align:right;">${formatCurrency(priceCurrent.sellingPrice)}</td>
+                <td style="text-align:right; font-weight:bold; color:#059669;">${formatCurrency(priceSim.sellingPrice)}</td>
+                <td style="text-align:right; font-weight:bold; color: ${isSave ? '#059669' : '#dc2626'};">${formatCurrency(diffPrice)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="background: ${isSave ? '#f0fdf4' : '#fef2f2'}; border: 1px solid ${isSave ? '#bbf7d0' : '#fecaca'}; padding: 8px; border-radius: 4px; font-size: 11px; color: ${isSave ? '#166534' : '#991b1b'};">
+            ${isSave ? '💡 <b>Tối Ưu:</b> Trạm máy mới giúp tối ưu hóa chi phí sản xuất & giá bán!' : '⚠️ <b>Cảnh Báo:</b> Tăng chi phí nhân công/máy móc.'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMaterialDetailRight(m, totalCost, grandTotalMat) {
+      document.getElementById("right-panel-title").innerText = "Chi Tiết Thành Phần Vật Tư";
+      const container = document.getElementById("right-panel-content");
+
+      let scrapCost = Math.round(totalCost * (m.scrap || 0.05));
+      let recycleCost = Math.round(totalCost * (m.recycle || 0.02));
+      let wasteCost = Math.round(totalCost * (m.waste || 0.01));
+      let netCost = totalCost + scrapCost + wasteCost - recycleCost;
+
+      let items = [
+        { label: "Sử dụng chính", cost: totalCost, color: "#3b82f6" },
+        { label: "Hao hụt (Scrap)", cost: scrapCost, color: "#f59e0b" },
+        { label: "Tái chế (Recycle)", cost: recycleCost, color: "#10b981" },
+        { label: "Bỏ đi (Waste)", cost: wasteCost, color: "#ef4444" }
+      ];
+
+      let totalAbs = items.reduce((sum, item) => sum + Math.abs(item.cost), 0) || 1;
+      let cumulativePercent = 0;
+      let svgSlices = "";
+
+      items.forEach((item, idx) => {
+        let p = Math.abs(item.cost) / totalAbs;
+        let startAngle = cumulativePercent * 360;
+        cumulativePercent += p;
+        let endAngle = cumulativePercent * 360;
+
+        let x1 = 50 + 40 * Math.cos((startAngle - 90) * Math.PI / 180);
+        let y1 = 50 + 40 * Math.sin((startAngle - 90) * Math.PI / 180);
+        let x2 = 50 + 40 * Math.cos((endAngle - 90) * Math.PI / 180);
+        let y2 = 50 + 40 * Math.sin((endAngle - 90) * Math.PI / 180);
+        let largeFlag = p > 0.5 ? 1 : 0;
+
+        let pathData = `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeFlag} 1 ${x2} ${y2} Z`;
+        svgSlices += `<path id="pie-slice-${idx}" d="${pathData}" fill="${item.color}" style="cursor: pointer; transition: transform 0.2s;" onclick="highlightDetailRow(${idx})"></path>`;
+      });
+
+      container.innerHTML = `
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px;">
+          <h5 style="font-size: 12px; font-weight: bold; color: #065f46; margin-bottom: 4px;">${m.name}</h5>
+          <p style="font-size: 11px; color: #047857;">Đơn giá: <b>${formatCurrency(m.unitCost)}</b> | Lượng dùng: <b>${m.usage}</b></p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; display: flex; align-items: center; gap: 16px;">
+          <svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+            ${svgSlices}
+            <circle cx="50" cy="50" r="22" fill="#fff"></circle>
+          </svg>
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+            <span style="font-weight: bold; color: #334155; margin-bottom: 2px;">📊 Tỷ Trọng Thành Phần:</span>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightDetailRow(0)"><span style="width: 10px; height: 10px; background: #3b82f6; border-radius: 2px;"></span> Sử dụng chính</div>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightDetailRow(1)"><span style="width: 10px; height: 10px; background: #f59e0b; border-radius: 2px;"></span> Hao hụt (Scrap)</div>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightDetailRow(2)"><span style="width: 10px; height: 10px; background: #10b981; border-radius: 2px;"></span> Tái chế (Recycle)</div>
+            <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="highlightDetailRow(3)"><span style="width: 10px; height: 10px; background: #ef4444; border-radius: 2px;"></span> Bỏ đi (Waste)</div>
+          </div>
+        </div>
+
+        <div>
+          <h5 style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Cột Thành Phần Chi Phí Vật Tư:</h5>
+          <table class="cogs-table">
+            <thead>
+              <tr>
+                <th>Thành Phần</th>
+                <th style="width: 70px; text-align: center;">Usage</th>
+                <th style="width: 100px; text-align: right;">Cost</th>
+                <th style="width: 60px; text-align: center;">%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr id="detail-row-0" onclick="highlightDetailRow(0)">
+                <td>Chi phí lượng vật tư sử dụng</td>
+                <td style="text-align: center; font-weight: bold;">${m.usage}</td>
+                <td style="text-align: right; font-family: monospace;">${formatCurrency(totalCost)}</td>
+                <td style="text-align: center; font-weight: bold; color: #059669;">${((totalCost/netCost)*100).toFixed(0)}%</td>
+              </tr>
+              <tr id="detail-row-1" onclick="highlightDetailRow(1)">
+                <td>Hao hụt (Scrap)</td>
+                <td style="text-align: center;">${(m.scrap*100)}%</td>
+                <td style="text-align: right; font-family: monospace; color: #b45309;">${formatCurrency(scrapCost)}</td>
+                <td style="text-align: center;">${((scrapCost/netCost)*100).toFixed(0)}%</td>
+              </tr>
+              <tr id="detail-row-2" onclick="highlightDetailRow(2)">
+                <td>Tái chế (Recycle)</td>
+                <td style="text-align: center;">${(m.recycle*100)}%</td>
+                <td style="text-align: right; font-family: monospace; color: #059669;">-${formatCurrency(recycleCost)}</td>
+                <td style="text-align: center;">-${((recycleCost/netCost)*100).toFixed(0)}%</td>
+              </tr>
+              <tr id="detail-row-3" onclick="highlightDetailRow(3)">
+                <td>Bỏ đi (Waste)</td>
+                <td style="text-align: center;">${(m.waste*100)}%</td>
+                <td style="text-align: right; font-family: monospace; color: #e11d48;">${formatCurrency(wasteCost)}</td>
+                <td style="text-align: center;">${((wasteCost/netCost)*100).toFixed(0)}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function highlightDetailRow(index) {
+      document.querySelectorAll("[id^='detail-row-']").forEach(tr => tr.classList.remove("highlight-row"));
+      document.querySelectorAll("svg path").forEach(p => p.style.transform = "scale(1)");
+
+      let targetRow = document.getElementById(`detail-row-${index}`);
+      if (targetRow) targetRow.classList.add("highlight-row");
+
+      let targetSlice = document.getElementById(`pie-slice-${index}`);
+      if (targetSlice) {
+        targetSlice.style.transform = "scale(1.08)";
+        targetSlice.style.transformOrigin = "50px 50px";
+      }
+    }
+
+    function renderOperationDetailRight(o, grandTotalOp) {
+      document.getElementById("right-panel-title").innerText = "Chi Tiết Vận Hành & Biểu Đồ";
+      const container = document.getElementById("right-panel-content");
+
+      let resources = o.resources || [];
+      let totalOpCost = o.cost;
+
+      let rowsHtml = "";
+      resources.forEach(res => {
+        let resTotal = res.unitCost * res.qty * 1.5;
+        rowsHtml += `
+          <tr>
+            <td><b>${res.name}</b> <br><span style="font-size: 10px; color: #64748b;">${res.type}</span></td>
+            <td style="text-align: center; font-weight: bold;">${res.usage}</td>
+            <td style="text-align: center;">${res.qty}</td>
+            <td style="text-align: right; font-family: monospace;">${formatCurrency(res.unitCost)}</td>
+            <td style="text-align: right; font-family: monospace; font-weight: bold; color: #1d4ed8;">${formatCurrency(resTotal)}</td>
+            <td style="text-align: center; font-weight: bold; color: #2563eb;">${((resTotal/totalOpCost)*100).toFixed(0)}%</td>
+          </tr>
+        `;
+      });
+
+      container.innerHTML = `
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px;">
+          <h5 style="font-size: 12px; font-weight: bold; color: #1e40af; margin-bottom: 4px;">${o.name}</h5>
+          <p style="font-size: 11px; color: #1d4ed8;">Thời gian thực hiện: <b>${o.time}</b> | Tổng chi phí: <b>${formatCurrency(o.cost)}</b></p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 11px; font-weight: bold; color: #334155; display: flex; align-items: center; justify-content: space-between;">
+            <span>📊 Biểu Đồ Phân Bổ Nhân Công & Máy Móc</span>
+          </span>
+          <div style="height: 16px; background: #e2e8f0; border-radius: 8px; overflow: hidden; display: flex;">
+            <div style="width: 55%; background: #2563eb;" title="Nhân công: 55%"></div>
+            <div style="width: 45%; background: #10b981;" title="Máy móc: 45%"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #64748b;">
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; background: #2563eb; display: inline-block; border-radius: 2px;"></span> Nhân công (55%)</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; background: #10b981; display: inline-block; border-radius: 2px;"></span> Máy móc/Thiết bị (45%)</span>
+          </div>
+        </div>
+
+        <div>
+          <h5 style="font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase; margin-bottom: 8px;">Cột Thành Phần Nhân Công & Máy Móc:</h5>
+          <table class="cogs-table">
+            <thead>
+              <tr>
+                <th>Tên Thành Phần</th>
+                <th style="width: 60px; text-align: center;">Usage</th>
+                <th style="width: 50px; text-align: center;">SL</th>
+                <th style="width: 80px; text-align: right;">Unit Cost</th>
+                <th style="width: 90px; text-align: right;">Tổng Cost</th>
+                <th style="width: 45px; text-align: center;">%</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function openCurrencyModal() {
+      document.getElementById("select-currency-type").value = currencyConfig.type;
+      document.getElementById("select-currency-format").value = currencyConfig.format;
+      document.getElementById("modal-currency-settings").classList.remove("hidden");
+    }
+
+    function closeCurrencyModal() {
+      document.getElementById("modal-currency-settings").classList.add("hidden");
+    }
+
+    function saveCurrencySettings() {
+      currencyConfig.type = document.getElementById("select-currency-type").value;
+      currencyConfig.format = document.getElementById("select-currency-format").value;
+
+      let labelText = currencyConfig.type;
+      if (currencyConfig.format === 'k') labelText += " (Rút gọn K)";
+      else if (currencyConfig.format === 'm') labelText += " (Rút gọn M)";
+      else labelText += " (Đầy đủ)";
+
+      document.getElementById("current-currency-label").innerText = labelText;
+      closeCurrencyModal();
+      selectTreeNode(selectedTreeNodeId);
+    }
+
+    function setupResizers() {
+      const resizer1 = document.getElementById("resizer-1");
+      const leftBom = document.getElementById("left-bom-container");
+      let isDragging = false;
+
+      resizer1.addEventListener("mousedown", () => { isDragging = true; resizer1.classList.add("active"); });
+      window.addEventListener("mousemove", (e) => {
+        if (isDragging && e.clientX > 300 && e.clientX < window.innerWidth * 0.65) {
+          leftBom.style.width = `${e.clientX}px`;
+        }
+      });
+      window.addEventListener("mouseup", () => { isDragging = false; resizer1.classList.remove("active"); });
+    }
+
+    function findBomNode(nodes, id) {
+      for (let n of nodes) {
+        if (n.id === id) return n;
+        if (n.children) {
+          let found = findBomNode(n.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+  </script>
+</body>
+</html>
