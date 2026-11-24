@@ -42,19 +42,19 @@ def BOM():
     return render_template('test gantt/BOM.html')
 
 @app.route('/ver_BOM')
-def BOM():
+def ver_BOM():
     return render_template('test gantt/version BOM.html')
 
 @app.route('/Routine')
-def BOM():
+def Routine():
     return render_template('test gantt/Routine.html')
 
 @app.route('/BOR')
-def BOM():
-    return render_template('test gantt/BOR.html')
+def BOR():
+    return render_template('test gantt/3_BOR_supabase.html')
 
 @app.route('/BOP')
-def BOM():
+def BOP():
     return render_template('test gantt/BOP.html')
 
 # 1. Route hiển thị giao diện Đăng nhập / Đăng ký
